@@ -86,7 +86,7 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
   }
 
   return (
-    <form onSubmit={create} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10">
+    <form onSubmit={create} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
         <Link href="/studio" className="text-sm font-medium" aria-label="Studio">
           ←

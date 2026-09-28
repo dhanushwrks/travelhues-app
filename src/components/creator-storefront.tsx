@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
+import { CreateMenu, GlimpseComposer, PostForm } from "@/components/storefront-create";
 import { postsServerSnapshot, postsSnapshot, storefrontBio, subscribeStudio } from "@/lib/mock/studio";
 import { useDesk } from "@/lib/studio-desk";
 
@@ -15,6 +16,7 @@ export function CreatorStorefront({
   username: string;
 }) {
   const [tab, setTab] = useState<"posts" | "glimpses">("posts");
+  const [composer, setComposer] = useState<"post" | "glimpse" | null>(null);
   const posts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
   const { stories } = useDesk();
   const storyCount = stories.length;
@@ -25,11 +27,19 @@ export function CreatorStorefront({
   const initial = (name || username || "T").slice(0, 1);
 
   return (
-    <div className="h-full overflow-y-auto pb-6">
+    <div className="relative h-full">
+    <div className="h-full overflow-y-auto pb-24">
       <header className="px-5 pt-6">
-        <div className="flex items-center justify-between">
-          <Image src="/travelhues-mark.png" alt="" width={28} height={28} />
-          <Link href="/account" className="text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <Image
+            src="/travelhues-logo.png"
+            alt="Travelhues"
+            width={374}
+            height={102}
+            priority
+            className="h-10 w-auto"
+          />
+          <Link href="/account" className="shrink-0 text-sm">
             Settings
           </Link>
         </div>
@@ -46,12 +56,6 @@ export function CreatorStorefront({
         <h1 className="mt-4 font-display text-2xl">{name || username}</h1>
         <p className="text-sm text-muted-foreground">@{username}</p>
         <p className="mt-3 text-sm leading-6">{storefrontBio}</p>
-        <Link
-          href="/storefront/new"
-          className="mt-4 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        >
-          New post
-        </Link>
       </header>
       <div className="mt-6 grid grid-cols-2 border-y border-border">
         <TabButton label="Posts" pressed={tab === "posts"} onClick={() => setTab("posts")} />
@@ -62,7 +66,7 @@ export function CreatorStorefront({
           {tab === "glimpses" ? "No glimpses yet." : "No posts yet."}
         </p>
       ) : (
-        <ul className="grid grid-cols-3 gap-px bg-border">
+        <ul className="grid grid-cols-3 gap-px bg-border md:grid-cols-4 lg:grid-cols-6">
           {grid.map((post) => (
             <li key={post.id} className="bg-card">
               <figure className="relative aspect-square">
@@ -74,7 +78,11 @@ export function CreatorStorefront({
                 ) : (
                   <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
                 )}
-                {post.kind !== "photo" ? (
+                {post.media && post.media.length > 1 ? (
+                  <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                    {post.media.length}
+                  </figcaption>
+                ) : post.kind !== "photo" ? (
                   <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
                     {post.kind === "glimpse" ? "Glimpse" : "Video"}
                   </figcaption>
@@ -84,6 +92,30 @@ export function CreatorStorefront({
           ))}
         </ul>
       )}
+    </div>
+    {composer === "post" ? (
+      <div className="absolute inset-0 z-10 overflow-y-auto bg-card">
+        <PostForm
+          onClose={() => setComposer(null)}
+          onPosted={() => {
+            setTab("posts");
+            setComposer(null);
+          }}
+        />
+      </div>
+    ) : composer === "glimpse" ? (
+      <div className="absolute inset-0 z-10 overflow-y-auto bg-card">
+        <GlimpseComposer
+          onClose={() => setComposer(null)}
+          onPosted={() => {
+            setTab("glimpses");
+            setComposer(null);
+          }}
+        />
+      </div>
+    ) : (
+      <CreateMenu onChoose={setComposer} />
+    )}
     </div>
   );
 }

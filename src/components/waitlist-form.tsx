@@ -164,8 +164,8 @@ export function WaitlistForm() {
             Back
           </button>
         ) : (
-          <Link href="/login" className="text-sm text-muted-foreground">
-            Sign in
+          <Link href="/login/tcc" className="text-sm text-muted-foreground">
+            Creator sign in
           </Link>
         )}
         {step < 2 ? (

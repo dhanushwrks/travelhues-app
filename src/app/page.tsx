@@ -56,10 +56,10 @@ export default async function ExplorePage({
         </div>
         <GlimpseRow glimpses={glimpses ?? []} country={selected ? code : ""} />
       </section>
-      <section className="mt-8 grid gap-4 px-5">
-        <h2 className="font-display text-2xl">Top destinations</h2>
+      <section className="mt-8 grid gap-4 px-5 md:grid-cols-2 xl:grid-cols-3">
+        <h2 className="font-display text-2xl md:col-span-2 xl:col-span-3">Top destinations</h2>
         {destinations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground md:col-span-2 xl:col-span-3">
             {place ? `No itineraries in ${countryName(code)} yet.` : "No destinations with itineraries yet."}
           </p>
         ) : (

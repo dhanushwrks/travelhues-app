@@ -84,7 +84,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
           </button>
         ))}
       </div>
-      <ul className="grid grid-cols-2 gap-3 px-5 pt-4">
+      <ul className="grid grid-cols-2 gap-3 px-5 pt-4 lg:grid-cols-3">
         <li>
           <Link
             href={`/studio/${story.id}/${tab}/new`}

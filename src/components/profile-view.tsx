@@ -5,6 +5,7 @@ import { Link2 } from "lucide-react";
 import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Person } from "@/lib/profile";
+import { storyHref } from "@/lib/types";
 
 export function ProfileView({
   person,
@@ -106,10 +107,10 @@ export function ProfileView({
         {showStories && person.stories.length > 0 ? (
           <section className="mt-8">
             <h3 className="font-display text-2xl">Stories</h3>
-            <ul className="mt-4 space-y-4">
+            <ul className="mt-4 grid gap-4 md:grid-cols-2">
               {person.stories.map((story) => (
                 <li key={story.slug}>
-                  <Link href={`/stories/${story.slug}`} className="block">
+                  <Link href={storyHref(story)} className="block">
                     <span className="relative block aspect-[16/9] overflow-hidden rounded-2xl bg-muted">
                       <Image src={story.coverUrl} alt="" fill className="object-cover" sizes="430px" />
                     </span>

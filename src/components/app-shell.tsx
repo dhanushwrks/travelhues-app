@@ -1,4 +1,5 @@
-import { BottomNav } from "@/components/bottom-nav";
+import { AppNav } from "@/components/bottom-nav";
+import { ContentFrame } from "@/components/content-frame";
 
 export function AppShell({
   children,
@@ -8,9 +9,12 @@ export function AppShell({
   role: "tcc" | "traveler";
 }) {
   return (
-    <div className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-card text-foreground shadow-[0_0_0_1px_rgba(18,35,42,0.06)]">
-      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-      <BottomNav role={role} />
+    <div className="flex h-dvh w-full bg-background text-foreground md:flex-row">
+      <AppNav role={role} placement="rail" />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <ContentFrame>{children}</ContentFrame>
+        <AppNav role={role} placement="bar" />
+      </div>
     </div>
   );
 }

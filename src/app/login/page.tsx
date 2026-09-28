@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { GoogleSignInButton } from "@/components/google-sign-in";
-
 export default function LoginDoorPage() {
   return (
     <div className="flex h-full flex-col overflow-y-auto px-5 pt-10 pb-10">
@@ -16,36 +14,16 @@ export default function LoginDoorPage() {
       />
       <h1 className="mt-8 font-display text-4xl">Come in</h1>
       <p className="mt-2 max-w-[28ch] text-sm leading-6 text-muted-foreground">
-        Browse stories from people who have already made the trip.
+        Choose how you use Travelhues. The two accounts stay separate.
       </p>
       <div className="mt-8 grid gap-3">
-        <GoogleSignInButton className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground" />
-        <Link
-          href="/login/user"
-          className="rounded-full border border-border px-4 py-3 text-center text-sm"
-        >
-          Sign in with email
+        <Link href="/login/user" className="rounded-3xl bg-primary px-5 py-5 text-primary-foreground">
+          <span className="block text-lg font-medium">User</span>
+          <span className="mt-1 block text-sm text-primary-foreground/85">Browse stories. Sign in with Google or email.</span>
         </Link>
-        <Link
-          href="/signup"
-          className="rounded-full border border-border px-4 py-3 text-center text-sm"
-        >
-          Create an account
-        </Link>
-      </div>
-      <div className="mt-12 grid gap-3">
-        <h2 className="font-display text-2xl">I write the stories</h2>
-        <p className="text-sm leading-6 text-muted-foreground">
-          Creator accounts open after a review, or from a link we send you.
-        </p>
-        <Link
-          href="/join"
-          className="rounded-full bg-foreground px-4 py-3 text-center text-sm font-medium text-background"
-        >
-          Join the waitlist
-        </Link>
-        <Link href="/login/tcc" className="text-sm">
-          Creator sign in
+        <Link href="/login/tcc" className="rounded-3xl border border-border bg-background px-5 py-5">
+          <span className="block text-lg font-medium">Creator</span>
+          <span className="mt-1 block text-sm text-muted-foreground">Write stories. New creators join the waitlist.</span>
         </Link>
       </div>
     </div>

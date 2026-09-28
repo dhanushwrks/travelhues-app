@@ -84,7 +84,7 @@ export function EditProfileForm({ person }: { person: Person }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-5 px-5 pt-6 pb-12">
+    <form onSubmit={onSubmit} className="grid h-full gap-5 overflow-y-auto px-5 pt-6 pb-12 md:mx-auto md:max-w-2xl">
       <div className="flex items-center justify-between">
         <Link href="/account" className="text-sm">
           Back

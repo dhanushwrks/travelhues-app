@@ -27,7 +27,7 @@ export function StudioHome() {
       ) : stories.length === 0 ? (
         <p className="pt-8 text-sm text-muted-foreground">No stories yet. Start with the place you know best.</p>
       ) : (
-        <ul className="mt-6 space-y-5">
+        <ul className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {stories.map((story) => (
             <li key={story.id}>
               <Link href={`/studio/${story.id}`} className="block">
@@ -50,7 +50,15 @@ export function StudioHome() {
 function Cover({ src }: { src: string }) {
   if (!src) return null;
   if (src.includes("images.unsplash.com")) {
-    return <Image src={src} alt="" fill className="object-cover" sizes="430px" />;
+    return (
+      <Image
+        src={src}
+        alt=""
+        fill
+        className="object-cover"
+        sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 100vw"
+      />
+    );
   }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt="" className="size-full object-cover" />;

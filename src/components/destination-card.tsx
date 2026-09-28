@@ -4,7 +4,7 @@ import Link from "next/link";
 import { MarkControls } from "@/components/mark-controls";
 import { countryLabel } from "@/lib/countries";
 import { markState, type Library } from "@/lib/marks";
-import type { Story } from "@/lib/types";
+import { itineraryHref, storyHref, type Story } from "@/lib/types";
 
 export function DestinationCard({
   story,
@@ -17,9 +17,15 @@ export function DestinationCard({
 }) {
   return (
     <article className="overflow-hidden rounded-3xl bg-card ring-1 ring-border">
-      <Link href={`/stories/${story.slug}`} className="block">
+      <Link href={storyHref(story)} className="block">
         <span className="relative block aspect-[16/9] bg-muted">
-          <Image src={story.coverUrl} alt="" fill className="object-cover" sizes="430px" />
+          <Image
+            src={story.coverUrl}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 100vw"
+          />
         </span>
         <span className="block px-4 pt-3">
           <span className="block font-display text-2xl">{story.title}</span>
@@ -34,7 +40,7 @@ export function DestinationCard({
             const state = markState(library, "itinerary", story.slug, itinerary.slug);
             return (
               <li key={itinerary.slug} className="grid gap-2 py-3">
-                <Link href={`/stories/${story.slug}/itineraries/${itinerary.slug}`}>
+                <Link href={itineraryHref(story, itinerary.slug)}>
                   <span className="block text-base font-medium">{itinerary.title}</span>
                   <span className="block text-sm text-muted-foreground">
                     {itinerary.days.length} {itinerary.days.length === 1 ? "day" : "days"}

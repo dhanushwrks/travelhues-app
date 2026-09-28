@@ -62,14 +62,36 @@ export type Destination = {
   lng: number;
 };
 
+export type StoryBlog = {
+  slug: string;
+  title: string;
+  body: string;
+};
+
 export type Story = {
   slug: string;
   title: string;
   summary: string;
   coverUrl: string;
+  images?: string[];
   ownerId?: string;
   destination: Destination;
   creator: Creator;
   spots: Spot[];
   itineraries: Itinerary[];
+  blogs?: StoryBlog[];
 };
+
+export function storyImages(story: Pick<Story, "coverUrl" | "images">) {
+  const urls = [story.coverUrl, ...(story.images ?? [])].filter((url) => url.trim());
+  return [...new Set(urls)];
+}
+
+export function storyHref(story: Pick<Story, "slug" | "creator">, spotId = "") {
+  const path = `/stories/${story.creator.username}/${story.slug}`;
+  return spotId ? `${path}?spot=${encodeURIComponent(spotId)}` : path;
+}
+
+export function itineraryHref(story: Pick<Story, "slug" | "creator">, itinerarySlug: string) {
+  return `/stories/${story.creator.username}/${story.slug}/itineraries/${itinerarySlug}`;
+}

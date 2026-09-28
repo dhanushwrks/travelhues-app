@@ -80,7 +80,7 @@ export function PostComposer() {
   }
 
   return (
-    <form onSubmit={publish} className="grid gap-4 px-5 pt-6 pb-10">
+    <form onSubmit={publish} className="grid h-full gap-4 overflow-y-auto px-5 pt-6 pb-10 md:mx-auto md:max-w-2xl">
       <Link href="/storefront" className="text-sm text-primary">
         Storefront
       </Link>

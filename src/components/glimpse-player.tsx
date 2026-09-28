@@ -112,7 +112,7 @@ export function GlimpsePlayer({
   const open = glimpses.find((glimpse) => glimpse.id === commentsFor) ?? null;
 
   return (
-    <div className="relative h-full bg-foreground text-background">
+    <div className="relative h-full bg-foreground text-background md:mx-auto md:max-w-[430px]">
       <Link href="/" className="absolute top-4 left-4 z-10 text-sm">
         Explore
       </Link>

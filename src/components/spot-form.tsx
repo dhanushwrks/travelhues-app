@@ -110,7 +110,7 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
   }
 
   return (
-    <form onSubmit={save} className="grid gap-5 px-5 pt-5 pb-10">
+    <form onSubmit={save} className="grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
         <Link href={back} className="text-sm font-medium" aria-label="Story">
           ←

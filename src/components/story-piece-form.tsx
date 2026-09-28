@@ -53,7 +53,7 @@ export function StoryPieceForm({
   }
 
   return (
-    <form onSubmit={save} className="grid gap-4 px-5 pt-5 pb-10">
+    <form onSubmit={save} className="grid h-full gap-4 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
         <Link href={`/studio/${storyId}`} className="text-sm font-medium" aria-label="Story">
           ←

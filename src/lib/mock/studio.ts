@@ -3,12 +3,19 @@ const photo = (id: string, width = 900) =>
 
 export type MediaKind = "photo" | "video" | "glimpse";
 
+export type PostMedia = {
+  kind: "photo" | "video";
+  imageUrl: string;
+  videoUrl: string;
+};
+
 export type MediaPost = {
   id: string;
   kind: MediaKind;
   caption: string;
   imageUrl: string;
   videoUrl: string;
+  media?: PostMedia[];
 };
 
 export const spotCategories = ["stay", "food", "activity", "sightseeing", "shop"] as const;

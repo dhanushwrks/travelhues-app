@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ItineraryView } from "@/components/itinerary-view";
 import { emptyLibrary } from "@/lib/marks";
 import { loadItinerary, loadLibrary } from "@/lib/remote";
 import { requireSession } from "@/lib/session";
+import { itineraryHref } from "@/lib/types";
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string; itinerarySlug: string }>;
+  params: Promise<{ creator: string; slug: string; itinerarySlug: string }>;
 }): Promise<Metadata> {
   const { slug, itinerarySlug } = await params;
   const session = await requireSession();
@@ -21,15 +22,18 @@ export async function generateMetadata({
 export default async function ItineraryPage({
   params,
 }: {
-  params: Promise<{ slug: string; itinerarySlug: string }>;
+  params: Promise<{ creator: string; slug: string; itinerarySlug: string }>;
 }) {
-  const { slug, itinerarySlug } = await params;
+  const { creator, slug, itinerarySlug } = await params;
   const session = await requireSession();
   const [result, library] = await Promise.all([
     loadItinerary(session.token, slug, itinerarySlug),
     loadLibrary(session.token),
   ]);
   if (!result) notFound();
+  if (result.story.creator.username !== creator) {
+    redirect(itineraryHref(result.story, itinerarySlug));
+  }
 
   return (
     <div className="h-full">

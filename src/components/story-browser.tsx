@@ -9,19 +9,24 @@ import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
 import { formatSpotMeta } from "@/lib/format";
 import { markState, type Library } from "@/lib/marks";
-import { spotTypes, type Spot, type SpotType, type Story } from "@/lib/types";
+import { itineraryHref, spotTypes, type Spot, type SpotType, type Story } from "@/lib/types";
+
+type StorySection = "spots" | "itinerary" | "blogs";
 
 export function StoryBrowser({
   story,
   traveler,
   library,
   initialSpot = "",
+  initialTab = "spots",
 }: {
   story: Story;
   traveler: boolean;
   library: Library;
   initialSpot?: string;
+  initialTab?: StorySection;
 }) {
+  const [tab, setTab] = useState<StorySection>(initialSpot ? "spots" : initialTab);
   const [filter, setFilter] = useState<SpotType | "all">("all");
   const [openId, setOpenId] = useState<string | null>(initialSpot || null);
   const spots =
@@ -30,8 +35,22 @@ export function StoryBrowser({
       : story.spots.filter((spot) => spot.type === filter);
   const openSpot = story.spots.find((spot) => spot.id === openId) ?? null;
 
+  const blogs = story.blogs ?? [];
+
   return (
     <>
+      <div className="mt-5 flex border-b border-border">
+        <SectionTab label="Spots" count={story.spots.length} pressed={tab === "spots"} onClick={() => setTab("spots")} />
+        <SectionTab
+          label="Itinerary"
+          count={story.itineraries.length}
+          pressed={tab === "itinerary"}
+          onClick={() => setTab("itinerary")}
+        />
+        <SectionTab label="Blogs" count={blogs.length} pressed={tab === "blogs"} onClick={() => setTab("blogs")} />
+      </div>
+      {tab === "spots" ? (
+        <>
       <div className="flex gap-2 overflow-x-auto px-5 py-4">
         <FilterChip
           label="All"
@@ -60,15 +79,20 @@ export function StoryBrowser({
           No spots in this category.
         </p>
       ) : null}
-      <section className="px-5 pt-8 pb-10">
-        <h2 className="font-display text-2xl">Itineraries</h2>
-        <ul className="mt-4 space-y-4">
+        </>
+      ) : null}
+      {tab === "itinerary" ? (
+      <section className="px-5 pt-5 pb-10">
+        {story.itineraries.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No itineraries in this story yet.</p>
+        ) : (
+        <ul className="grid gap-4 md:grid-cols-2">
           {story.itineraries.map((itinerary) => {
             const state = markState(library, "itinerary", story.slug, itinerary.slug);
             return (
             <li key={itinerary.slug} className="grid gap-2">
               <Link
-                href={`/stories/${story.slug}/itineraries/${itinerary.slug}`}
+                href={itineraryHref(story, itinerary.slug)}
                 className="block overflow-hidden rounded-2xl bg-white ring-1 ring-border"
               >
                 <div className="relative aspect-[2/1]">
@@ -83,7 +107,7 @@ export function StoryBrowser({
                 <div className="space-y-1 px-4 py-3">
                   <p className="text-base font-medium">{itinerary.title}</p>
                   <p className="text-sm leading-5 text-muted-foreground">
-                    {itinerary.days.length} days
+                    {itinerary.days.length} {itinerary.days.length === 1 ? "day" : "days"}
                   </p>
                 </div>
               </Link>
@@ -100,7 +124,25 @@ export function StoryBrowser({
             );
           })}
         </ul>
+        )}
       </section>
+      ) : null}
+      {tab === "blogs" ? (
+        <section className="px-5 pt-5 pb-10">
+          {blogs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No blogs in this story yet.</p>
+          ) : (
+            <ul className="grid gap-4 md:grid-cols-2">
+              {blogs.map((blog) => (
+                <li key={blog.slug} className="rounded-2xl bg-white px-4 py-4 ring-1 ring-border">
+                  <p className="text-base font-medium">{blog.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{plainText(blog.body)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
       <SpotSheet
         spot={openSpot}
         open={openSpot !== null}
@@ -115,6 +157,39 @@ export function StoryBrowser({
       />
     </>
   );
+}
+
+function SectionTab({
+  label,
+  count,
+  pressed,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  pressed: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={`h-11 flex-1 text-sm font-medium md:flex-none md:px-6 ${pressed ? "border-b-2 border-foreground text-foreground" : "text-muted-foreground"}`}
+    >
+      {label}
+      <span className="ml-1 text-muted-foreground">{count}</span>
+    </button>
+  );
+}
+
+function plainText(value: string) {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function FilterChip({

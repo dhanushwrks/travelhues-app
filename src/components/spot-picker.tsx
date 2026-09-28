@@ -58,7 +58,7 @@ export function SpotPicker({
     >
       <SheetContent
         side="bottom"
-        className="h-[88dvh] max-h-[88dvh] gap-0 overflow-hidden rounded-t-3xl p-0 data-[side=bottom]:left-1/2 data-[side=bottom]:w-full data-[side=bottom]:max-w-[430px] data-[side=bottom]:-translate-x-1/2"
+        className="h-[88dvh] max-h-[88dvh] gap-0 overflow-hidden rounded-t-3xl p-0 data-[side=bottom]:left-1/2 data-[side=bottom]:w-full data-[side=bottom]:max-w-[430px] data-[side=bottom]:-translate-x-1/2 md:data-[side=bottom]:max-w-xl"
       >
         <div className="flex items-center justify-between px-5 pt-5 pr-12">
           <SheetTitle className="text-lg font-medium">Add a spot</SheetTitle>

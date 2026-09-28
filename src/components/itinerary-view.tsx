@@ -10,7 +10,7 @@ import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
 import { spotById, spotsInOrder } from "@/lib/itinerary";
 import { markState, type Library } from "@/lib/marks";
-import type { Itinerary, Story } from "@/lib/types";
+import { storyHref, type Itinerary, type Story } from "@/lib/types";
 
 const RouteMap = dynamic(
   () => import("@/components/maps").then((mod) => mod.RouteMap),
@@ -55,7 +55,7 @@ export function ItineraryView({
     <div className="flex h-full flex-col">
       <header className="space-y-3 px-5 pt-4">
         <Link
-          href={`/stories/${story.slug}`}
+          href={storyHref(story)}
           className="inline-flex h-11 items-center gap-1 text-sm font-medium text-primary"
         >
           <ChevronLeft className="size-4" />
@@ -97,7 +97,7 @@ export function ItineraryView({
           />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-2 px-5 py-2">
+      <div className="grid grid-cols-2 gap-2 px-5 py-2 xl:hidden">
         <ModeButton
           label="List"
           icon={<List className="size-4" />}
@@ -111,8 +111,8 @@ export function ItineraryView({
           onClick={() => setMode("map")}
         />
       </div>
-      {mode === "list" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-2 pb-8">
+      <div className="grid min-h-0 flex-1 xl:grid-cols-2">
+        <div className={`min-h-0 overflow-y-auto px-5 pt-2 pb-8 ${mode === "map" ? "hidden xl:block" : ""}`}>
           {visibleDays.map((item) => {
             const index = itinerary.days.indexOf(item);
             return (
@@ -164,15 +164,14 @@ export function ItineraryView({
             );
           })}
         </div>
-      ) : (
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className={`h-full min-h-[24rem] overflow-hidden ${mode === "list" ? "hidden xl:block" : ""}`}>
           <RouteMap
             key={`${day}-${points.map((point) => point.id).join("-")}`}
             points={points}
             onSelect={setOpenId}
           />
         </div>
-      )}
+      </div>
       <SpotSheet
         spot={openSpot}
         open={openSpot !== null}
