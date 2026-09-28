@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import { DateField } from "@/components/date-field";
 import {
   CountryField,
   CountryMultiField,
@@ -39,8 +40,8 @@ export function WaitlistForm() {
       setError("Add your name, country, and date of birth");
       return;
     }
-    if (step === 1 && !socials.some((link) => link.url.trim())) {
-      setError("Add a social link we can open");
+    if (step === 1 && !socials.some((link) => webAddress(link.url))) {
+      setError("Add a social link we can open, like instagram.com/you");
       return;
     }
     setStep((current) => Math.min(current + 1, 2));
@@ -62,7 +63,9 @@ export function WaitlistForm() {
           name,
           country,
           dateOfBirth,
-          socials: socials.filter((link) => link.url.trim()),
+          socials: socials
+            .map((link) => ({ ...link, url: webAddress(link.url) }))
+            .filter((link) => link.url),
           handle,
           bio,
           hobbies,
@@ -115,16 +118,7 @@ export function WaitlistForm() {
             <input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} required />
           </Field>
           <CountryField countries={countries} label="Country" value={country} onChange={setCountry} />
-          <Field label="Date of birth">
-            <input
-              className={controlClass}
-              type="date"
-              value={dateOfBirth}
-              max={thirteenYearsAgo()}
-              onChange={(event) => setDateOfBirth(event.target.value)}
-              required
-            />
-          </Field>
+          <DateField label="Date of birth" value={dateOfBirth} onChange={setDateOfBirth} />
         </div>
       ) : null}
       {step === 1 ? (
@@ -192,8 +186,16 @@ export function WaitlistForm() {
   );
 }
 
-function thirteenYearsAgo() {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() - 13);
-  return date.toISOString().slice(0, 10);
+function webAddress(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    if (!url.hostname.includes(".")) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
 }

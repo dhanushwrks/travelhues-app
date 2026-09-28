@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { GoogleSignInButton } from "@/components/google-sign-in";
+
 export default function LoginDoorPage() {
   return (
     <div className="flex h-full flex-col overflow-y-auto px-5 pt-10 pb-10">
@@ -17,11 +19,12 @@ export default function LoginDoorPage() {
         Browse stories from people who have already made the trip.
       </p>
       <div className="mt-8 grid gap-3">
+        <GoogleSignInButton className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground" />
         <Link
           href="/login/user"
-          className="rounded-full bg-primary px-4 py-3 text-center text-sm font-medium text-primary-foreground"
+          className="rounded-full border border-border px-4 py-3 text-center text-sm"
         >
-          Sign in
+          Sign in with email
         </Link>
         <Link
           href="/signup"

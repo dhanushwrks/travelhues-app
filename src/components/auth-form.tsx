@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { apiBase } from "@/lib/api";
 import { saveSession, type AccountRole } from "@/lib/browser-session";
-import { browserSupabase, googleReady } from "@/lib/supabase";
+import { GoogleSignInButton } from "@/components/google-sign-in";
 
 export function AuthForm({
   mode,
@@ -68,20 +68,6 @@ export function AuthForm({
     }
   }
 
-  async function continueWithGoogle() {
-    setError("");
-    const supabase = browserSupabase();
-    if (!supabase) {
-      setError("Google sign-in is not configured");
-      return;
-    }
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (oauthError) setError(oauthError.message);
-  }
-
   return (
     <form onSubmit={onSubmit} className="grid gap-4 px-5 pt-10 pb-8">
       <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
@@ -106,14 +92,8 @@ export function AuthForm({
       >
         {pending ? "Please wait" : mode === "signup" ? "Create account" : "Sign in"}
       </button>
-      {mode === "login" && !creator && googleReady ? (
-        <button
-          type="button"
-          onClick={continueWithGoogle}
-          className="rounded-full border border-border px-4 py-3 text-sm"
-        >
-          Continue with Google
-        </button>
+      {!creator ? (
+        <GoogleSignInButton className="rounded-full border border-border px-4 py-3 text-sm" />
       ) : null}
       <Link href="/login" className="text-sm text-muted-foreground">
         Other ways to sign in

@@ -46,7 +46,7 @@ export default function AuthCallbackPage() {
         user: { role: AccountRole; username: string; displayName: string };
       };
       saveSession({ accessToken: payload.accessToken, user: payload.user });
-      router.push("/");
+      router.push(payload.user.role === "tcc" ? "/storefront" : "/");
       router.refresh();
     })();
     return () => {

@@ -274,7 +274,7 @@ export function SocialEditor({
           <input
             className={controlClass}
             type="url"
-            placeholder="https://"
+            placeholder="instagram.com/you"
             value={link.url}
             onChange={(event) => update(index, { url: event.target.value })}
           />
