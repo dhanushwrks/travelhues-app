@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
 import {
-  piecesServerSnapshot,
-  piecesSnapshot,
   postsServerSnapshot,
   postsSnapshot,
   storefrontBio,
+  storiesServerSnapshot,
+  storiesSnapshot,
   subscribeStudio,
 } from "@/lib/mock/studio";
 
@@ -22,8 +22,8 @@ export function CreatorStorefront({
 }) {
   const [tab, setTab] = useState<"posts" | "glimpses">("posts");
   const posts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
-  const pieces = useSyncExternalStore(subscribeStudio, piecesSnapshot, piecesServerSnapshot);
-  const storyCount = pieces.filter((piece) => piece.kind === "story" && piece.status === "published").length;
+  const stories = useSyncExternalStore(subscribeStudio, storiesSnapshot, storiesServerSnapshot);
+  const storyCount = stories.length;
 
   const grid = posts.filter((post) => (tab === "glimpses" ? post.kind === "glimpse" : post.kind !== "glimpse"));
   const glimpseCount = posts.filter((post) => post.kind === "glimpse").length;
@@ -72,11 +72,13 @@ export function CreatorStorefront({
           {grid.map((post) => (
             <li key={post.id} className="bg-card">
               <figure className="relative aspect-square">
-                {post.imageUrl.startsWith("data:") ? (
+                {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={post.imageUrl} alt="" className="size-full object-cover" />
-                ) : (
+                ) : post.imageUrl ? (
                   <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
+                ) : (
+                  <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
                 )}
                 {post.kind !== "photo" ? (
                   <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">

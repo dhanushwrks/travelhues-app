@@ -150,6 +150,84 @@ export function RouteMap({
   return <div ref={containerRef} className="h-full min-h-40 w-full" />;
 }
 
+export function PlacePicker({
+  lat,
+  lng,
+  centerLat,
+  centerLng,
+  onPick,
+}: {
+  lat: number | null;
+  lng: number | null;
+  centerLat: number;
+  centerLng: number;
+  onPick: (lat: number, lng: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
+  const onPickRef = useRef(onPick);
+  const startRef = useRef({ lat, lng });
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    onPickRef.current = onPick;
+  }, [onPick]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let map: google.maps.Map | null = null;
+    const start = startRef.current;
+
+    loadGoogleMaps()
+      .then(() => {
+        if (cancelled || !containerRef.current) return;
+        const pinned = start.lat != null && start.lng != null;
+        map = new google.maps.Map(containerRef.current, {
+          center: pinned ? { lat: start.lat as number, lng: start.lng as number } : { lat: centerLat, lng: centerLng },
+          zoom: pinned ? 13 : 5,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          clickableIcons: false,
+        });
+        if (pinned) {
+          markerRef.current = new google.maps.Marker({
+            map,
+            position: { lat: start.lat as number, lng: start.lng as number },
+            icon: circleIcon(8),
+          });
+        }
+        map.addListener("click", (event: google.maps.MapMouseEvent) => {
+          if (!event.latLng || !map) return;
+          const next = { lat: event.latLng.lat(), lng: event.latLng.lng() };
+          if (!markerRef.current) {
+            markerRef.current = new google.maps.Marker({ map, position: next, icon: circleIcon(8) });
+            map.setZoom(13);
+          } else {
+            markerRef.current.setPosition(next);
+          }
+          onPickRef.current(next.lat, next.lng);
+        });
+      })
+      .catch((reason: Error) => {
+        if (!cancelled) setError(reason.message);
+      });
+
+    return () => {
+      cancelled = true;
+      markerRef.current?.setMap(null);
+      markerRef.current = null;
+    };
+  }, [centerLat, centerLng]);
+
+  if (error) return <MapFallback message="The map did not load. The place name is enough for now." />;
+
+  return <div ref={containerRef} className="h-44 w-full" />;
+}
+
 export function PinMap({
   lng,
   lat,

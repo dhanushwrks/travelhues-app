@@ -1,4 +1,7 @@
-@AGENTS.md
+---
+description: AWS Agent Toolkit guidance for AWS work in this project
+alwaysApply: true
+---
 
 <!-- BEGIN AWS Agent Toolkit rules -->
 
@@ -32,4 +35,3 @@
   `asm-exec` so the secret resolves at runtime without entering context.
 
 <!-- END AWS Agent Toolkit rules -->
-

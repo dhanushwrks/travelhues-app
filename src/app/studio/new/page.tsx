@@ -1,17 +1,12 @@
 import { redirect } from "next/navigation";
 
-import { StudioEditor } from "@/components/studio-editor";
-import { studioKinds, type StudioKind } from "@/lib/mock/studio";
+import { StoryForm } from "@/components/story-form";
+import { loadEnabledCountries } from "@/lib/remote";
 import { requireSession } from "@/lib/session";
 
-export default async function NewStudioPiecePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ kind?: string }>;
-}) {
+export default async function NewStoryPage() {
   const session = await requireSession();
   if (session.role !== "tcc") redirect("/");
-  const { kind = "story" } = await searchParams;
-  const selected = studioKinds.includes(kind as StudioKind) ? (kind as StudioKind) : "story";
-  return <StudioEditor kind={selected} />;
+  const countries = await loadEnabledCountries();
+  return <StoryForm countries={countries} />;
 }

@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CountrySearch } from "@/components/country-search";
@@ -50,13 +49,8 @@ export default async function ExplorePage({
         <CountrySearch countries={countries} selected={selected ? code : ""} />
       </header>
       <section className="mt-8 grid gap-3">
-        <div className="flex items-baseline justify-between px-5">
+        <div className="px-5">
           <h2 className="font-display text-2xl">Glimpses</h2>
-          {session.role === "tcc" ? (
-            <Link href="/glimpse/new" className="text-sm text-primary">
-              Add a glimpse
-            </Link>
-          ) : null}
         </div>
         <GlimpseRow glimpses={glimpses ?? []} country={selected ? code : ""} />
       </section>

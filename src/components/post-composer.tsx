@@ -18,7 +18,41 @@ export function PostComposer() {
   const [caption, setCaption] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
+  const [reading, setReading] = useState(false);
+
+  function chooseKind(next: MediaKind) {
+    setKind(next);
+    setImageUrl("");
+    setVideoUrl("");
+    setFileName("");
+    setError("");
+  }
+
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    setError("");
+    setReading(true);
+    try {
+      if (kind === "photo") {
+        setImageUrl(await readPhoto(file));
+        setVideoUrl("");
+      } else {
+        const clip = await readClip(file);
+        setVideoUrl(clip.videoUrl);
+        setImageUrl(clip.imageUrl);
+      }
+      setFileName(file.name);
+    } catch (caught) {
+      setImageUrl("");
+      setVideoUrl("");
+      setFileName("");
+      setError(caught instanceof Error ? caught.message : "Could not read that file");
+    } finally {
+      setReading(false);
+    }
+  }
 
   function publish(event: React.FormEvent) {
     event.preventDefault();
@@ -26,20 +60,20 @@ export function PostComposer() {
       setError("Add a caption");
       return;
     }
-    if (kind !== "video" && !imageUrl.trim()) {
-      setError("Add a photo address");
+    if (kind === "photo" && !imageUrl) {
+      setError("Choose a photo");
       return;
     }
-    if (kind !== "photo" && !videoUrl.trim()) {
-      setError("Add a video address");
+    if (kind !== "photo" && !videoUrl) {
+      setError("Choose a video");
       return;
     }
     savePost({
       id: `post-${Date.now()}`,
       kind,
       caption: caption.trim(),
-      imageUrl: imageUrl.trim() || videoUrl.trim(),
-      videoUrl: kind === "photo" ? "" : videoUrl.trim(),
+      imageUrl,
+      videoUrl: kind === "photo" ? "" : videoUrl,
     });
     router.push("/storefront");
     router.refresh();
@@ -57,7 +91,7 @@ export function PostComposer() {
             key={item.id}
             type="button"
             aria-pressed={kind === item.id}
-            onClick={() => setKind(item.id)}
+            onClick={() => chooseKind(item.id)}
             className={`rounded-full px-3 py-2 text-sm ${
               kind === item.id ? "bg-primary text-primary-foreground" : "bg-secondary"
             }`}
@@ -76,30 +110,34 @@ export function PostComposer() {
           className="rounded-2xl border border-border bg-background px-4 py-3"
         />
       </label>
-      {kind !== "video" ? (
-        <label className="grid gap-1 text-sm">
-          Photo address
-          <input
-            value={imageUrl}
-            onChange={(event) => setImageUrl(event.target.value)}
-            placeholder="https://"
-            className="rounded-2xl border border-border bg-background px-4 py-3"
-          />
-        </label>
-      ) : null}
-      {kind !== "photo" ? (
-        <label className="grid gap-1 text-sm">
-          Video address
-          <input
-            value={videoUrl}
-            onChange={(event) => setVideoUrl(event.target.value)}
-            placeholder="https://"
-            className="rounded-2xl border border-border bg-background px-4 py-3"
-          />
-        </label>
-      ) : null}
+      <label className="grid gap-2 text-sm">
+        {kind === "photo" ? "Photo" : "Video"}
+        <span className="text-muted-foreground">
+          {kind === "photo" ? "JPEG, PNG, or WebP under 1 MB" : "MP4, MOV, or WebM under 12 MB"}
+        </span>
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imageUrl} alt="" className="aspect-square w-full rounded-2xl object-cover" />
+        ) : (
+          <span className="grid aspect-square place-items-center rounded-2xl bg-secondary text-muted-foreground">
+            {reading ? "Reading…" : "No file yet"}
+          </span>
+        )}
+        <input
+          key={kind}
+          type="file"
+          accept={kind === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/quicktime,video/webm"}
+          onChange={(event) => void onFile(event.target.files?.[0])}
+          className="text-sm"
+        />
+        {fileName ? <span className="text-muted-foreground">{fileName}</span> : null}
+      </label>
       {error ? <p className="text-sm text-primary">{error}</p> : null}
-      <button type="submit" className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground">
+      <button
+        type="submit"
+        disabled={reading}
+        className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+      >
         Publish
       </button>
       <p className="text-sm text-muted-foreground">
@@ -107,4 +145,56 @@ export function PostComposer() {
       </p>
     </form>
   );
+}
+
+function readPhoto(file: File) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    return Promise.reject(new Error("Use a JPEG, PNG, or WebP photo"));
+  }
+  if (file.size > 1_000_000) return Promise.reject(new Error("Photo must be under 1 MB"));
+  return readDataUrl(file);
+}
+
+function readClip(file: File) {
+  if (!["video/mp4", "video/quicktime", "video/webm"].includes(file.type)) {
+    return Promise.reject(new Error("Use an MP4, MOV, or WebM video"));
+  }
+  if (file.size > 12_000_000) return Promise.reject(new Error("Video must be under 12 MB"));
+  const videoUrl = URL.createObjectURL(file);
+  return new Promise<{ videoUrl: string; imageUrl: string }>((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+    video.src = videoUrl;
+    video.onloadeddata = () => {
+      const target = Number.isFinite(video.duration) ? Math.min(0.2, video.duration / 2) : 0;
+      if (target > 0) video.currentTime = target;
+      else paintFrame();
+    };
+    video.onseeked = () => paintFrame();
+    video.onerror = () => reject(new Error("Could not read that video"));
+
+    function paintFrame() {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth || 360;
+      canvas.height = video.videoHeight || 640;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        resolve({ videoUrl, imageUrl: "" });
+        return;
+      }
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      resolve({ videoUrl, imageUrl: canvas.toDataURL("image/jpeg", 0.72) });
+    }
+  });
+}
+
+function readDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read that photo"));
+    reader.readAsDataURL(file);
+  });
 }

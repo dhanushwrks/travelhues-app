@@ -11,31 +11,119 @@ export type MediaPost = {
   videoUrl: string;
 };
 
-export type StudioKind = "story" | "spot" | "itinerary" | "blog";
+export const spotCategories = ["stay", "food", "activity", "sightseeing", "shop"] as const;
 
-export type StudioPiece = {
+export type SpotCategory = (typeof spotCategories)[number];
+
+export const categoryLabel: Record<SpotCategory, string> = {
+  stay: "Stay",
+  food: "Food",
+  activity: "Activity",
+  sightseeing: "Sightseeing",
+  shop: "Shop",
+};
+
+export const subcategories: Record<SpotCategory, string[]> = {
+  stay: ["Hotel", "Guesthouse", "Homestay"],
+  food: ["Restaurant", "Cafe", "Street food"],
+  activity: ["Trek", "Class", "Boat", "Walk"],
+  sightseeing: ["Temple", "Viewpoint", "Neighborhood"],
+  shop: ["Market", "Boutique"],
+};
+
+export type StorySpot = {
   id: string;
-  kind: StudioKind;
   title: string;
   summary: string;
-  status: "draft" | "published";
+  category: SpotCategory;
+  subcategory: string;
+  placeName: string;
+  lat: number | null;
+  lng: number | null;
+  images: string[];
+  duration: string;
+  cost: string;
+  difficulty: string;
+  season: string;
+  ageGroup: string;
+  affiliateUrl: string;
+  referenceUrl: string;
 };
 
-export const studioKinds: StudioKind[] = ["story", "spot", "itinerary", "blog"];
-
-export const kindLabel: Record<StudioKind, string> = {
-  story: "Stories",
-  spot: "Spots",
-  itinerary: "Itineraries",
-  blog: "Blogs",
+export type PlanNote = {
+  id: string;
+  kind: "note";
+  body: string;
+  minutes: string;
 };
 
-export const kindSingular: Record<StudioKind, string> = {
-  story: "story",
-  spot: "spot",
-  itinerary: "itinerary",
-  blog: "blog",
+export type PlanStop = {
+  id: string;
+  kind: "stop";
+  spotId: string;
 };
+
+export type PlanBlock = PlanNote | PlanStop;
+
+export type PlanDay = {
+  id: string;
+  title: string;
+  blocks: PlanBlock[];
+};
+
+export type StoryPlan = {
+  id: string;
+  title: string;
+  summary: string;
+  images: string[];
+  days: PlanDay[];
+};
+
+export type StoryBlog = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+const blogTags = /^(p|h2|strong|em|u|ul|ol|li|blockquote|a|br)$/i;
+
+export function blogMarkup(html: string) {
+  return html.replace(/<\/?([a-z0-9]+)([^>]*)>/gi, (match, tag: string, attrs: string) => {
+    if (!blogTags.test(tag)) return "";
+    const name = tag.toLowerCase();
+    if (name === "br") return "<br>";
+    if (match.startsWith("</")) return `</${name}>`;
+    if (name !== "a") return `<${name}>`;
+    const href = /href\s*=\s*"([^"]*)"/i.exec(attrs)?.[1] ?? "";
+    if (!/^https:\/\//i.test(href)) return "<a>";
+    return `<a href="${href}" rel="noopener noreferrer" target="_blank">`;
+  });
+}
+
+export function blogExcerpt(html: string) {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export type CreatorStory = {
+  id: string;
+  country: string;
+  title: string;
+  about: string;
+  coverUrl: string;
+  videoUrl: string;
+  spots: StorySpot[];
+  plans: StoryPlan[];
+  blogs: StoryBlog[];
+};
+
+export type StoryTab = "spots" | "plans" | "blogs";
 
 export const storefrontBio =
   "I film the road as it happens, from night markets to slow trains, and leave the route so someone else can walk it.";
@@ -92,39 +180,102 @@ export const seedPosts: MediaPost[] = [
   },
 ];
 
-export const seedPieces: StudioPiece[] = [
+export const seedStories: CreatorStory[] = [
   {
     id: "slow-south",
-    kind: "story",
-    title: "A slow week in the south",
-    summary: "One coast, two towns, and the ferries between them.",
-    status: "published",
-  },
-  {
-    id: "river-room",
-    kind: "spot",
-    title: "The River Room",
-    summary: "A low hotel that faces the water. Ask for the terrace room.",
-    status: "published",
-  },
-  {
-    id: "four-days",
-    kind: "itinerary",
-    title: "Four days, river then hills",
-    summary: "City mornings, one canal afternoon, a mountain terrace on the last day.",
-    status: "draft",
-  },
-  {
-    id: "how-i-pack",
-    kind: "blog",
-    title: "What I actually pack for a night train",
-    summary: "A short note on the bag that fits the overhead rack.",
-    status: "draft",
+    country: "IN",
+    title: "The long way south",
+    about:
+      "A week between the river towns, with one hill stop in the middle and a night train when the road gets dull.",
+    coverUrl: photo("photo-1508009603885-50cf7c579365"),
+    videoUrl: "",
+    spots: [
+      {
+        id: "fort-lane",
+        title: "Fort lane breakfast",
+        summary: "The counter opens at seven. Sit outside before the tour groups arrive.",
+        category: "food",
+        subcategory: "Cafe",
+        placeName: "Fort lane",
+        lat: 9.93,
+        lng: 76.26,
+        images: [photo("photo-1504674900247-0877df9cc836")],
+        duration: "45 min",
+        cost: "180",
+        difficulty: "",
+        season: "",
+        ageGroup: "",
+        affiliateUrl: "",
+        referenceUrl: "",
+      },
+    ],
+    plans: [
+      {
+        id: "five-days",
+        title: "Five days along the coast",
+        summary: "River mornings first, then one hill day before the train home.",
+        images: [photo("photo-1507525428034-b723cf961d3e")],
+        days: [
+          {
+            id: "arrival",
+            title: "Arrival on the coast",
+            blocks: [{ id: "breakfast", kind: "stop", spotId: "fort-lane" }],
+          },
+          { id: "river", title: "The river towns", blocks: [] },
+          { id: "hill", title: "One hill day", blocks: [] },
+          { id: "market", title: "The night market", blocks: [] },
+          { id: "train", title: "The train home", blocks: [] },
+        ],
+      },
+    ],
+    blogs: [
+      {
+        id: "night-train",
+        title: "What I pack for a night train",
+        body: "<p>A short note on the bag that fits the overhead rack.</p>",
+      },
+    ],
   },
 ];
 
+let serial = 0;
+
+export function nextPieceId(prefix: string) {
+  serial += 1;
+  return `${prefix}-${serial}`;
+}
+
+export type PlanDraft = {
+  title: string;
+  summary: string;
+  images: string[];
+  days: PlanDay[];
+  active: number;
+};
+
+let planDraft: { storyId: string; draft: PlanDraft } | null = null;
+
+export function writePlanDraft(storyId: string, draft: PlanDraft) {
+  planDraft = { storyId, draft };
+  listeners.forEach((listener) => listener());
+}
+
+export function clearPlanDraft(storyId: string) {
+  if (planDraft?.storyId !== storyId) return;
+  planDraft = null;
+  listeners.forEach((listener) => listener());
+}
+
+export function planDraftSnapshot(storyId: string) {
+  return planDraft?.storyId === storyId ? planDraft.draft : null;
+}
+
+export function planDraftServerSnapshot() {
+  return null;
+}
+
 let posts = seedPosts;
-let pieces = seedPieces;
+let stories = seedStories;
 const listeners = new Set<() => void>();
 
 export function subscribeStudio(onStoreChange: () => void) {
@@ -140,12 +291,12 @@ export function postsServerSnapshot() {
   return seedPosts;
 }
 
-export function piecesSnapshot() {
-  return pieces;
+export function storiesSnapshot() {
+  return stories;
 }
 
-export function piecesServerSnapshot() {
-  return seedPieces;
+export function storiesServerSnapshot() {
+  return seedStories;
 }
 
 export function savePost(post: MediaPost) {
@@ -153,9 +304,23 @@ export function savePost(post: MediaPost) {
   listeners.forEach((listener) => listener());
 }
 
-export function savePiece(piece: StudioPiece) {
-  pieces = pieces.some((item) => item.id === piece.id)
-    ? pieces.map((item) => (item.id === piece.id ? piece : item))
-    : [piece, ...pieces];
+export function saveStory(story: CreatorStory) {
+  stories = [story, ...stories];
+  listeners.forEach((listener) => listener());
+}
+
+export function addToStory(
+  storyId: string,
+  patch: { spot?: StorySpot; plan?: StoryPlan; blog?: StoryBlog },
+) {
+  stories = stories.map((story) => {
+    if (story.id !== storyId) return story;
+    return {
+      ...story,
+      spots: patch.spot ? [patch.spot, ...story.spots] : story.spots,
+      plans: patch.plan ? [patch.plan, ...story.plans] : story.plans,
+      blogs: patch.blog ? [patch.blog, ...story.blogs] : story.blogs,
+    };
+  });
   listeners.forEach((listener) => listener());
 }
