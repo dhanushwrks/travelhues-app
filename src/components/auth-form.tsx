@@ -59,7 +59,7 @@ export function AuthForm({
         return;
       }
       saveSession({ accessToken: payload.accessToken, user: payload.user });
-      router.push("/");
+      router.push(payload.user.role === "tcc" ? "/storefront" : "/");
       router.refresh();
     } catch {
       setError("Could not reach Travelhues");

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { CountrySearch } from "@/components/country-search";
 import { DestinationCard } from "@/components/destination-card";
@@ -15,6 +16,7 @@ export default async function ExplorePage({
   searchParams: Promise<{ country?: string }>;
 }) {
   const session = await requireSession();
+  if (session.role === "tcc") redirect("/storefront");
   const { country = "" } = await searchParams;
   const code = country.toUpperCase();
   const [countries, stories, glimpses, library] = await Promise.all([

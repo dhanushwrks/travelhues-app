@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, UserRound } from "lucide-react";
+import { Compass, LayoutGrid, PenLine, UserRound } from "lucide-react";
 
-const items = [
+const travelerItems = [
   {
     href: "/",
     label: "Explore",
@@ -23,9 +23,26 @@ const items = [
   },
 ];
 
-export function BottomNav() {
+const creatorItems = [
+  {
+    href: "/storefront",
+    label: "Storefront",
+    icon: LayoutGrid,
+    active: (path: string) => path === "/storefront" || path.startsWith("/storefront/"),
+  },
+  {
+    href: "/studio",
+    label: "Studio",
+    icon: PenLine,
+    active: (path: string) => path === "/studio" || path.startsWith("/studio/"),
+  },
+];
+
+export function BottomNav({ role }: { role: "tcc" | "traveler" }) {
   const pathname = usePathname();
   if (/^\/(login|signup|join|auth)(\/|$)/.test(pathname) || pathname === "/glimpse") return null;
+
+  const items = role === "tcc" ? creatorItems : travelerItems;
 
   return (
     <nav className="border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
