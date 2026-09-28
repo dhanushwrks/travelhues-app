@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
 import { StoryBrowser } from "@/components/story-browser";
+import { countryLabel } from "@/lib/countries";
 import { emptyLibrary } from "@/lib/marks";
 import { loadLibrary, loadStory } from "@/lib/remote";
 import { requireSession } from "@/lib/session";
@@ -57,7 +58,7 @@ export default async function StoryPage({
         </Link>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-5 pt-20 pb-5 text-white">
           <h1 className="font-display text-5xl">{story.title}</h1>
-          <p className="mt-1 text-sm">{story.destination.country}</p>
+          <p className="mt-1 text-sm">{countryLabel(story.destination.country)}</p>
         </div>
       </div>
       <div className="space-y-4 px-5 pt-5">

@@ -2,16 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 
 import { countryFlag, countryName } from "@/lib/countries";
-import {
-  blogExcerpt,
-  storiesServerSnapshot,
-  storiesSnapshot,
-  subscribeStudio,
-  type StoryTab,
-} from "@/lib/mock/studio";
+import { blogExcerpt, type StoryTab } from "@/lib/mock/studio";
+import { useDesk } from "@/lib/studio-desk";
 
 const tabs: { id: StoryTab; label: string }[] = [
   { id: "spots", label: "Spots" },
@@ -20,9 +15,22 @@ const tabs: { id: StoryTab; label: string }[] = [
 ];
 
 export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab: StoryTab }) {
-  const stories = useSyncExternalStore(subscribeStudio, storiesSnapshot, storiesServerSnapshot);
+  const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const [tab, setTab] = useState<StoryTab>(initialTab);
+
+  if (!story && status !== "ready") {
+    return (
+      <div className="px-5 pt-6">
+        <Link href="/studio" className="text-sm text-primary">
+          Studio
+        </Link>
+        <p className="pt-6 text-sm text-muted-foreground">
+          {status === "error" ? problem : "Loading the story"}
+        </p>
+      </div>
+    );
+  }
 
   if (!story) {
     return (
@@ -165,9 +173,9 @@ function Card({ imageUrl, title, detail }: { imageUrl: string; title: string; de
 
 function Cover({ src }: { src: string }) {
   if (!src) return null;
-  if (src.startsWith("data:") || src.startsWith("blob:")) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" className="size-full object-cover" />;
+  if (src.includes("images.unsplash.com")) {
+    return <Image src={src} alt="" fill className="object-cover" sizes="200px" />;
   }
-  return <Image src={src} alt="" fill className="object-cover" sizes="200px" />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" className="size-full object-cover" />;
 }

@@ -1,3 +1,8 @@
+export function countryLabel(value: string) {
+  if (/^[A-Za-z]{2}$/.test(value)) return countryName(value);
+  return value;
+}
+
 export function countryName(code: string) {
   if (!code) return "";
   const name = new Intl.DisplayNames(["en"], { type: "region" }).of(code);

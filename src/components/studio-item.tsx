@@ -4,16 +4,9 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import { useSyncExternalStore } from "react";
 
-import {
-  blogMarkup,
-  categoryLabel,
-  storiesServerSnapshot,
-  storiesSnapshot,
-  subscribeStudio,
-  type StoryTab,
-} from "@/lib/mock/studio";
+import { blogMarkup, categoryLabel, type StoryTab } from "@/lib/mock/studio";
+import { useDesk } from "@/lib/studio-desk";
 
 const PinMap = dynamic(() => import("@/components/maps").then((mod) => mod.PinMap), {
   ssr: false,
@@ -29,9 +22,22 @@ export function StudioItem({
   tab: StoryTab;
   itemId: string;
 }) {
-  const stories = useSyncExternalStore(subscribeStudio, storiesSnapshot, storiesServerSnapshot);
+  const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const back = `/studio/${storyId}?tab=${tab}`;
+
+  if (!story && status !== "ready") {
+    return (
+      <div className="px-5 pt-6">
+        <Link href="/studio" className="text-sm font-medium">
+          ←
+        </Link>
+        <p className="pt-6 text-sm text-muted-foreground">
+          {status === "error" ? problem : "Loading the story"}
+        </p>
+      </div>
+    );
+  }
 
   if (!story) return <Missing href="/studio" label="story" />;
 
@@ -214,9 +220,9 @@ function Gallery({ images }: { images: string[] }) {
 
 function Cover({ src }: { src: string }) {
   if (!src) return null;
-  if (src.startsWith("data:") || src.startsWith("blob:")) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" className="size-full object-cover" />;
+  if (src.includes("images.unsplash.com")) {
+    return <Image src={src} alt="" fill className="object-cover" sizes="360px" />;
   }
-  return <Image src={src} alt="" fill className="object-cover" sizes="360px" />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" className="size-full object-cover" />;
 }

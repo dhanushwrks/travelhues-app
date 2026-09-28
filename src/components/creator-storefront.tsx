@@ -4,14 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
-import {
-  postsServerSnapshot,
-  postsSnapshot,
-  storefrontBio,
-  storiesServerSnapshot,
-  storiesSnapshot,
-  subscribeStudio,
-} from "@/lib/mock/studio";
+import { postsServerSnapshot, postsSnapshot, storefrontBio, subscribeStudio } from "@/lib/mock/studio";
+import { useDesk } from "@/lib/studio-desk";
 
 export function CreatorStorefront({
   name,
@@ -22,7 +16,7 @@ export function CreatorStorefront({
 }) {
   const [tab, setTab] = useState<"posts" | "glimpses">("posts");
   const posts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
-  const stories = useSyncExternalStore(subscribeStudio, storiesSnapshot, storiesServerSnapshot);
+  const { stories } = useDesk();
   const storyCount = stories.length;
 
   const grid = posts.filter((post) => (tab === "glimpses" ? post.kind === "glimpse" : post.kind !== "glimpse"));

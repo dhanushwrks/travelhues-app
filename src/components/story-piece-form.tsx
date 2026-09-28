@@ -7,7 +7,8 @@ import { useState, type FormEvent } from "react";
 import { BlogEditor } from "@/components/blog-editor";
 import { PlanForm } from "@/components/plan-form";
 import { SpotForm } from "@/components/spot-form";
-import { addToStory, blogExcerpt, type StoryTab } from "@/lib/mock/studio";
+import { blogExcerpt, type StoryTab } from "@/lib/mock/studio";
+import { addDeskBlog, refreshDesk, useDesk } from "@/lib/studio-desk";
 
 const titles: Record<StoryTab, string> = {
   spots: "New spot",
@@ -25,6 +26,7 @@ export function StoryPieceForm({
   fromPlan?: boolean;
 }) {
   const router = useRouter();
+  useDesk();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
@@ -34,7 +36,7 @@ export function StoryPieceForm({
   }
   if (tab === "plans") return <PlanForm storyId={storyId} />;
 
-  function save(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) {
       setError("Add a title");
@@ -44,7 +46,8 @@ export function StoryPieceForm({
       setError("Write a little more of the post");
       return;
     }
-    addToStory(storyId, { blog: { id: `blog-${Date.now()}`, title: title.trim(), body } });
+    await refreshDesk();
+    addDeskBlog(storyId, { id: `blog-${Date.now()}`, title: title.trim(), body });
     router.push(`/studio/${storyId}?tab=${tab}`);
     router.refresh();
   }

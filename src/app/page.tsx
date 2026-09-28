@@ -26,9 +26,11 @@ export default async function ExplorePage({
   ]);
   const selected = countries.find((item) => item.code === code);
   const place = selected?.name ?? "";
-  const visibleStories = (stories ?? []).filter((story) =>
-    place ? story.destination.country.toLowerCase() === place.toLowerCase() : true,
-  );
+  const visibleStories = (stories ?? []).filter((story) => {
+    if (!code) return true;
+    const stored = story.destination.country;
+    return stored.toUpperCase() === code || stored.toLowerCase() === place.toLowerCase();
+  });
   const destinations = visibleStories
     .filter((story) => story.itineraries.length > 0)
     .sort((a, b) => b.itineraries.length - a.itineraries.length);

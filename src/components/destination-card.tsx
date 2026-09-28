@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { MarkControls } from "@/components/mark-controls";
+import { countryLabel } from "@/lib/countries";
 import { markState, type Library } from "@/lib/marks";
 import type { Story } from "@/lib/types";
 
@@ -23,7 +24,7 @@ export function DestinationCard({
         <span className="block px-4 pt-3">
           <span className="block font-display text-2xl">{story.title}</span>
           <span className="mt-1 block text-sm text-muted-foreground">
-            {story.destination.country} · {story.creator.displayName}
+            {countryLabel(story.destination.country)} · {story.creator.displayName}
           </span>
         </span>
       </Link>

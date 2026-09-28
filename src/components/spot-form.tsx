@@ -3,21 +3,17 @@
 import { MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
-import { PlacePicker } from "@/components/maps";
+import { PlacePicker, PlaceSearch } from "@/components/maps";
 import { PictureTray } from "@/components/picture-tray";
 import {
-  addToStory,
   categoryLabel,
-  nextPieceId,
   spotCategories,
-  storiesServerSnapshot,
-  storiesSnapshot,
   subcategories,
-  subscribeStudio,
   type SpotCategory,
 } from "@/lib/mock/studio";
+import { createDeskSpot, useDesk } from "@/lib/studio-desk";
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
 
@@ -33,7 +29,7 @@ const ages = ["All ages", "Families", "Adults"];
 export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: string }) {
   const router = useRouter();
   const back = returnTo ?? `/studio/${storyId}?tab=spots`;
-  const stories = useSyncExternalStore(subscribeStudio, storiesSnapshot, storiesServerSnapshot);
+  const { stories } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const center = centers[story?.country ?? ""] ?? centers.IN;
 
@@ -53,8 +49,9 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [referenceUrl, setReferenceUrl] = useState("");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function save(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) {
       setError("Add a name");
@@ -72,6 +69,10 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
       setError("Name the place");
       return;
     }
+    if (lat == null || lng == null) {
+      setError("Drop a pin on the map");
+      return;
+    }
     if (images.length === 0) {
       setError("Add at least one picture");
       return;
@@ -80,9 +81,10 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
       setError("Links need to start with https://");
       return;
     }
-    addToStory(storyId, {
-      spot: {
-        id: nextPieceId("spot"),
+    setError("");
+    setSaving(true);
+    try {
+      await createDeskSpot(storyId, {
         title: title.trim(),
         summary: summary.trim(),
         category,
@@ -98,10 +100,13 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
         ageGroup,
         affiliateUrl: affiliateUrl.trim(),
         referenceUrl: referenceUrl.trim(),
-      },
-    });
-    router.push(back);
-    router.refresh();
+      });
+      router.push(back);
+      router.refresh();
+    } catch (caught) {
+      setSaving(false);
+      setError(caught instanceof Error ? caught.message : "Could not save the spot");
+    }
   }
 
   return (
@@ -163,8 +168,17 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
         </label>
       </div>
       <div className="grid gap-2 text-sm">
-        <span className="font-medium">Locate it</span>
-        <span className="text-muted-foreground">Tap the map to drop a pin. The name is what people read.</span>
+        <span className="font-medium">Where is it</span>
+        <span className="text-muted-foreground">Search for the place, or locate it on the map. The name is what people read.</span>
+        <PlaceSearch
+          country={story?.country}
+          center={center}
+          onChoose={(place) => {
+            setPlaceName(place.name);
+            setLat(place.lat);
+            setLng(place.lng);
+          }}
+        />
         <div className="overflow-hidden rounded-2xl border border-border">
           <PlacePicker
             lat={lat}
@@ -175,6 +189,7 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
               setLat(nextLat);
               setLng(nextLng);
             }}
+            onNamed={(name) => setPlaceName((current) => current || name)}
           />
         </div>
         <label className="relative">
@@ -238,8 +253,12 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
         <Link href={back} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
           Cancel
         </Link>
-        <button type="submit" className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground">
-          Create spot
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        >
+          {saving ? "Saving" : "Create spot"}
         </button>
       </div>
     </form>

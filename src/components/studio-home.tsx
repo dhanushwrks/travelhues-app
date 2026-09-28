@@ -2,13 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
 
 import { countryFlag, countryName } from "@/lib/countries";
-import { storiesServerSnapshot, storiesSnapshot, subscribeStudio } from "@/lib/mock/studio";
+import { useDesk } from "@/lib/studio-desk";
 
 export function StudioHome() {
-  const stories = useSyncExternalStore(subscribeStudio, storiesSnapshot, storiesServerSnapshot);
+  const { stories, status, problem } = useDesk();
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-6 pb-10">
@@ -21,7 +20,11 @@ export function StudioHome() {
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         A story is one place. Spots, plans, and blogs live inside it.
       </p>
-      {stories.length === 0 ? (
+      {status === "error" ? (
+        <p className="pt-8 text-sm text-primary">{problem}</p>
+      ) : stories.length === 0 && status !== "ready" ? (
+        <p className="pt-8 text-sm text-muted-foreground">Loading your stories</p>
+      ) : stories.length === 0 ? (
         <p className="pt-8 text-sm text-muted-foreground">No stories yet. Start with the place you know best.</p>
       ) : (
         <ul className="mt-6 space-y-5">
@@ -46,9 +49,9 @@ export function StudioHome() {
 
 function Cover({ src }: { src: string }) {
   if (!src) return null;
-  if (src.startsWith("data:") || src.startsWith("blob:")) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" className="size-full object-cover" />;
+  if (src.includes("images.unsplash.com")) {
+    return <Image src={src} alt="" fill className="object-cover" sizes="430px" />;
   }
-  return <Image src={src} alt="" fill className="object-cover" sizes="430px" />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" className="size-full object-cover" />;
 }

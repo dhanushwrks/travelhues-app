@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { countryFlag } from "@/lib/countries";
-import { saveStory } from "@/lib/mock/studio";
+import { createDeskStory } from "@/lib/studio-desk";
 
 export function StoryForm({ countries }: { countries: { code: string; name: string }[] }) {
   const router = useRouter();
@@ -16,6 +16,7 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
   const [videoUrl, setVideoUrl] = useState("");
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   async function onCover(file: File | undefined) {
     if (!file) return;
@@ -49,7 +50,7 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
     setVideoUrl(URL.createObjectURL(file));
   }
 
-  function create(event: FormEvent) {
+  async function create(event: FormEvent) {
     event.preventDefault();
     if (!country) {
       setError("Choose a country");
@@ -67,24 +68,25 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
       setError("Upload a cover picture");
       return;
     }
-    const id = `story-${Date.now()}`;
-    saveStory({
-      id,
-      country,
-      title: title.trim(),
-      about: about.trim(),
-      coverUrl,
-      videoUrl,
-      spots: [],
-      plans: [],
-      blogs: [],
-    });
-    router.push(`/studio/${id}`);
-    router.refresh();
+    setError("");
+    setSaving(true);
+    try {
+      const id = await createDeskStory({
+        country,
+        title: title.trim(),
+        about: about.trim(),
+        coverUrl,
+      });
+      router.push(`/studio/${id}`);
+      router.refresh();
+    } catch (caught) {
+      setSaving(false);
+      setError(caught instanceof Error ? caught.message : "Could not save the story");
+    }
   }
 
   return (
-    <form onSubmit={create} className="grid gap-5 px-5 pt-5 pb-10">
+    <form onSubmit={create} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10">
       <div className="flex items-center gap-3">
         <Link href="/studio" className="text-sm font-medium" aria-label="Studio">
           ←
@@ -152,10 +154,10 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
         </Link>
         <button
           type="submit"
-          disabled={reading}
+          disabled={reading || saving}
           className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          Create story
+          {saving ? "Saving" : "Create story"}
         </button>
       </div>
       <p className="text-sm leading-6 text-muted-foreground">

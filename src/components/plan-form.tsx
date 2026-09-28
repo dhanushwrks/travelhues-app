@@ -8,14 +8,11 @@ import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { PictureTray } from "@/components/picture-tray";
 import { SpotPicker } from "@/components/spot-picker";
 import {
-  addToStory,
   categoryLabel,
   clearPlanDraft,
   nextPieceId,
   planDraftServerSnapshot,
   planDraftSnapshot,
-  storiesServerSnapshot,
-  storiesSnapshot,
   subscribeStudio,
   writePlanDraft,
   type PlanBlock,
@@ -23,12 +20,13 @@ import {
   type PlanDraft,
   type StorySpot,
 } from "@/lib/mock/studio";
+import { createDeskPlan, useDesk } from "@/lib/studio-desk";
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
 
 export function PlanForm({ storyId }: { storyId: string }) {
   const router = useRouter();
-  const stories = useSyncExternalStore(subscribeStudio, storiesSnapshot, storiesServerSnapshot);
+  const { stories } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const spots = story?.spots ?? [];
 
@@ -56,6 +54,7 @@ export function PlanForm({ storyId }: { storyId: string }) {
   const [note, setNote] = useState("");
   const [minutes, setMinutes] = useState("");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const day = days[active] ?? days[0];
 
@@ -95,7 +94,7 @@ export function PlanForm({ storyId }: { storyId: string }) {
     updateDay(active, { ...day, blocks });
   }
 
-  function save(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) {
       setError("Add a name");
@@ -117,18 +116,22 @@ export function PlanForm({ storyId }: { storyId: string }) {
       setError("Add a note or a spot to the schedule");
       return;
     }
+    setError("");
+    setSaving(true);
     clearPlanDraft(storyId);
-    addToStory(storyId, {
-      plan: {
-        id: nextPieceId("plan"),
+    try {
+      await createDeskPlan(storyId, {
         title: title.trim(),
         summary: summary.trim(),
         images,
         days: days.map((item) => ({ ...item, title: item.title.trim() })),
-      },
-    });
-    router.push(`/studio/${storyId}?tab=plans`);
-    router.refresh();
+      });
+      router.push(`/studio/${storyId}?tab=plans`);
+      router.refresh();
+    } catch (caught) {
+      setSaving(false);
+      setError(caught instanceof Error ? caught.message : "Could not save the plan");
+    }
   }
 
   return (
@@ -289,8 +292,12 @@ export function PlanForm({ storyId }: { storyId: string }) {
         <Link href={`/studio/${storyId}?tab=plans`} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
           Cancel
         </Link>
-        <button type="submit" className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground">
-          Create plan
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        >
+          {saving ? "Saving" : "Create plan"}
         </button>
       </div>
     </form>
