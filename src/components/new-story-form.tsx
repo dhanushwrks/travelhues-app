@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { apiBase } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 
-const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const api = apiBase;
 
 export function NewStoryForm() {
   const router = useRouter();

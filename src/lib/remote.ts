@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import type { Glimpse } from "@/lib/glimpse";
 import type { Library } from "@/lib/marks";
 import type { Person } from "@/lib/profile";
+import { apiBase } from "@/lib/api";
 import type { Itinerary, Story } from "@/lib/types";
 
-const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const base = apiBase;
 
 async function load<T>(path: string, token: string): Promise<T | null> {
   const response = await fetch(`${base}${path}`, {

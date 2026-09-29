@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { apiBase } from "@/lib/api";
+import { supabaseKey, supabaseUrl } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -13,20 +14,16 @@ export async function GET(request: Request) {
 
   const jar = await cookies();
   const pending: { name: string; value: string; options?: Record<string, unknown> }[] = [];
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "",
-    {
-      cookies: {
-        getAll() {
-          return jar.getAll();
-        },
-        setAll(cookiesToSet) {
-          pending.push(...cookiesToSet);
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return jar.getAll();
+      },
+      setAll(cookiesToSet) {
+        pending.push(...cookiesToSet);
       },
     },
-  );
+  });
 
   const exchanged = await supabase.auth.exchangeCodeForSession(code);
   const token = exchanged.data.session?.access_token;

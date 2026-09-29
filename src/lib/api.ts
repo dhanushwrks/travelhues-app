@@ -1,4 +1,4 @@
-export const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+export const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://65.2.235.120.sslip.io";
 
 export function mediaUrl(path: string) {
   if (!path) return "";
