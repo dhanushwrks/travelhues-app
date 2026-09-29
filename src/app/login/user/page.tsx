@@ -7,7 +7,7 @@ export default async function UserLoginPage({
 }) {
   const { error = "" } = await searchParams;
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="flex h-full flex-col overflow-y-auto md:justify-center">
       <AuthForm mode="login" intent="traveler" notice={error} />
     </div>
   );

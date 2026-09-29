@@ -4,8 +4,7 @@ import { usePathname } from "next/navigation";
 
 export function ContentFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const narrow =
-    /^\/(login|signup|join|auth)(\/|$)/.test(pathname) || pathname === "/glimpse";
+  const narrow = pathname === "/glimpse";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col md:px-4 md:py-4">

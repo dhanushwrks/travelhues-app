@@ -78,7 +78,7 @@ export function AuthForm({
       : "Browse stories from people who have already made the trip.";
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4 px-5 pt-10 pb-8">
+    <form onSubmit={onSubmit} className="grid w-full gap-4 px-5 pt-10 pb-8 md:mx-auto md:max-w-md md:py-16">
       <Link href="/login" className="text-sm font-medium" aria-label="Choose user or creator">
         ←
       </Link>

@@ -86,7 +86,7 @@ export function WaitlistForm() {
 
   if (sent) {
     return (
-      <div className="grid gap-4 px-5 pt-10">
+      <div className="grid gap-4 px-5 pt-10 md:mx-auto md:w-full md:max-w-lg">
         <h1 className="font-display text-4xl">Request sent</h1>
         <p className="text-sm leading-6 text-muted-foreground">
           We will check the link you shared. If the profile is accepted, the desk sends an invite that expires.
@@ -99,7 +99,7 @@ export function WaitlistForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-5 px-5 pt-8 pb-10">
+    <form onSubmit={onSubmit} className="grid gap-5 px-5 pt-8 pb-10 md:mx-auto md:w-full md:max-w-lg">
       <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-10 w-fit" />
       <ol className="grid grid-cols-3 gap-3 text-sm">
         {steps.map((label, index) => (
