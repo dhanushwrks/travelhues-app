@@ -42,6 +42,11 @@ export default async function ItineraryPage({
         itinerary={result.itinerary}
         traveler={session.role === "traveler"}
         library={library ?? emptyLibrary}
+        editHref={
+          session.role === "tcc" && session.username === result.story.creator.username
+            ? `/studio/${result.story.slug}/plans/${result.itinerary.slug}/edit`
+            : undefined
+        }
       />
     </div>
   );

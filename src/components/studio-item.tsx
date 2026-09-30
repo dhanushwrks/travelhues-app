@@ -4,11 +4,12 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
+import { useState } from "react";
 
 import { Loader, PageLoader } from "@/components/loader";
 import { formatInr } from "@/lib/format";
 import { blogMarkup, categoryName, type StoryTab } from "@/lib/mock/studio";
-import { useDesk } from "@/lib/studio-desk";
+import { setDeskArchived, useDesk } from "@/lib/studio-desk";
 
 const PinMap = dynamic(() => import("@/components/maps").then((mod) => mod.PinMap), {
   ssr: false,
@@ -58,6 +59,12 @@ export function StudioItem({
     return (
       <article className="h-full overflow-y-auto pb-10">
         <ViewHeader href={back} title={spot.title} />
+        <PieceActions
+          storyId={story.id}
+          kind="spots"
+          itemId={spot.id}
+          archived={spot.archived ?? false}
+        />
         <Gallery images={spot.images} />
         <div className="grid gap-3 px-5 pt-4">
           <p className="text-sm text-muted-foreground">
@@ -118,6 +125,13 @@ export function StudioItem({
     return (
       <article className="h-full overflow-y-auto pb-10">
         <ViewHeader href={back} title={plan.title} />
+        <PieceActions
+          storyId={story.id}
+          kind="plans"
+          itemId={plan.id}
+          archived={plan.archived ?? false}
+          editHref={`/studio/${story.id}/plans/${plan.id}/edit`}
+        />
         <Gallery images={plan.images} />
         <div className="grid gap-3 px-5 pt-4">
           <p className="text-sm text-muted-foreground">
@@ -184,6 +198,12 @@ export function StudioItem({
   return (
     <article className="h-full overflow-y-auto pb-10">
       <ViewHeader href={back} title={blog.title} />
+      <PieceActions
+        storyId={story.id}
+        kind="blogs"
+        itemId={blog.id}
+        archived={blog.archived ?? false}
+      />
       <div className="relative mx-5 mt-4 aspect-[4/3] overflow-hidden rounded-3xl bg-secondary">
         <Cover src={blog.coverUrl || "/blog-thumb.svg"} />
       </div>
@@ -193,6 +213,61 @@ export function StudioItem({
         dangerouslySetInnerHTML={{ __html: blogMarkup(blog.body) }}
       />
     </article>
+  );
+}
+
+function PieceActions({
+  storyId,
+  kind,
+  itemId,
+  archived,
+  editHref,
+}: {
+  storyId: string;
+  kind: StoryTab;
+  itemId: string;
+  archived: boolean;
+  editHref?: string;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function toggle() {
+    setError("");
+    setPending(true);
+    try {
+      await setDeskArchived(storyId, kind, itemId, !archived);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not update this");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-2 px-5 pt-4">
+      <div className="flex flex-wrap gap-2">
+        {editHref ? (
+          <Link href={editHref} className="inline-flex h-11 items-center rounded-full bg-secondary px-4 text-sm font-medium">
+            Edit
+          </Link>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => void toggle()}
+          disabled={pending}
+          className="inline-flex h-11 items-center rounded-full bg-secondary px-4 text-sm font-medium disabled:opacity-60"
+        >
+          {pending ? <Loader label={archived ? "Restoring" : "Archiving"} /> : archived ? "Restore" : "Archive"}
+        </button>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {archived
+          ? "This is archived. Travelers cannot see it until you restore it."
+          : "Archive hides this from travelers. It stays here in the studio."}
+      </p>
+      {error ? <p className="text-sm text-primary">{error}</p> : null}
+    </div>
   );
 }
 

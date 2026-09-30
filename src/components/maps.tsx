@@ -113,6 +113,126 @@ function circleIcon(scale: number) {
   };
 }
 
+const routeBlue = "#4285F4";
+
+export type RouteStop = string | { lat: number; lng: number };
+
+function stopLocation(stop: RouteStop): string | google.maps.LatLngLiteral {
+  return typeof stop === "string" ? stop : { lat: stop.lat, lng: stop.lng };
+}
+
+function numberBadge(number: number) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="1.5"/><text x="18" y="23" text-anchor="middle" font-family="Sora, sans-serif" font-size="14" font-weight="600" fill="${routeBlue}">${number}</text></svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(36, 36),
+    anchor: new google.maps.Point(18, 18),
+  };
+}
+
+export type DrawnRoute = {
+  clear: () => void;
+};
+
+export async function renderDynamicRoute(
+  map: google.maps.Map,
+  stops: RouteStop[],
+  markersFor?: Array<{ id?: string; label?: string; lat: number; lng: number }>,
+  onSelect?: (id: string) => void,
+): Promise<DrawnRoute> {
+  const markers: google.maps.Marker[] = [];
+  let renderer: google.maps.DirectionsRenderer | null = null;
+  let fallback: google.maps.Polyline | null = null;
+
+  const clear = () => {
+    markers.forEach((marker) => marker.setMap(null));
+    markers.length = 0;
+    renderer?.setMap(null);
+    renderer = null;
+    fallback?.setMap(null);
+    fallback = null;
+  };
+
+  const placeMarkers = (positions: google.maps.LatLngLiteral[]) => {
+    positions.forEach((position, index) => {
+      const source = markersFor?.[index];
+      const marker = new google.maps.Marker({
+        map,
+        position,
+        title: source?.label,
+        icon: numberBadge(index + 1),
+        zIndex: 10 + index,
+      });
+      if (source?.id && onSelect) marker.addListener("click", () => onSelect(source.id as string));
+      markers.push(marker);
+    });
+  };
+
+  if (stops.length === 0) return { clear };
+
+  if (stops.length === 1) {
+    const only = stopLocation(stops[0]);
+    const position = typeof only === "string" ? null : only;
+    if (position) placeMarkers([position]);
+    if (position) {
+      map.setCenter(position);
+      map.setZoom(13);
+    }
+    return { clear };
+  }
+
+  try {
+    const routes = (await google.maps.importLibrary("routes")) as google.maps.RoutesLibrary;
+    const service = new routes.DirectionsService();
+    const result = await service.route({
+      origin: stopLocation(stops[0]),
+      destination: stopLocation(stops[stops.length - 1]),
+      waypoints: stops.slice(1, -1).map((stop) => ({ location: stopLocation(stop), stopover: true })),
+      travelMode: routes.TravelMode.DRIVING,
+      optimizeWaypoints: false,
+    });
+    renderer = new routes.DirectionsRenderer({
+      map,
+      directions: result,
+      suppressMarkers: true,
+      preserveViewport: false,
+      polylineOptions: {
+        strokeColor: routeBlue,
+        strokeWeight: 5,
+        strokeOpacity: 0.8,
+      },
+    });
+    const legs = result.routes[0]?.legs ?? [];
+    const positions = legs.map((leg) => ({ lat: leg.start_location.lat(), lng: leg.start_location.lng() }));
+    const last = legs[legs.length - 1];
+    if (last) positions.push({ lat: last.end_location.lat(), lng: last.end_location.lng() });
+    placeMarkers(positions.length > 0 ? positions : stops.flatMap((stop) => {
+      const location = stopLocation(stop);
+      return typeof location === "string" ? [] : [location];
+    }));
+  } catch {
+    const positions = stops.flatMap((stop) => {
+      const location = stopLocation(stop);
+      return typeof location === "string" ? [] : [location];
+    });
+    if (positions.length > 1) {
+      fallback = new google.maps.Polyline({
+        map,
+        path: positions,
+        strokeColor: routeBlue,
+        strokeWeight: 5,
+        strokeOpacity: 0.8,
+      });
+      const bounds = new google.maps.LatLngBounds();
+      positions.forEach((position) => bounds.extend(position));
+      map.fitBounds(bounds, 48);
+    }
+    placeMarkers(positions);
+  }
+
+  return { clear };
+}
+
 const quietMapStyle: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#efece6" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
@@ -154,7 +274,41 @@ export type MapPoint = {
   lng: number;
   lat: number;
   label: string;
+  type?: string;
 };
+
+const categoryPin: Record<string, { color: string; glyph: string }> = {
+  stay: {
+    color: "#1d4e89",
+    glyph: `<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>`,
+  },
+  food: {
+    color: "#c45c26",
+    glyph: `<path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/>`,
+  },
+  activity: {
+    color: "#0c6e6a",
+    glyph: `<path d="M10 2v15"/><path d="M7 22a4 4 0 0 1-4-4 1 1 0 0 1 1-1h16a1 1 0 0 1 1 1 4 4 0 0 1-4 4z"/><path d="M9.159 2.46a1 1 0 0 1 1.521-.193l9.977 8.98A1 1 0 0 1 20 13H4a1 1 0 0 1-.824-1.567z"/>`,
+  },
+  sightseeing: {
+    color: "#5c4d8a",
+    glyph: `<path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/>`,
+  },
+  shop: {
+    color: "#9a3d55",
+    glyph: `<path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/>`,
+  },
+};
+
+function categoryIcon(type: string | undefined) {
+  const pin = (type && categoryPin[type]) || { color: "#e12e2f", glyph: `<circle cx="12" cy="12" r="3"/>` };
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48"><path d="M20 46s-14-16-14-28a14 14 0 1 1 28 0c0 12-14 28-14 28z" fill="${pin.color}" stroke="#ffffff" stroke-width="2"/><g transform="translate(10 8) scale(0.83)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pin.glyph}</g></svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(40, 48),
+    anchor: new google.maps.Point(20, 46),
+  };
+}
 
 function MapFallback({ message }: { message: string }) {
   return (
@@ -167,9 +321,11 @@ function MapFallback({ message }: { message: string }) {
 export function RouteMap({
   points,
   onSelect,
+  connected = true,
 }: {
   points: MapPoint[];
   onSelect: (id: string) => void;
+  connected?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -186,10 +342,10 @@ export function RouteMap({
 
     let cancelled = false;
     const markers: google.maps.Marker[] = [];
-    let line: google.maps.Polyline | null = null;
+    let drawn: DrawnRoute | null = null;
 
     loadGoogleMaps()
-      .then(() => {
+      .then(async () => {
         if (cancelled || !containerRef.current) return;
 
         const map =
@@ -203,29 +359,23 @@ export function RouteMap({
           );
         mapRef.current = map;
 
-        if (points.length > 1) {
-          line = new google.maps.Polyline({
+        if (connected) {
+          drawn = await renderDynamicRoute(
             map,
-            path: points.map((point) => ({ lat: point.lat, lng: point.lng })),
-            strokeColor: "#e12e2f",
-            strokeOpacity: 0.9,
-            strokeWeight: 3,
-          });
+            points.map((point) => ({ lat: point.lat, lng: point.lng })),
+            points,
+            (id) => onSelectRef.current(id),
+          );
+          if (cancelled) drawn.clear();
+          return;
         }
 
-        points.forEach((point, index) => {
+        points.forEach((point) => {
           const marker = new google.maps.Marker({
             map,
             position: { lat: point.lat, lng: point.lng },
             title: point.label,
-            icon: circleIcon(16),
-            label: {
-              text: String(index + 1),
-              color: "#ffffff",
-              fontSize: "11px",
-              fontWeight: "600",
-              fontFamily: "Sora, sans-serif",
-            },
+            icon: categoryIcon(point.type),
           });
           marker.addListener("click", () => onSelectRef.current(point.id));
           markers.push(marker);
@@ -238,9 +388,7 @@ export function RouteMap({
         }
         if (points.length > 1) {
           const bounds = new google.maps.LatLngBounds();
-          points.forEach((point) =>
-            bounds.extend({ lat: point.lat, lng: point.lng }),
-          );
+          points.forEach((point) => bounds.extend({ lat: point.lat, lng: point.lng }));
           map.fitBounds(bounds, 48);
         }
       })
@@ -251,9 +399,9 @@ export function RouteMap({
     return () => {
       cancelled = true;
       markers.forEach((marker) => marker.setMap(null));
-      line?.setMap(null);
+      drawn?.clear();
     };
-  }, [points]);
+  }, [points, connected]);
 
   if (error) return <MapFallback message={error} />;
 

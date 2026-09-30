@@ -32,11 +32,13 @@ export function ItineraryView({
   itinerary,
   traveler,
   library,
+  editHref,
 }: {
   story: Story;
   itinerary: Itinerary;
   traveler: boolean;
   library: Library;
+  editHref?: string;
 }) {
   const [day, setDay] = useState<number | "overview">("overview");
   const [mode, setMode] = useState<"list" | "map">("list");
@@ -53,17 +55,19 @@ export function ItineraryView({
     () => buildTimeline(story, itinerary.days, visibleDays),
     [story, itinerary.days, visibleDays],
   );
-  const points = useMemo(
-    () =>
-      timeline.flatMap((section) =>
-        section.entries.flatMap((entry) =>
-          entry.kind === "spot"
-            ? [{ id: entry.spot.id, lng: entry.spot.lng, lat: entry.spot.lat, label: entry.spot.title }]
-            : [],
-        ),
-      ),
-    [timeline],
-  );
+  const points = useMemo(() => {
+    const seen = new Set<string>();
+    return timeline.flatMap((section) =>
+      section.entries.flatMap((entry) => {
+        if (entry.kind !== "spot") return [];
+        if (day === "overview") {
+          if (seen.has(entry.spot.id)) return [];
+          seen.add(entry.spot.id);
+        }
+        return [{ id: entry.spot.id, lng: entry.spot.lng, lat: entry.spot.lat, label: entry.spot.title, type: entry.spot.type }];
+      }),
+    );
+  }, [timeline, day]);
   const stopCount = points.length;
   const budget = useMemo(() => itineraryBudget(story, itinerary.days), [story, itinerary.days]);
   const visibleBudget = useMemo(() => itineraryBudget(story, visibleDays), [story, visibleDays]);
@@ -80,7 +84,14 @@ export function ItineraryView({
           {story.title}
         </Link>
         <div>
-          <h1 className="font-display text-3xl leading-tight">{itinerary.title}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="font-display text-3xl leading-tight">{itinerary.title}</h1>
+            {editHref ? (
+              <Link href={editHref} className="mt-1 shrink-0 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium">
+                Edit
+              </Link>
+            ) : null}
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Itinerary by{" "}
             <Link href={`/u/${story.creator.username}`} className="text-foreground">
@@ -106,6 +117,7 @@ export function ItineraryView({
           kind="itinerary"
           itinerarySlug={itinerary.slug}
           {...markState(library, "itinerary", story.slug, itinerary.slug)}
+          icons
         />
       </header>
       <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-2">
@@ -195,6 +207,7 @@ export function ItineraryView({
           <RouteMap
             key={`${day}-${points.map((point) => point.id).join("-")}`}
             points={points}
+            connected={day !== "overview"}
             onSelect={setOpenId}
           />
         </div>
@@ -207,6 +220,7 @@ export function ItineraryView({
         liked={openSpot ? markState(library, "spot", story.slug, "", openSpot.id).liked : false}
         saved={openSpot ? markState(library, "spot", story.slug, "", openSpot.id).saved : false}
         likes={openSpot ? markState(library, "spot", story.slug, "", openSpot.id).likes : 0}
+        icons
         onOpenChange={(open) => {
           if (!open) setOpenId(null);
         }}

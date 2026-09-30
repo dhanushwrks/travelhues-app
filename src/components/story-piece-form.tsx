@@ -21,10 +21,12 @@ export function StoryPieceForm({
   storyId,
   tab,
   fromPlan = false,
+  planId = "",
 }: {
   storyId: string;
   tab: StoryTab;
   fromPlan?: boolean;
+  planId?: string;
 }) {
   const router = useRouter();
   useDesk();
@@ -35,7 +37,18 @@ export function StoryPieceForm({
   const [pending, setPending] = useState(false);
 
   if (tab === "spots") {
-    return <SpotForm storyId={storyId} returnTo={fromPlan ? `/studio/${storyId}/plans/new` : undefined} />;
+    return (
+      <SpotForm
+        storyId={storyId}
+        returnTo={
+          fromPlan
+            ? planId
+              ? `/studio/${storyId}/plans/${planId}/edit?resume=1`
+              : `/studio/${storyId}/plans/new`
+            : undefined
+        }
+      />
+    );
   }
   if (tab === "plans") return <PlanForm storyId={storyId} />;
 

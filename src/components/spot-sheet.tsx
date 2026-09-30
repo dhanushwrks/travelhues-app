@@ -32,6 +32,7 @@ export function SpotSheet({
   liked = false,
   saved = false,
   likes = 0,
+  icons = false,
 }: {
   spot: Spot | null;
   open: boolean;
@@ -41,6 +42,7 @@ export function SpotSheet({
   liked?: boolean;
   saved?: boolean;
   likes?: number;
+  icons?: boolean;
 }) {
   const meta = spot ? spotTypeMeta[spot.type] : null;
   const copy = spot ? unpackDescription(spot.description) : null;
@@ -77,6 +79,7 @@ export function SpotSheet({
                   liked={liked}
                   saved={saved}
                   likes={likes}
+                  icons={icons}
                 />
               ) : null}
               <p className="text-[15px] leading-6 whitespace-pre-wrap">{copy?.summary}</p>

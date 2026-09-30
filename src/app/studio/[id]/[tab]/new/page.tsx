@@ -11,12 +11,12 @@ export default async function NewStoryPiecePage({
   searchParams,
 }: {
   params: Promise<{ id: string; tab: string }>;
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string; plan?: string }>;
 }) {
   const session = await requireSession();
   if (session.role !== "tcc") redirect("/");
   const { id, tab } = await params;
-  const { from } = await searchParams;
+  const { from, plan } = await searchParams;
   if (!tabs.includes(tab as StoryTab)) notFound();
-  return <StoryPieceForm storyId={id} tab={tab as StoryTab} fromPlan={from === "plan"} />;
+  return <StoryPieceForm storyId={id} tab={tab as StoryTab} fromPlan={from === "plan"} planId={plan ?? ""} />;
 }

@@ -3,9 +3,9 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 
-import { Loader } from "@/components/loader";
+import { Loader, PageLoader } from "@/components/loader";
 import { formatInr } from "@/lib/format";
 import { PictureTray } from "@/components/picture-tray";
 import { SpotPicker } from "@/components/spot-picker";
@@ -22,14 +22,23 @@ import {
   type PlanDraft,
   type StorySpot,
 } from "@/lib/mock/studio";
-import { createDeskPlan, useDesk } from "@/lib/studio-desk";
+import { createDeskPlan, updateDeskPlan, useDesk } from "@/lib/studio-desk";
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
 
-export function PlanForm({ storyId }: { storyId: string }) {
+export function PlanForm({
+  storyId,
+  planId,
+  resume = false,
+}: {
+  storyId: string;
+  planId?: string;
+  resume?: boolean;
+}) {
   const router = useRouter();
-  const { stories } = useDesk();
+  const { stories, status } = useDesk();
   const story = stories.find((item) => item.id === storyId);
+  const existing = planId ? story?.plans.find((item) => item.id === planId) : undefined;
   const spots = story?.spots ?? [];
 
   const [title, setTitle] = useState("");
@@ -45,7 +54,8 @@ export function PlanForm({ storyId }: { storyId: string }) {
     planDraftServerSnapshot,
   );
   const [appliedDraft, setAppliedDraft] = useState<PlanDraft | null>(null);
-  if (draft && appliedDraft !== draft) {
+  const [loadedPlan, setLoadedPlan] = useState<string | null>(null);
+  if (!planId && draft && appliedDraft !== draft) {
     setAppliedDraft(draft);
     setTitle(draft.title);
     setSummary(draft.summary);
@@ -53,12 +63,47 @@ export function PlanForm({ storyId }: { storyId: string }) {
     setDays(draft.days.length > 0 ? draft.days : [{ id: "day-1", title: "", blocks: [] }]);
     setActive(Math.min(draft.active, Math.max(draft.days.length - 1, 0)));
   }
+  if (planId && resume && draft && appliedDraft !== draft) {
+    setAppliedDraft(draft);
+    setLoadedPlan(planId);
+    setTitle(draft.title);
+    setSummary(draft.summary);
+    setImages(draft.images);
+    setDays(draft.days.length > 0 ? draft.days : [{ id: "day-1", title: "", blocks: [] }]);
+    setActive(Math.min(draft.active, Math.max(draft.days.length - 1, 0)));
+  }
+  if (planId && !resume && existing && loadedPlan !== existing.id) {
+    setLoadedPlan(existing.id);
+    setTitle(existing.title);
+    setSummary(existing.summary);
+    setImages(existing.images);
+    setDays(existing.days.length > 0 ? existing.days : [{ id: "day-1", title: "", blocks: [] }]);
+    setActive(0);
+  }
   const [note, setNote] = useState("");
   const [minutes, setMinutes] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const day = days[active] ?? days[0];
+  const back = planId ? `/studio/${storyId}/plans/${planId}` : `/studio/${storyId}?tab=plans`;
+
+  if (planId && (!mounted || (!existing && !resume))) {
+    return (
+      <div className="px-5 pt-6">
+        <Link href={`/studio/${storyId}?tab=plans`} className="text-sm font-medium">
+          ←
+        </Link>
+        {status === "ready" ? (
+          <p className="pt-6 text-sm text-muted-foreground">That plan is not in this story.</p>
+        ) : (
+          <PageLoader label="Loading the plan" />
+        )}
+      </div>
+    );
+  }
 
   function updateDay(index: number, next: PlanDay) {
     setDays(days.map((item, itemIndex) => (itemIndex === index ? next : item)));
@@ -122,13 +167,15 @@ export function PlanForm({ storyId }: { storyId: string }) {
     setSaving(true);
     clearPlanDraft(storyId);
     try {
-      await createDeskPlan(storyId, {
+      const saved = {
         title: title.trim(),
         summary: summary.trim(),
         images,
         days: days.map((item) => ({ ...item, title: item.title.trim() })),
-      });
-      router.push(`/studio/${storyId}?tab=plans`);
+      };
+      if (planId) await updateDeskPlan(storyId, planId, saved);
+      else await createDeskPlan(storyId, saved);
+      router.push(planId ? `/studio/${storyId}/plans/${planId}` : `/studio/${storyId}?tab=plans`);
       router.refresh();
     } catch (caught) {
       setSaving(false);
@@ -139,10 +186,10 @@ export function PlanForm({ storyId }: { storyId: string }) {
   return (
     <form onSubmit={save} className="grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href={`/studio/${storyId}?tab=plans`} className="text-sm font-medium" aria-label="Story">
+        <Link href={back} className="text-sm font-medium" aria-label="Story">
           ←
         </Link>
-        <h1 className="text-lg font-medium">New plan</h1>
+        <h1 className="text-lg font-medium">{planId ? "Edit plan" : "New plan"}</h1>
       </div>
       <p className="text-sm leading-6">
         <span className="font-medium">What is a plan?</span> The days, in order. Each day has a title and a schedule:
@@ -285,13 +332,17 @@ export function PlanForm({ storyId }: { storyId: string }) {
           onAdd={addStop}
           onCreate={() => {
             writePlanDraft(storyId, { title, summary, images, days, active });
-            router.push(`/studio/${storyId}/spots/new?from=plan`);
+            router.push(
+              planId
+                ? `/studio/${storyId}/spots/new?from=plan&plan=${planId}`
+                : `/studio/${storyId}/spots/new?from=plan`,
+            );
           }}
         />
       </div>
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <div className="grid grid-cols-2 gap-3">
-        <Link href={`/studio/${storyId}?tab=plans`} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
+        <Link href={back} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
           Cancel
         </Link>
         <button
@@ -299,7 +350,7 @@ export function PlanForm({ storyId }: { storyId: string }) {
           disabled={saving}
           className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving ? <Loader label="Saving" /> : "Create plan"}
+          {saving ? <Loader label="Saving" /> : planId ? "Save plan" : "Create plan"}
         </button>
       </div>
     </form>

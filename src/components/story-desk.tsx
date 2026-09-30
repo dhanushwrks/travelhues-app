@@ -124,7 +124,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
               .map((spot) => (
               <li key={spot.id} className="flex">
                 <Link href={`/studio/${story.id}/spots/${spot.id}`} className="flex h-full w-full">
-                  <Card imageUrl={spot.images[0] ?? ""} title={spot.title} detail={spot.summary} />
+                  <Card imageUrl={spot.images[0] ?? ""} title={spot.title} detail={spot.summary} archived={spot.archived} />
                 </Link>
               </li>
             ))
@@ -137,6 +137,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
                     imageUrl={plan.images[0] ?? story.coverUrl}
                     title={plan.title}
                     detail={`${plan.days.length} ${plan.days.length === 1 ? "day" : "days"}`}
+                    archived={plan.archived}
                   />
                 </Link>
               </li>
@@ -146,7 +147,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
           ? story.blogs.map((blog) => (
               <li key={blog.id} className="flex">
                 <Link href={`/studio/${story.id}/blogs/${blog.id}`} className="flex h-full w-full">
-                  <Card imageUrl={blog.coverUrl || blogThumb} title={blog.title} detail={blogExcerpt(blog.body)} />
+                  <Card imageUrl={blog.coverUrl || blogThumb} title={blog.title} detail={blogExcerpt(blog.body)} archived={blog.archived} />
                 </Link>
               </li>
             ))
@@ -199,11 +200,26 @@ function FilterChip({ label, pressed, onClick }: { label: string; pressed: boole
   );
 }
 
-function Card({ imageUrl, title, detail }: { imageUrl: string; title: string; detail: string }) {
+function Card({
+  imageUrl,
+  title,
+  detail,
+  archived = false,
+}: {
+  imageUrl: string;
+  title: string;
+  detail: string;
+  archived?: boolean;
+}) {
   return (
     <article className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-secondary">
       <span className="relative block aspect-[4/3] bg-muted">
         <Cover src={imageUrl} />
+        {archived ? (
+          <span className="absolute top-2 left-2 rounded-full bg-foreground px-2 py-1 text-[11px] font-medium text-background">
+            Archived
+          </span>
+        ) : null}
       </span>
       <span className="block flex-1 px-3 py-3">
         <span className="block text-sm font-medium">{title}</span>

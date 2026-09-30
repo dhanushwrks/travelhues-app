@@ -173,6 +173,42 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
   await pull(token);
 }
 
+export async function updateDeskPlan(storyId: string, planId: string, plan: Omit<StoryPlan, "id">) {
+  const token = tokenOrThrow();
+  const story = stories.find((item) => item.id === storyId);
+  const images = [];
+  for (const image of plan.images) images.push(await uploadImage(token, image));
+  const coverUrl = images[0] || story?.coverUrl;
+  if (!coverUrl) throw new Error("Add a cover picture for the plan");
+  await send(
+    token,
+    `/stories/${storyId}/itineraries/${planId}`,
+    {
+      title: plan.title,
+      summary: plan.summary,
+      coverUrl,
+      days: plan.days.map((day) => ({
+        title: day.title,
+        blocks: day.blocks.map((block) => toBlock(block, story?.spots ?? [])),
+      })),
+    },
+    "PUT",
+  );
+  await pull(token);
+}
+
+export async function setDeskArchived(
+  storyId: string,
+  kind: "spots" | "plans" | "blogs",
+  id: string,
+  archived: boolean,
+) {
+  const token = tokenOrThrow();
+  const path = kind === "plans" ? "itineraries" : kind;
+  await send(token, `/stories/${storyId}/${path}/${id}/archive`, { archived });
+  await pull(token);
+}
+
 export async function addDeskBlog(storyId: string, blog: StoryBlog) {
   const token = tokenOrThrow();
   let coverUrl = blog.coverUrl ?? "";
@@ -227,9 +263,9 @@ function apply(next: CreatorStory[]) {
   emit();
 }
 
-async function send<T>(token: string, path: string, body: unknown): Promise<T> {
+async function send<T>(token: string, path: string, body: unknown, method: "POST" | "PUT" = "POST"): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
-    method: "POST",
+    method,
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -264,6 +300,7 @@ function toDesk(story: Story): CreatorStory {
       title: blog.title,
       body: blog.body,
       coverUrl: blog.coverUrl ? mediaUrl(blog.coverUrl) : "",
+      archived: blog.archived ?? false,
     })),
   };
 }
@@ -298,6 +335,7 @@ function toSpot(spot: Spot): StorySpot {
     affiliateUrl: notes.affiliate,
     referenceUrl: notes.reference,
     tips: notes.tips,
+    archived: spot.archived ?? false,
   };
 }
 
@@ -308,6 +346,7 @@ function toPlan(plan: Story["itineraries"][number]): StoryPlan {
     summary: plan.summary,
     images: plan.coverUrl ? [mediaUrl(plan.coverUrl)] : [],
     days: plan.days.map((day, index) => toDay(day, index)),
+    archived: plan.archived ?? false,
   };
 }
 

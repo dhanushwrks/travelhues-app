@@ -72,6 +72,7 @@ export type StorySpot = {
   affiliateUrl: string;
   referenceUrl: string;
   tips: string;
+  archived?: boolean;
 };
 
 export type PlanNote = {
@@ -101,6 +102,7 @@ export type StoryPlan = {
   summary: string;
   images: string[];
   days: PlanDay[];
+  archived?: boolean;
 };
 
 export type StoryBlog = {
@@ -108,6 +110,7 @@ export type StoryBlog = {
   title: string;
   body: string;
   coverUrl?: string;
+  archived?: boolean;
 };
 
 const blogTags = /^(p|h2|strong|em|u|ul|ol|li|blockquote|a|br)$/i;
