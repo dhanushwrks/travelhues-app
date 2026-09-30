@@ -25,11 +25,11 @@ export function TravelerProfile({ person, library }: { person: Person; library: 
       </header>
       <div className="relative mt-4 h-40 bg-secondary md:h-56">
         {cover ? <Photo src={cover} className="size-full object-cover" /> : null}
-      </div>
-      <div className="px-5">
-        <span className="relative -mt-12 grid size-24 place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary font-display text-3xl">
+        <span className="absolute bottom-4 left-5 z-10 grid size-24 place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary font-display text-3xl">
           {avatar ? <Photo src={avatar} className="size-full object-cover" /> : person.displayName.slice(0, 1)}
         </span>
+      </div>
+      <div className="px-5 pt-4">
         <h2 className="mt-3 font-display text-3xl">Hey, {first}</h2>
         <p className="text-sm text-muted-foreground">@{person.username}</p>
         <Link

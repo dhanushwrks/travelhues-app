@@ -6,7 +6,7 @@ import { Loader } from "@/components/loader";
 import { useEffect, useRef, useState } from "react";
 
 const apiKey =
-  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCXkJRf9b0Y0d3bfiHNVUzG89FUdgx8Glk";
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAcsD2M_WrBW_ep7k4gGdxABgcAvRvRYT0";
 
 type LoaderMaps = {
   Map?: typeof google.maps.Map;

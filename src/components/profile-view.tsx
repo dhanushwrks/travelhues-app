@@ -5,6 +5,7 @@ import { Link2 } from "lucide-react";
 import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Person } from "@/lib/profile";
+import { SocialLinks } from "@/components/social-links";
 import { storyHref } from "@/lib/types";
 
 export function ProfileView({
@@ -34,11 +35,11 @@ export function ProfileView({
           </Link>
         ) : null}
       </header>
-      <div className="relative mt-4 h-28 bg-secondary">
+      <div className="relative mt-4 h-40 bg-secondary md:h-56">
         {person.coverUrl ? <UserPhoto src={mediaUrl(person.coverUrl)} className="size-full object-cover" /> : null}
-      </div>
-      <div className="px-5">
         <Portrait src={person.avatarUrl} name={person.displayName} />
+      </div>
+      <div className="px-5 pt-4">
         <div className="mt-3 flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-3xl">Hey, {first}</h2>
@@ -68,23 +69,7 @@ export function ProfileView({
             Add a story
           </Link>
         ) : null}
-        {person.socials.length > 0 ? (
-          <ul className="mt-5 flex gap-3">
-            {person.socials.map((link) => (
-              <li key={`${link.platform}-${link.url}`}>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={socialLabel(link.platform)}
-                  className="grid size-10 place-items-center rounded-full bg-secondary text-foreground"
-                >
-                  <SocialIcon platform={link.platform} />
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <SocialLinks links={person.socials} />
         {person.headline ? <p className="mt-5 text-sm font-medium">{person.headline}</p> : null}
         {person.bio ? (
           <section className="mt-5">
@@ -139,7 +124,7 @@ function Stat({ value, label }: { value: number; label: string }) {
 function Portrait({ src, name }: { src: string; name: string }) {
   const url = mediaUrl(src);
   return (
-    <span className="relative -mt-10 grid size-20 place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary text-xl">
+    <span className="absolute bottom-4 left-5 z-10 grid size-24 place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary font-display text-3xl">
       {url.includes("images.unsplash.com") ? (
         <Image src={url} alt="" fill className="object-cover" sizes="80px" />
       ) : url ? (
@@ -158,39 +143,3 @@ function UserPhoto({ src, className }: { src: string; className: string }) {
   );
 }
 
-function socialLabel(platform: string) {
-  const labels: Record<string, string> = {
-    instagram: "Instagram",
-    facebook: "Facebook",
-    youtube: "YouTube",
-    x: "X",
-    tiktok: "TikTok",
-    website: "Link",
-  };
-  return labels[platform] ?? "Link";
-}
-
-function SocialIcon({ platform }: { platform: string }) {
-  if (platform === "instagram") return <InstagramMark />;
-  if (platform === "youtube") return <YouTubeMark />;
-  return <Link2 className="size-5" aria-hidden />;
-}
-
-function InstagramMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function YouTubeMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="2" y="6" width="20" height="12" rx="3" />
-      <path d="m10 9.5 5 2.5-5 2.5z" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}

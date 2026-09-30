@@ -8,7 +8,8 @@ import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Glimpse } from "@/lib/glimpse";
 import { blogExcerpt } from "@/lib/mock/studio";
-import type { Person, SocialLink } from "@/lib/profile";
+import type { Person } from "@/lib/profile";
+import { SocialLinks } from "@/components/social-links";
 import { itineraryHref, storyHref, type Story, type StoryBlog } from "@/lib/types";
 
 const worldCountries = 197;
@@ -36,9 +37,7 @@ export function Storefront({
       </header>
       <div className="relative mt-4 h-40 bg-secondary md:h-56">
         {person.coverUrl ? <UserPhoto src={mediaUrl(person.coverUrl)} className="size-full object-cover" /> : null}
-      </div>
-      <div className="px-5">
-        <div className="-mt-12 size-24 overflow-hidden rounded-full border-4 border-card bg-secondary">
+        <div className="absolute bottom-4 left-5 z-10 size-24 overflow-hidden rounded-full border-4 border-card bg-secondary">
           {person.avatarUrl ? (
             <UserPhoto src={mediaUrl(person.avatarUrl)} className="size-full object-cover" />
           ) : (
@@ -47,6 +46,8 @@ export function Storefront({
             </span>
           )}
         </div>
+      </div>
+      <div className="px-5 pt-4">
         <h2 className="mt-3 font-display text-3xl">{person.displayName}</h2>
         <p className="text-sm text-muted-foreground">@{person.username}</p>
         {person.headline ? <p className="mt-3 text-sm font-medium">{person.headline}</p> : null}
@@ -69,17 +70,7 @@ export function Storefront({
             <p className="mt-2 text-sm text-muted-foreground">No countries marked yet.</p>
           )}
         </section>
-        {person.socials.length > 0 ? (
-          <ul className="mt-4 flex flex-wrap gap-3 text-sm">
-            {person.socials.map((link) => (
-              <li key={`${link.platform}-${link.url}`}>
-                <a href={link.url} target="_blank" rel="noreferrer" className="underline">
-                  {label(link)}
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <SocialLinks links={person.socials} />
       </div>
       <div className="mt-8 flex border-b border-border px-5">
         <ShelfTab label="Posts" count={0} pressed={shelf === "posts"} onClick={() => setShelf("posts")} />
@@ -274,10 +265,6 @@ function ShelfTab({
 
 function Empty({ label }: { label: string }) {
   return <p className="text-sm text-muted-foreground">{label}</p>;
-}
-
-function label(link: SocialLink) {
-  return link.platform.charAt(0).toUpperCase() + link.platform.slice(1);
 }
 
 function Cover({ src }: { src: string }) {
