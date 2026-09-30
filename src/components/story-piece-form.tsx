@@ -47,7 +47,12 @@ export function StoryPieceForm({
       return;
     }
     await refreshDesk();
-    addDeskBlog(storyId, { id: `blog-${Date.now()}`, title: title.trim(), body });
+    try {
+      await addDeskBlog(storyId, { id: `blog-${Date.now()}`, title: title.trim(), body });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save the blog");
+      return;
+    }
     router.push(`/studio/${storyId}?tab=${tab}`);
     router.refresh();
   }

@@ -173,11 +173,14 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
   await pull(token);
 }
 
-export function addDeskBlog(storyId: string, blog: StoryBlog) {
-  stories = stories.map((story) =>
-    story.id === storyId ? { ...story, blogs: [blog, ...story.blogs] } : story,
-  );
-  emit();
+export async function addDeskBlog(storyId: string, blog: StoryBlog) {
+  const token = tokenOrThrow();
+  await send(token, `/stories/${storyId}/blogs`, {
+    slug: slugify(blog.title, "blog"),
+    title: blog.title,
+    body: blog.body,
+  });
+  await pull(token);
 }
 
 async function pull(token: string) {
@@ -213,8 +216,7 @@ function remember(next: CreatorStory[]) {
 }
 
 function apply(next: CreatorStory[]) {
-  const blogs = new Map(stories.map((story) => [story.id, story.blogs]));
-  stories = next.map((story) => ({ ...story, blogs: blogs.get(story.id) ?? [] }));
+  stories = next;
   status = "ready";
   problem = "";
   emit();
@@ -252,7 +254,11 @@ function toDesk(story: Story): CreatorStory {
     videoUrl: "",
     spots: story.spots.map(toSpot),
     plans: story.itineraries.map((plan) => toPlan(plan)),
-    blogs: [],
+    blogs: (story.blogs ?? []).map((blog) => ({
+      id: blog.slug,
+      title: blog.title,
+      body: blog.body,
+    })),
   };
 }
 
