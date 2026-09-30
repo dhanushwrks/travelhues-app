@@ -52,7 +52,7 @@ export default async function ExplorePage({
       </header>
       <section className="mt-8 grid gap-3">
         <div className="px-5">
-          <h2 className="font-display text-2xl">Glimpses</h2>
+          <h2 className="font-display text-2xl">Shorts</h2>
         </div>
         <GlimpseRow glimpses={glimpses ?? []} country={selected ? code : ""} />
       </section>

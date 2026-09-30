@@ -11,10 +11,10 @@ export function GlimpseRow({
 }) {
   const preview = glimpses.slice(0, 5);
   const more = glimpses.length > 5;
-  const feed = country ? `/glimpse?country=${country}` : "/glimpse";
+  const feed = country ? `/shorts?country=${country}` : "/shorts";
 
   if (preview.length === 0) {
-    return <p className="px-5 text-sm text-muted-foreground">No glimpses in this search yet.</p>;
+    return <p className="px-5 text-sm text-muted-foreground">No shorts in this search yet.</p>;
   }
 
   return (

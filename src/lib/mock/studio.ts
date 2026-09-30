@@ -128,8 +128,8 @@ export function blogMarkup(html: string) {
   });
 }
 
-export function blogExcerpt(html: string) {
-  return html
+export function blogExcerpt(html: string, words?: number) {
+  const text = html
     .replace(/<[^>]*>/g, " ")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/g, "&")
@@ -137,6 +137,10 @@ export function blogExcerpt(html: string) {
     .replace(/&quot;/g, '"')
     .replace(/\s+/g, " ")
     .trim();
+  if (!words) return text;
+  const parts = text.split(" ").filter(Boolean);
+  if (parts.length <= words) return text;
+  return `${parts.slice(0, words).join(" ")}...`;
 }
 
 export type CreatorStory = {

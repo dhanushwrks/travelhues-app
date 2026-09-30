@@ -13,6 +13,7 @@ const travelerItems = [
     active: (path: string) =>
       path === "/" ||
       path.startsWith("/stories") ||
+      path.startsWith("/shorts") ||
       path.startsWith("/glimpse") ||
       path.startsWith("/u/"),
   },
@@ -47,7 +48,7 @@ export function AppNav({
   placement: "rail" | "bar";
 }) {
   const pathname = usePathname();
-  if (/^\/(login|signup|join|auth)(\/|$)/.test(pathname) || pathname === "/glimpse") return null;
+  if (/^\/(login|signup|join|auth)(\/|$)/.test(pathname) || pathname === "/shorts" || pathname === "/glimpse") return null;
 
   const items = role === "tcc" ? creatorItems : travelerItems;
 

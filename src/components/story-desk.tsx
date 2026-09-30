@@ -147,7 +147,13 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
           ? story.blogs.map((blog) => (
               <li key={blog.id} className="flex">
                 <Link href={`/studio/${story.id}/blogs/${blog.id}`} className="flex h-full w-full">
-                  <Card imageUrl={blog.coverUrl || blogThumb} title={blog.title} detail={blogExcerpt(blog.body)} archived={blog.archived} />
+                  <Card
+                    imageUrl={blog.coverUrl || blogThumb}
+                    title={blog.title}
+                    detail={blogExcerpt(blog.body, 100)}
+                    archived={blog.archived}
+                    clamp={false}
+                  />
                 </Link>
               </li>
             ))
@@ -205,11 +211,13 @@ function Card({
   title,
   detail,
   archived = false,
+  clamp = true,
 }: {
   imageUrl: string;
   title: string;
   detail: string;
   archived?: boolean;
+  clamp?: boolean;
 }) {
   return (
     <article className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-secondary">
@@ -223,7 +231,7 @@ function Card({
       </span>
       <span className="block flex-1 px-3 py-3">
         <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</span>
+        <span className={`mt-1 block text-xs leading-5 text-muted-foreground ${clamp ? "line-clamp-2" : ""}`}>{detail}</span>
       </span>
     </article>
   );

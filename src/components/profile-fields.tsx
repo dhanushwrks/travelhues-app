@@ -342,6 +342,43 @@ export function readImage(file: File) {
   });
 }
 
+export function compressImage(file: File, maxEdge: number) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+    return Promise.reject(new Error("Use a JPEG, PNG, or WebP"));
+  }
+  if (file.size > 5_000_000) return Promise.reject(new Error("Photo must be under 5 MB"));
+  return new Promise<string>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      const longest = Math.max(image.width, image.height);
+      const scale = longest > maxEdge ? maxEdge / longest : 1;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("Could not read that photo"));
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      let quality = 0.82;
+      let data = canvas.toDataURL("image/jpeg", quality);
+      while (data.length > 1_600_000 && quality > 0.5) {
+        quality -= 0.12;
+        data = canvas.toDataURL("image/jpeg", quality);
+      }
+      resolve(data);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that photo"));
+    };
+    image.src = url;
+  });
+}
+
 function UserPhoto({ src, className }: { src: string; className: string }) {
   return (
     // Uploaded photos are data URLs or API files, which the optimizer does not accept.

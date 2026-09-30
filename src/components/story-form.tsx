@@ -142,7 +142,7 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
       />
       <UploadWell
         label="Highlight video"
-        hint="A short glimpse of the story. MP4 or MOV, under 100 MB"
+        hint="A short video of the story. MP4 or MOV, under 100 MB"
         changeLabel="Change video"
         video={videoUrl}
         accept="video/mp4,video/quicktime"

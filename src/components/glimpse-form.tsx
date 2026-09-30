@@ -55,13 +55,13 @@ export function GlimpseForm({
       setError(await apiMessage(response));
       return;
     }
-    router.push("/glimpse");
+    router.push("/shorts");
     router.refresh();
   }
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4 px-5 pt-8 pb-12">
-      <h1 className="font-display text-3xl">Add a glimpse</h1>
+      <h1 className="font-display text-3xl">Add a short</h1>
       <p className="text-sm leading-6 text-muted-foreground">
         A short video. You can point it at a story, a day plan, or a spot.
       </p>
@@ -147,7 +147,7 @@ export function GlimpseForm({
         disabled={pending || open.length === 0}
         className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {pending ? <Loader label="Posting" /> : "Post glimpse"}
+        {pending ? <Loader label="Posting" /> : "Post short"}
       </button>
     </form>
   );

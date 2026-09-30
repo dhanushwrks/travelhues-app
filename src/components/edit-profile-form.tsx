@@ -1,9 +1,10 @@
 "use client";
 
 import { Loader } from "@/components/loader";
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   CountryField,
@@ -12,6 +13,7 @@ import {
   HobbyField,
   PhotoField,
   SocialEditor,
+  compressImage,
   controlClass,
   readImage,
   useCountries,
@@ -40,6 +42,8 @@ export function EditProfileForm({ person }: { person: Person }) {
   const [cover, setCover] = useState(mediaUrl(person.coverUrl));
   const [avatarData, setAvatarData] = useState("");
   const [coverData, setCoverData] = useState("");
+  const [clearAvatar, setClearAvatar] = useState(false);
+  const [clearCover, setClearCover] = useState(false);
   const creator = person.role === "tcc";
 
   async function onSubmit(event: React.FormEvent) {
@@ -53,7 +57,7 @@ export function EditProfileForm({ person }: { person: Person }) {
         Authorization: `Bearer ${readCookie("th_access")}`,
       },
       body: JSON.stringify({
-        username,
+        ...(creator ? { username } : {}),
         displayName,
         headline,
         ...(creator || bio.trim() ? { bio } : {}),
@@ -62,8 +66,8 @@ export function EditProfileForm({ person }: { person: Person }) {
         hobbies,
         countriesTraveled,
         socials: socials.filter((link) => link.url.trim()),
-        avatarDataUrl: avatarData || undefined,
-        coverDataUrl: coverData || undefined,
+        ...(clearAvatar ? { avatarDataUrl: "" } : avatarData ? { avatarDataUrl: avatarData } : {}),
+        ...(clearCover ? { coverDataUrl: "" } : coverData ? { coverDataUrl: coverData } : {}),
       }),
     });
     setPending(false);
@@ -85,7 +89,7 @@ export function EditProfileForm({ person }: { person: Person }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid h-full gap-5 overflow-y-auto px-5 pt-6 pb-12 md:mx-auto md:max-w-2xl">
+    <form onSubmit={onSubmit} className="grid h-full gap-5 overflow-y-auto px-5 pt-6 pb-12">
       <div className="flex items-center justify-between">
         <Link href="/account" className="text-sm">
           Back
@@ -93,37 +97,75 @@ export function EditProfileForm({ person }: { person: Person }) {
         <h1 className="font-display text-2xl">Edit profile</h1>
         <span className="w-10" />
       </div>
-      <PhotoField
-        label="Profile photo"
-        preview={avatar}
-        onFile={(file) => {
-          readImage(file)
-            .then((value) => {
-              setAvatarData(value);
-              setAvatar(value);
-            })
-            .catch((caught: unknown) => {
-              setError(caught instanceof Error ? caught.message : "Could not read that photo");
-            });
-        }}
-      />
-      <PhotoField
-        label="Cover photo"
-        preview={cover}
-        onFile={(file) => {
-          readImage(file)
-            .then((value) => {
-              setCoverData(value);
-              setCover(value);
-            })
-            .catch((caught: unknown) => {
-              setError(caught instanceof Error ? caught.message : "Could not read that photo");
-            });
-        }}
-      />
-      <Field label="Username" hint="Lowercase, used in your page address">
-        <input className={controlClass} value={username} onChange={(event) => setUsername(event.target.value.toLowerCase())} required />
-      </Field>
+      {creator ? (
+        <>
+          <PhotoField
+            label="Profile photo"
+            preview={avatar}
+            onFile={(file) => {
+              readImage(file)
+                .then((value) => {
+                  setClearAvatar(false);
+                  setAvatarData(value);
+                  setAvatar(value);
+                })
+                .catch((caught: unknown) => {
+                  setError(caught instanceof Error ? caught.message : "Could not read that photo");
+                });
+            }}
+          />
+          <PhotoField
+            label="Cover photo"
+            preview={cover}
+            onFile={(file) => {
+              readImage(file)
+                .then((value) => {
+                  setClearCover(false);
+                  setCoverData(value);
+                  setCover(value);
+                })
+                .catch((caught: unknown) => {
+                  setError(caught instanceof Error ? caught.message : "Could not read that photo");
+                });
+            }}
+          />
+          <Field label="Username" hint="Lowercase, used in your page address">
+            <input className={controlClass} value={username} onChange={(event) => setUsername(event.target.value.toLowerCase())} required />
+          </Field>
+        </>
+      ) : (
+        <UserPhotos
+          name={displayName}
+          username={person.username}
+          avatar={clearAvatar ? "" : avatar}
+          cover={clearCover ? "" : cover}
+          onAvatar={(value) => {
+            setError("");
+            if (!value) {
+              setAvatar("");
+              setAvatarData("");
+              setClearAvatar(true);
+              return;
+            }
+            setClearAvatar(false);
+            setAvatar(value);
+            setAvatarData(value);
+          }}
+          onCover={(value) => {
+            setError("");
+            if (!value) {
+              setCover("");
+              setCoverData("");
+              setClearCover(true);
+              return;
+            }
+            setClearCover(false);
+            setCover(value);
+            setCoverData(value);
+          }}
+          onError={setError}
+        />
+      )}
       <Field label="Name">
         <input className={controlClass} value={displayName} onChange={(event) => setDisplayName(event.target.value)} required />
       </Field>
@@ -154,5 +196,143 @@ export function EditProfileForm({ person }: { person: Person }) {
         </button>
       </div>
     </form>
+  );
+}
+
+function UserPhotos({
+  name,
+  username,
+  avatar,
+  cover,
+  onAvatar,
+  onCover,
+  onError,
+}: {
+  name: string;
+  username: string;
+  avatar: string;
+  cover: string;
+  onAvatar: (value: string) => void;
+  onCover: (value: string) => void;
+  onError: (message: string) => void;
+}) {
+  return (
+    <div className="-mx-5">
+      <div className="relative h-40 bg-secondary md:h-56">
+        {cover ? <img src={cover} alt="" className="size-full object-cover" /> : null}
+        <PhotoAction
+          label={cover ? "Edit cover photo" : "Add cover photo"}
+          hasPhoto={Boolean(cover)}
+          className="absolute right-4 bottom-3"
+          menuClass="right-0"
+          maxEdge={1600}
+          onPick={onCover}
+          onRemove={() => onCover("")}
+          onError={onError}
+        />
+      </div>
+      <div className="px-5">
+        <div className="relative -mt-12 size-24">
+          <span className="grid size-full place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary font-display text-3xl">
+            {avatar ? <img src={avatar} alt="" className="size-full object-cover" /> : name.slice(0, 1) || "?"}
+          </span>
+          <PhotoAction
+            label={avatar ? "Edit profile photo" : "Add profile photo"}
+            hasPhoto={Boolean(avatar)}
+            className="absolute -right-1 -bottom-1"
+            menuClass="left-0"
+            maxEdge={640}
+            onPick={onAvatar}
+            onRemove={() => onAvatar("")}
+            onError={onError}
+          />
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">@{username}</p>
+        <p className="text-sm text-muted-foreground">Username cannot be changed</p>
+      </div>
+    </div>
+  );
+}
+
+function PhotoAction({
+  label,
+  hasPhoto,
+  className,
+  menuClass,
+  maxEdge,
+  onPick,
+  onRemove,
+  onError,
+}: {
+  label: string;
+  hasPhoto: boolean;
+  className: string;
+  menuClass: string;
+  maxEdge: number;
+  onPick: (value: string) => void;
+  onRemove: () => void;
+  onError: (message: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+
+  function choose(file: File | undefined) {
+    setOpen(false);
+    if (!file) return;
+    compressImage(file, maxEdge)
+      .then(onPick)
+      .catch((caught: unknown) => {
+        onError(caught instanceof Error ? caught.message : "Could not read that photo");
+      });
+  }
+
+  return (
+    <div className={className}>
+      {open ? (
+        <button type="button" aria-label="Close" className="fixed inset-0 z-10 cursor-default" onClick={() => setOpen(false)} />
+      ) : null}
+      <button
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        className="relative z-20 grid size-8 place-items-center rounded-full bg-card text-foreground shadow-sm ring-1 ring-border"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <Pencil className="size-4" />
+      </button>
+      {open ? (
+        <div className={`absolute z-20 mt-2 w-44 overflow-hidden rounded-2xl bg-card py-1 shadow-lg ring-1 ring-border ${menuClass}`}>
+          <button
+            type="button"
+            className="block w-full px-4 py-2.5 text-left text-sm"
+            onClick={() => inputRef.current?.click()}
+          >
+            {hasPhoto ? "Change photo" : "Add photo"}
+          </button>
+          {hasPhoto ? (
+            <button
+              type="button"
+              className="block w-full px-4 py-2.5 text-left text-sm text-primary"
+              onClick={() => {
+                setOpen(false);
+                onRemove();
+              }}
+            >
+              Remove photo
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(event) => {
+          choose(event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+    </div>
   );
 }

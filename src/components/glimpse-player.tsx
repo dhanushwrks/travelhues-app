@@ -100,7 +100,7 @@ export function GlimpsePlayer({
     return (
       <div className="grid h-full place-items-center px-6 text-center">
         <div className="grid gap-3">
-          <p>No glimpses yet.</p>
+          <p>No shorts yet.</p>
           <Link href="/" className="text-sm text-primary">
             Back to explore
           </Link>

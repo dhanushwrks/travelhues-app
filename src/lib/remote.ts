@@ -33,7 +33,11 @@ export async function loadEnabledCountries() {
   const settings = (await settingsResponse.json()) as {
     app?: { enabledCountries?: string[] };
   };
-  const countries = (await countriesResponse.json()) as { code: string; name: string }[];
+  const countries = (await countriesResponse.json()) as {
+    code: string;
+    name: string;
+    flag?: string;
+  }[];
   const enabled = new Set(settings.app?.enabledCountries ?? []);
   return countries.filter((country) => enabled.has(country.code));
 }

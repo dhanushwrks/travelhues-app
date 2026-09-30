@@ -1,17 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { apiBase, apiMessage } from "@/lib/api";
 import { clearSession, readCookie } from "@/lib/browser-session";
+import { Loader } from "@/components/loader";
 
 export function AccountSettings({ hidden, creator = true }: { hidden: boolean; creator?: boolean }) {
   const router = useRouter();
   const [isHidden, setHidden] = useState(hidden);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [changing, setChanging] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [accountAction, setAccountAction] = useState<"disable" | "delete" | "logout" | null>(null);
+  const [accountPending, setAccountPending] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -32,8 +38,23 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
     }
   }
 
-  async function savePassword(event: React.FormEvent) {
+  function reviewPassword(event: React.FormEvent) {
     event.preventDefault();
+    setError("");
+    setNotice("");
+    if (password !== confirmPassword) {
+      setError("New password and confirmation do not match");
+      return;
+    }
+    if (password === currentPassword) {
+      setError("Choose a password that is different from the current one");
+      return;
+    }
+    setReviewing(true);
+  }
+
+  async function savePassword() {
+    setSaving(true);
     setError("");
     setNotice("");
     const response = await fetch(`${apiBase}/me/password`, {
@@ -42,24 +63,49 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
         "Content-Type": "application/json",
         Authorization: `Bearer ${readCookie("th_access")}`,
       },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ currentPassword, password, confirmPassword }),
     });
+    setSaving(false);
     if (!response.ok) {
+      setReviewing(false);
       setError(await apiMessage(response));
       return;
     }
+    setCurrentPassword("");
     setPassword("");
+    setConfirmPassword("");
     setChanging(false);
+    setReviewing(false);
     setNotice("Password updated");
   }
 
-  async function removeAccount() {
+  useEffect(() => {
+    if (!reviewing) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && !saving) setReviewing(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [reviewing, saving]);
+
+  async function runAccountAction() {
+    if (!accountAction) return;
+    if (accountAction === "logout") {
+      clearSession();
+      router.push("/login");
+      router.refresh();
+      return;
+    }
+    setAccountPending(true);
     setError("");
-    const response = await fetch(`${apiBase}/me`, {
-      method: "DELETE",
+    const disabling = accountAction === "disable";
+    const response = await fetch(disabling ? `${apiBase}/me/disable` : `${apiBase}/me`, {
+      method: disabling ? "POST" : "DELETE",
       headers: { Authorization: `Bearer ${readCookie("th_access")}` },
     });
     if (!response.ok) {
+      setAccountPending(false);
+      setAccountAction(null);
       setError(await apiMessage(response));
       return;
     }
@@ -85,49 +131,250 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
         </label>
       ) : null}
       {changing ? (
-        <form onSubmit={savePassword} className="grid gap-2">
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-            placeholder="New password"
+        <form onSubmit={reviewPassword} className="grid gap-3">
+          <PasswordField
+            label="Current password"
+            value={currentPassword}
+            autoComplete="current-password"
+            onChange={setCurrentPassword}
           />
-          <button type="submit" className="justify-self-start text-sm font-medium">
-            Save password
-          </button>
+          <PasswordField
+            label="New password"
+            value={password}
+            autoComplete="new-password"
+            onChange={setPassword}
+          />
+          <PasswordField
+            label="Confirm new password"
+            value={confirmPassword}
+            autoComplete="new-password"
+            onChange={setConfirmPassword}
+          />
+          <div className="flex gap-4">
+            <button type="submit" className="text-sm font-medium">
+              Review change
+            </button>
+            <button
+              type="button"
+              className="text-sm text-muted-foreground"
+              onClick={() => {
+                setChanging(false);
+                setError("");
+                setCurrentPassword("");
+                setPassword("");
+                setConfirmPassword("");
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       ) : (
         <button type="button" className="justify-self-start text-sm font-medium underline" onClick={() => setChanging(true)}>
           Change password
         </button>
       )}
-      <p className="-mt-2 text-sm text-muted-foreground">Replaces the current password.</p>
-      {confirming ? (
-        <button type="button" className="justify-self-start text-sm font-medium text-primary" onClick={() => void removeAccount()}>
-          Delete permanently
-        </button>
-      ) : (
-        <button type="button" className="justify-self-start text-sm font-medium text-primary underline" onClick={() => setConfirming(true)}>
-          Delete account
-        </button>
-      )}
-      <p className="-mt-2 text-sm text-muted-foreground">This permanently deletes your account and cannot be undone.</p>
+      <p className="-mt-2 text-sm text-muted-foreground">
+        Asks for the current password, then confirms before it changes.
+      </p>
+      {reviewing ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-[#12232a]/40 px-5"
+          role="presentation"
+          onClick={() => {
+            if (!saving) setReviewing(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="password-confirm-title"
+            className="grid w-full max-w-sm gap-4 rounded-3xl bg-card p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="grid gap-1">
+              <h4 id="password-confirm-title" className="font-display text-2xl">
+                Change password?
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                The new password replaces the current one. Use it the next time you sign in.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="rounded-full px-4 py-2 text-sm"
+                disabled={saving}
+                onClick={() => setReviewing(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+                disabled={saving}
+                onClick={() => void savePassword()}
+              >
+                {saving ? <Loader label="Changing" className="size-4" /> : "Change password"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <button
         type="button"
         className="justify-self-start text-sm font-medium underline"
-        onClick={() => {
-          clearSession();
-          router.push("/login");
-          router.refresh();
-        }}
+        onClick={() => setAccountAction("disable")}
+      >
+        Disable account
+      </button>
+      <p className="-mt-2 text-sm text-muted-foreground">
+        Hides your profile and what you published. Signing in again turns it back on.
+      </p>
+      <button
+        type="button"
+        className="justify-self-start text-sm font-medium text-primary underline"
+        onClick={() => setAccountAction("delete")}
+      >
+        Delete account
+      </button>
+      <p className="-mt-2 text-sm text-muted-foreground">
+        Marks your account and everything you published as deleted. You cannot sign in again.
+      </p>
+      {accountAction ? (
+        <ConfirmDialog
+          title={accountDialog[accountAction].title}
+          body={accountDialog[accountAction].body}
+          confirmLabel={accountDialog[accountAction].confirmLabel}
+          pending={accountPending}
+          pendingLabel={accountDialog[accountAction].pendingLabel}
+          onCancel={() => {
+            if (!accountPending) setAccountAction(null);
+          }}
+          onConfirm={() => void runAccountAction()}
+        />
+      ) : null}
+      <button
+        type="button"
+        className="justify-self-start text-sm font-medium underline"
+        onClick={() => setAccountAction("logout")}
       >
         Log out
       </button>
       {notice ? <p className="text-sm">{notice}</p> : null}
       {error ? <p className="text-sm text-primary">{error}</p> : null}
     </section>
+  );
+}
+
+const accountDialog = {
+  disable: {
+    title: "Disable account?",
+    body: "Your profile and the stories, spots, plans, blogs, and shorts you published stay hidden until you sign in again.",
+    confirmLabel: "Disable account",
+    pendingLabel: "Disabling",
+  },
+  delete: {
+    title: "Delete account?",
+    body: "Your account and the content that belongs to it are marked deleted. Sign-in stops working for this account.",
+    confirmLabel: "Delete account",
+    pendingLabel: "Deleting",
+  },
+  logout: {
+    title: "Log out?",
+    body: "You will leave this account on this device. Sign in again when you want to come back.",
+    confirmLabel: "Log out",
+    pendingLabel: "Logging out",
+  },
+} as const;
+
+function ConfirmDialog({
+  title,
+  body,
+  confirmLabel,
+  pending,
+  pendingLabel,
+  onCancel,
+  onConfirm,
+}: {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  pending: boolean;
+  pendingLabel: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && !pending) onCancel();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel, pending]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-[#12232a]/40 px-5"
+      role="presentation"
+      onClick={() => {
+        if (!pending) onCancel();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-confirm-title"
+        className="grid w-full max-w-sm gap-4 rounded-3xl bg-card p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="grid gap-1">
+          <h4 id="account-confirm-title" className="font-display text-2xl">
+            {title}
+          </h4>
+          <p className="text-sm text-muted-foreground">{body}</p>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button type="button" className="rounded-full px-4 py-2 text-sm" disabled={pending} onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+            disabled={pending}
+            onClick={onConfirm}
+          >
+            {pending ? <Loader label={pendingLabel} className="size-4" /> : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PasswordField({
+  label,
+  value,
+  autoComplete,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  autoComplete: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-1.5 text-sm">
+      <span>{label}</span>
+      <input
+        type="password"
+        required
+        minLength={6}
+        value={value}
+        autoComplete={autoComplete}
+        onChange={(event) => onChange(event.target.value)}
+        className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none"
+      />
+    </label>
   );
 }

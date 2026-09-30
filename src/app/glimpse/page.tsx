@@ -1,14 +1,14 @@
-import { GlimpsePlayer } from "@/components/glimpse-player";
-import { loadGlimpses } from "@/lib/remote";
-import { requireSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
-export default async function GlimpsePage({
+export default async function GlimpseRedirect({
   searchParams,
 }: {
   searchParams: Promise<{ country?: string; start?: string }>;
 }) {
-  const session = await requireSession();
   const { country = "", start = "" } = await searchParams;
-  const glimpses = (await loadGlimpses(session.token, country || undefined)) ?? [];
-  return <GlimpsePlayer initial={glimpses} startId={start} />;
+  const query = new URLSearchParams();
+  if (country) query.set("country", country);
+  if (start) query.set("start", start);
+  const suffix = query.toString();
+  redirect(suffix ? `/shorts?${suffix}` : "/shorts");
 }

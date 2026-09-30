@@ -49,7 +49,7 @@ export function CreatorStorefront({
           </span>
           <dl className="grid flex-1 grid-cols-3 text-center">
             <Count value={postCount} label="Posts" />
-            <Count value={glimpseCount} label="Glimpses" />
+            <Count value={glimpseCount} label="Shorts" />
             <Count value={storyCount} label="Stories" />
           </dl>
         </div>
@@ -59,11 +59,11 @@ export function CreatorStorefront({
       </header>
       <div className="mt-6 grid grid-cols-2 border-y border-border">
         <TabButton label="Posts" pressed={tab === "posts"} onClick={() => setTab("posts")} />
-        <TabButton label="Glimpses" pressed={tab === "glimpses"} onClick={() => setTab("glimpses")} />
+        <TabButton label="Shorts" pressed={tab === "glimpses"} onClick={() => setTab("glimpses")} />
       </div>
       {grid.length === 0 ? (
         <p className="px-5 pt-8 text-sm text-muted-foreground">
-          {tab === "glimpses" ? "No glimpses yet." : "No posts yet."}
+          {tab === "glimpses" ? "No shorts yet." : "No posts yet."}
         </p>
       ) : (
         <ul className="grid grid-cols-3 gap-px bg-border md:grid-cols-4 lg:grid-cols-6">
@@ -85,7 +85,7 @@ export function CreatorStorefront({
                     </figcaption>
                   ) : post.kind !== "photo" ? (
                     <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                      {post.kind === "glimpse" ? "Glimpse" : "Video"}
+                      {post.kind === "glimpse" ? "Short" : "Video"}
                     </figcaption>
                   ) : null}
                 </figure>

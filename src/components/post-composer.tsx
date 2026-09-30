@@ -10,7 +10,7 @@ import { savePost, type MediaKind } from "@/lib/mock/studio";
 const kinds: { id: MediaKind; label: string }[] = [
   { id: "photo", label: "Photo" },
   { id: "video", label: "Video" },
-  { id: "glimpse", label: "Glimpse" },
+  { id: "glimpse", label: "Short" },
 ];
 
 export function PostComposer() {

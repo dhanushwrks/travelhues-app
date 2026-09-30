@@ -28,7 +28,7 @@ export function CreateMenu({
       {open ? (
         <div className="grid gap-2">
           <MenuChoice label="Post" onClick={() => choose("post")} />
-          <MenuChoice label="Glimpse" onClick={() => choose("glimpse")} />
+          <MenuChoice label="Short" onClick={() => choose("glimpse")} />
         </div>
       ) : null}
       <button
@@ -185,9 +185,9 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
     setError("");
     setReading(true);
     try {
-      if (!file.type.startsWith("video/")) throw new Error("A glimpse is a video");
+      if (!file.type.startsWith("video/")) throw new Error("A short is a video");
       const media = await readMedia(file);
-      if (media.kind !== "video") throw new Error("A glimpse is a video");
+      if (media.kind !== "video") throw new Error("A short is a video");
       setClip({ id: file.name, ...media });
     } catch (caught) {
       setClip(null);
@@ -223,7 +223,7 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
       <button type="button" onClick={onClose} className="w-fit text-sm font-medium">
         ←
       </button>
-      <h1 className="font-display text-3xl">New glimpse</h1>
+      <h1 className="font-display text-3xl">New short</h1>
       <p className="text-sm text-muted-foreground">One video, up to 60 seconds.</p>
       <label className="grid cursor-pointer gap-2 text-sm">
         {clip?.imageUrl ? (

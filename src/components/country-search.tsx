@@ -3,11 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { countryFlag } from "@/lib/countries";
+
+type Country = { code: string; name: string; flag?: string };
+
+function flagOf(country: Country) {
+  return country.flag || countryFlag(country.code);
+}
+
 export function CountrySearch({
   countries,
   selected,
 }: {
-  countries: { code: string; name: string }[];
+  countries: Country[];
   selected: string;
 }) {
   const router = useRouter();
@@ -22,12 +30,18 @@ export function CountrySearch({
     return pool.slice(0, 8);
   }, [countries, query]);
 
+  function choose(code: string) {
+    setOpen(false);
+    setQuery("");
+    router.push(`/?country=${code}`);
+  }
+
   return (
     <div className="grid gap-2">
       <label className="grid gap-2 text-sm">
         <span className="sr-only">Search countries</span>
         <input
-          value={open ? query : current?.name ?? ""}
+          value={open ? query : current ? `${flagOf(current)} ${current.name}` : ""}
           placeholder={countries.length ? "Search countries" : "No countries are open yet"}
           disabled={countries.length === 0}
           className="rounded-full border border-border bg-background px-4 py-3 outline-none"
@@ -51,19 +65,39 @@ export function CountrySearch({
               <li key={country.code}>
                 <button
                   type="button"
-                  className="w-full px-4 py-2.5 text-left text-sm"
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    setOpen(false);
-                    setQuery("");
-                    router.push(`/?country=${country.code}`);
-                  }}
+                  onClick={() => choose(country.code)}
                 >
+                  <span aria-hidden>{flagOf(country)}</span>
                   {country.name}
                 </button>
               </li>
             ))
           )}
+        </ul>
+      ) : countries.length > 0 ? (
+        <ul className="flex flex-wrap gap-2" aria-label="Open countries">
+          {countries.map((country) => {
+            const active = country.code === selected;
+            return (
+              <li key={country.code}>
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card"
+                  }`}
+                  onClick={() => choose(country.code)}
+                >
+                  <span aria-hidden>{flagOf(country)}</span>
+                  {country.name}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
       {current ? (
