@@ -61,7 +61,7 @@ function creatorItems(username: string) {
     },
     {
       href: "/studio",
-      label: "Studio",
+      label: "Stories",
       icon: PenLine,
       featured: false,
       active: (path: string) => path === "/studio" || (path.startsWith("/studio/") && path !== "/studio/new" && !path.startsWith("/studio/new/")),

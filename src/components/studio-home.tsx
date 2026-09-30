@@ -8,7 +8,7 @@ import { countryFlag, countryName } from "@/lib/countries";
 import { useDesk, useDeskHome } from "@/lib/studio-desk";
 
 export function StudioHome({
-  title = "Studio",
+  title = "Stories",
   lead = "A story is one place. Spots, plans, and blogs live inside it.",
   action = "New story",
   empty = "No stories yet. Start with the place you know best.",

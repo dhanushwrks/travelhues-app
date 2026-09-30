@@ -10,7 +10,6 @@ import { ProfileMast } from "@/components/profile-mast";
 import { SocialLinks } from "@/components/social-links";
 import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
-import type { Glimpse } from "@/lib/glimpse";
 import { storyLikeCount, type Library } from "@/lib/marks";
 import {
   postBoard,
@@ -28,16 +27,15 @@ type Shelf = "posts" | "shorts" | "stories";
 
 export function Storefront({
   person,
-  shorts,
   library,
 }: {
   person: Person;
-  shorts: Glimpse[];
   library: Library;
 }) {
   const [shelf, setShelf] = useState<Shelf>("stories");
   const allPosts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
   const posts = allPosts.filter((post) => post.kind !== "glimpse");
+  const shorts = allPosts.filter((post) => post.kind === "glimpse");
   const traveled = [...new Set(person.countriesTraveled.map((code) => code.toUpperCase()))].filter((code) =>
     /^[A-Z]{2}$/.test(code),
   );
@@ -105,7 +103,7 @@ export function Storefront({
 
 function PostsGrid({ posts }: { posts: MediaPost[] }) {
   if (posts.length === 0) {
-    return <p className="px-5 pt-8 text-sm text-muted-foreground">No posts yet.</p>;
+    return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No posts yet.</p>;
   }
 
   return (
@@ -162,7 +160,7 @@ function PostsGrid({ posts }: { posts: MediaPost[] }) {
 
 function StoryShelf({ stories, library }: { stories: Story[]; library: Library }) {
   if (stories.length === 0) {
-    return <p className="px-5 pt-8 text-sm text-muted-foreground">No stories yet.</p>;
+    return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No stories yet.</p>;
   }
 
   return (
@@ -216,23 +214,53 @@ function Count({
   );
 }
 
-function ShortsGrid({ shorts }: { shorts: Glimpse[] }) {
-  if (shorts.length === 0) return <p className="px-5 pt-8 text-sm text-muted-foreground">No shorts yet.</p>;
+function ShortsGrid({ shorts }: { shorts: MediaPost[] }) {
+  if (shorts.length === 0) {
+    return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No shorts yet.</p>;
+  }
+
   return (
-    <ul className="grid grid-cols-3 gap-2 px-5 pt-6 md:grid-cols-4 lg:grid-cols-6">
-      {shorts.map((short) => (
-        <li key={short.id}>
-          <Link href={`/shorts?start=${short.id}`} className="block">
-            <span className="relative block aspect-[9/16] overflow-hidden rounded-2xl bg-foreground">
-              {short.posterUrl ? (
-                <UserPhoto src={mediaUrl(short.posterUrl)} className="size-full object-cover" />
-              ) : (
-                <span className="absolute inset-x-0 bottom-0 p-2 text-xs text-background">{short.caption}</span>
-              )}
-            </span>
-          </Link>
-        </li>
-      ))}
+    <ul className="grid grid-cols-3 gap-px bg-border md:grid-cols-4 lg:grid-cols-6">
+      {shorts.map((short) => {
+        const likes = postBoard(short.id).likes;
+        const saves = 0;
+        return (
+          <li key={short.id} className="bg-card">
+            <Link
+              href={`/storefront/posts/${short.id}`}
+              className="group block focus-visible:outline-none"
+              aria-label={`${likes} likes, ${saves} saves`}
+            >
+              <figure className="relative aspect-square">
+                {short.imageUrl.startsWith("data:") || short.imageUrl.startsWith("blob:") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={short.imageUrl} alt="" className="size-full object-cover" />
+                ) : short.imageUrl ? (
+                  <Image src={short.imageUrl} alt="" fill className="object-cover" sizes="144px" />
+                ) : (
+                  <video src={short.videoUrl} muted playsInline className="size-full object-cover" />
+                )}
+                <span
+                  className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                  aria-hidden
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Heart className="size-4 fill-current" />
+                    {likes}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Bookmark className="size-4 fill-current" />
+                    {saves}
+                  </span>
+                </span>
+                <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                  Short
+                </figcaption>
+              </figure>
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }

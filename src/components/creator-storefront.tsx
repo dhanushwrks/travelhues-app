@@ -70,7 +70,7 @@ export function CreatorStorefront({
         <TabButton label="Shorts" pressed={tab === "glimpses"} onClick={() => setTab("glimpses")} />
       </div>
       {grid.length === 0 ? (
-        <p className="px-5 pt-8 text-sm text-muted-foreground">
+        <p className="px-5 py-12 text-center text-sm text-muted-foreground">
           {tab === "glimpses" ? "No shorts yet." : "No posts yet."}
         </p>
       ) : (
