@@ -152,7 +152,7 @@ function Input({ name, label, type = "text" }: { name: string; label: string; ty
           type={password && visible ? "text" : type}
           required
           autoComplete={password ? "current-password" : "on"}
-          className={`w-full rounded-2xl border border-border bg-background px-4 py-3 ${password ? "pr-12" : ""}`}
+          className={`w-full rounded-2xl border border-border bg-background px-4 py-3 text-base ${password ? "pr-12" : ""}`}
         />
         {password ? (
           <button

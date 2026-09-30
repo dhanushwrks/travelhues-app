@@ -65,7 +65,7 @@ function SheetContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-3 right-3"
+                className="absolute top-3 right-3 bg-muted text-foreground hover:bg-muted/80 hover:text-foreground"
                 size="icon-sm"
               />
             }

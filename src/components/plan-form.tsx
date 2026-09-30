@@ -1,6 +1,23 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
@@ -90,6 +107,11 @@ export function PlanForm({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   const day = days[active] ?? days[0];
   const back = planId ? `${home}/${storyId}/plans/${planId}` : `${home}/${storyId}?tab=plans`;
 
@@ -137,13 +159,13 @@ export function PlanForm({
     setAdding(null);
   }
 
-  function moveBlock(index: number, direction: -1 | 1) {
-    const next = index + direction;
-    if (next < 0 || next >= day.blocks.length) return;
-    const blocks = [...day.blocks];
-    const [item] = blocks.splice(index, 1);
-    blocks.splice(next, 0, item);
-    updateDay(active, { ...day, blocks });
+  function onDragEnd(event: DragEndEvent) {
+    const { active: dragged, over } = event;
+    if (!over || dragged.id === over.id) return;
+    const from = day.blocks.findIndex((block) => block.id === dragged.id);
+    const to = day.blocks.findIndex((block) => block.id === over.id);
+    if (from < 0 || to < 0) return;
+    updateDay(active, { ...day, blocks: arrayMove(day.blocks, from, to) });
   }
 
   async function save(event: FormEvent) {
@@ -286,25 +308,31 @@ export function PlanForm({
         </button>
       ) : null}
       <div className="grid gap-3">
-        <span className="text-sm font-medium">Schedule</span>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium">Schedule</span>
+          {day.blocks.length > 1 ? (
+            <span className="text-xs text-muted-foreground">Drag to reorder</span>
+          ) : null}
+        </div>
         {day.blocks.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nothing on this day yet.</p>
         ) : (
-          <ul className="grid gap-3">
-            {day.blocks.map((block, index) => (
-              <li key={block.id}>
-                <BlockCard
-                  block={block}
-                  spots={spots}
-                  onRemove={() => updateDay(active, { ...day, blocks: day.blocks.filter((item) => item.id !== block.id) })}
-                  onUp={() => moveBlock(index, -1)}
-                  onDown={() => moveBlock(index, 1)}
-                  upDisabled={index === 0}
-                  downDisabled={index === day.blocks.length - 1}
-                />
-              </li>
-            ))}
-          </ul>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={day.blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
+              <ul className="grid gap-3">
+                {day.blocks.map((block) => (
+                  <SortableBlock
+                    key={block.id}
+                    block={block}
+                    spots={spots}
+                    onRemove={() =>
+                      updateDay(active, { ...day, blocks: day.blocks.filter((item) => item.id !== block.id) })
+                    }
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         )}
         {adding === "note" ? (
           <div className="grid gap-2 rounded-2xl bg-secondary p-3">
@@ -381,60 +409,95 @@ export function PlanForm({
   );
 }
 
-function BlockCard({
+function SortableBlock({
   block,
   spots,
   onRemove,
-  onUp,
-  onDown,
-  upDisabled,
-  downDisabled,
 }: {
   block: PlanBlock;
   spots: StorySpot[];
   onRemove: () => void;
-  onUp: () => void;
-  onDown: () => void;
-  upDisabled: boolean;
-  downDisabled: boolean;
 }) {
+  const [confirming, setConfirming] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
   const spot = block.kind === "stop" ? spots.find((item) => item.id === block.spotId) : null;
+  const kindLabel = block.kind === "note" ? "note" : "spot";
+
   return (
-    <article className="overflow-hidden rounded-2xl bg-secondary">
-      {spot?.images[0] ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={spot.images[0]} alt="" className="aspect-[16/9] w-full object-cover" />
-      ) : null}
-      <div className="grid gap-2 px-3 py-3 text-sm">
-        {block.kind === "note" ? (
-          <>
-            <p className="leading-6">{block.body}</p>
-            {block.minutes ? <p className="text-muted-foreground">{block.minutes}</p> : null}
-          </>
-        ) : (
-          <>
-            <p className="font-medium">{spot?.title ?? "Spot removed"}</p>
-            {spot ? (
-              <p className="text-muted-foreground">
-                {categoryName(spot.category)}
-                {spot.duration ? ` · ${spot.duration}` : ""}
-                {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
-              </p>
-            ) : null}
-          </>
-        )}
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <button type="button" aria-label="Move up" disabled={upDisabled} onClick={onUp} className="disabled:opacity-30">
-            <ChevronUp className="size-4" />
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={isDragging ? "z-10 opacity-90" : undefined}
+    >
+      <article
+        className={`overflow-hidden rounded-2xl bg-secondary ${
+          isDragging ? "shadow-[0_12px_32px_rgba(18,35,42,0.16)] ring-2 ring-primary/25" : ""
+        }`}
+      >
+        {spot?.images[0] ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={spot.images[0]} alt="" className="aspect-[16/9] w-full object-cover" />
+        ) : null}
+        <div className="flex gap-2 px-2 py-3 text-sm">
+          <button
+            type="button"
+            aria-label="Drag to reorder"
+            disabled={confirming}
+            className="mt-0.5 touch-none self-start rounded-lg p-1.5 text-muted-foreground hover:bg-background/60 hover:text-foreground disabled:opacity-40"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="size-5" />
           </button>
-          <button type="button" aria-label="Move down" disabled={downDisabled} onClick={onDown} className="disabled:opacity-30">
-            <ChevronDown className="size-4" />
-          </button>
-          <button type="button" onClick={onRemove} className="ml-auto text-sm">
-            Remove
-          </button>
+          <div className="grid min-w-0 flex-1 gap-2 pr-1">
+            {block.kind === "note" ? (
+              <>
+                <p className="leading-6">{block.body}</p>
+                {block.minutes ? <p className="text-muted-foreground">{block.minutes}</p> : null}
+              </>
+            ) : (
+              <>
+                <p className="font-medium">{spot?.title ?? "Spot removed"}</p>
+                {spot ? (
+                  <p className="text-muted-foreground">
+                    {categoryName(spot.category)}
+                    {spot.duration ? ` · ${spot.duration}` : ""}
+                    {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
+                  </p>
+                ) : null}
+              </>
+            )}
+            {confirming ? (
+              <div className="grid gap-2 rounded-xl bg-background/70 px-3 py-2.5">
+                <p className="text-sm leading-5">Remove this {kindLabel} from the day?</p>
+                <div className="flex items-center gap-4">
+                  <button type="button" onClick={() => setConfirming(false)} className="text-sm text-muted-foreground">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirming(false);
+                      onRemove();
+                    }}
+                    className="text-sm font-medium text-primary"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="justify-self-start text-sm text-muted-foreground"
+              >
+                Remove
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </li>
   );
 }
