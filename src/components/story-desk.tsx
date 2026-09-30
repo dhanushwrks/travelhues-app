@@ -6,6 +6,7 @@ import { Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { PageLoader } from "@/components/loader";
+import { BackLink } from "@/components/back-link";
 import { countryFlag, countryName } from "@/lib/countries";
 import { blogExcerpt, categoryName, type StoryTab } from "@/lib/mock/studio";
 import { useDesk, useDeskHome } from "@/lib/studio-desk";
@@ -56,16 +57,12 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
     <div className="h-full overflow-y-auto pb-10">
       {trip ? (
         <div className="relative flex items-center justify-center px-5 pt-6">
-          <Link href={home} aria-label="My trips" className="absolute left-5 grid size-10 place-items-center rounded-full text-sm font-medium">
-            ←
-          </Link>
+          <BackLink href={home} label="My trips" className="absolute left-5" />
           <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
         </div>
       ) : (
         <div className="flex items-center gap-3 px-5 pt-5">
-          <Link href={home} className="text-sm font-medium" aria-label="Studio">
-            ←
-          </Link>
+          <BackLink href={home} label="Studio" />
           <h1 className="min-w-0 flex-1 truncate text-lg font-medium">{story.title}</h1>
           <Link
             href={`${home}/${story.id}/edit`}

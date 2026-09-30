@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ConsentCheckbox, consentRequiredMessage } from "@/components/consent-checkbox";
 import { DateField } from "@/components/date-field";
 import { PageLoader } from "@/components/loader";
 import { HobbyChips, OnboardingScreen, onboardingInput } from "@/components/onboarding";
@@ -16,7 +17,7 @@ import {
 } from "@/components/profile-fields";
 import { apiBase } from "@/lib/api";
 import { saveSession, type AccountRole } from "@/lib/browser-session";
-import { platforms, type SocialLink } from "@/lib/profile";
+import { normalizeSocials, platforms, type SocialLink } from "@/lib/profile";
 
 export type InvitePrefill = {
   name: string;
@@ -37,13 +38,14 @@ export function InviteForm({ token, prefill }: { token: string; prefill: InviteP
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState(prefill?.name ?? "");
   const [country, setCountry] = useState(prefill?.country ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(prefill?.dateOfBirth ?? "");
   const [socials, setSocials] = useState<SocialLink[]>(
-    prefill?.socials.length ? prefill.socials : [{ platform: "instagram", url: "" }],
+    prefill?.socials.length ? normalizeSocials(prefill.socials) : [{ platform: "instagram", url: "" }],
   );
   const [handle, setHandle] = useState(prefill?.handle ?? "");
   const [headline, setHeadline] = useState("");
@@ -55,6 +57,7 @@ export function InviteForm({ token, prefill }: { token: string; prefill: InviteP
 
   function problem() {
     if (step === 0 && (!email.includes("@") || password.length < 6)) return "Add an email and a password of at least 6 characters";
+    if (step === 0 && !consent) return consentRequiredMessage;
     if (step === 1 && (handle.trim().length < 3 || !/^[a-z0-9]+(?:[_-][a-z0-9]+)*$/.test(handle.trim()))) {
       return "Use at least 3 letters, numbers, or single hyphens";
     }
@@ -99,6 +102,11 @@ export function InviteForm({ token, prefill }: { token: string; prefill: InviteP
   }
 
   async function submit() {
+    if (!consent) {
+      setError(consentRequiredMessage);
+      setStep(0);
+      return;
+    }
     setPending(true);
     setError("");
     try {
@@ -167,6 +175,13 @@ export function InviteForm({ token, prefill }: { token: string; prefill: InviteP
             placeholder="Password"
             autoComplete="new-password"
             aria-label="Password"
+          />
+          <ConsentCheckbox
+            checked={consent}
+            onChange={(checked) => {
+              setConsent(checked);
+              if (checked) setError("");
+            }}
           />
         </div>
       ),

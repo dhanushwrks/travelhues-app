@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
 
+import { BackLink } from "@/components/back-link";
 import { Loader } from "@/components/loader";
 
 export const onboardingInput =
@@ -52,9 +52,7 @@ export function OnboardingScreen({
         className="mx-auto h-12 w-fit"
       />
       <div className="mt-6 flex items-center gap-3">
-        <button type="button" onClick={onBack} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full">
-          <ChevronLeft className="size-5" />
-        </button>
+        <BackLink onClick={onBack} className="size-9" />
         <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#d5e3e6]" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
           <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
         </div>

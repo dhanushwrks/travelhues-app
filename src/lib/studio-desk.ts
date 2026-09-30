@@ -15,7 +15,7 @@ import {
   type StoryPlan,
   type StorySpot,
 } from "@/lib/mock/studio";
-import type { Spot, Story } from "@/lib/types";
+import { spotTypes, type Itinerary, type Spot, type Story } from "@/lib/types";
 
 const DeskHomeContext = createContext("/studio");
 
@@ -454,4 +454,65 @@ function tokenOrThrow() {
 
 function emit() {
   listeners.forEach((listener) => listener());
+}
+
+export function deskStoryAsPublic(
+  story: CreatorStory,
+  creator: { username: string; displayName: string },
+): Story {
+  return {
+    slug: story.id,
+    title: story.title,
+    summary: story.about,
+    coverUrl: story.coverUrl,
+    destination: {
+      name: story.title,
+      country: story.country,
+      lat: story.spots.find((spot) => spot.lat != null)?.lat ?? 0,
+      lng: story.spots.find((spot) => spot.lng != null)?.lng ?? 0,
+    },
+    creator: {
+      username: creator.username,
+      displayName: creator.displayName,
+      bio: "",
+      avatarUrl: "",
+    },
+    spots: story.spots.map(deskSpotAsPublic),
+    itineraries: story.plans.map(deskPlanAsPublic),
+  };
+}
+
+export function deskPlanAsPublic(plan: StoryPlan): Itinerary {
+  return {
+    slug: plan.id,
+    title: plan.title,
+    summary: plan.summary,
+    coverUrl: plan.images[0] ?? "",
+    days: plan.days.map((day) => ({
+      title: day.title,
+      blocks: day.blocks.map((block) => {
+        if (block.kind === "note") return { kind: "note" as const, body: block.body };
+        return { kind: "spot" as const, spotId: block.spotId, body: "" };
+      }),
+    })),
+    archived: plan.archived ?? false,
+  };
+}
+
+function deskSpotAsPublic(spot: StorySpot): Spot {
+  const type = spotTypes.includes(spot.category as Spot["type"]) ? (spot.category as Spot["type"]) : "sightseeing";
+  return {
+    id: spot.id,
+    type,
+    title: spot.title,
+    description: spot.summary,
+    images: spot.images,
+    lat: spot.lat ?? 0,
+    lng: spot.lng ?? 0,
+    address: spot.placeName,
+    avgMinutes: toMinutes(spot.duration),
+    avgCostThb: toCost(spot.cost),
+    tags: [spot.subcategory, spot.difficulty, spot.season, spot.ageGroup].filter(Boolean),
+    archived: spot.archived ?? false,
+  };
 }

@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-
 import { ArchiveAction } from "@/components/archive-action";
+import { BackLink } from "@/components/back-link";
 import { PageLoader } from "@/components/loader";
 import { useDesk, useDeskHome } from "@/lib/studio-desk";
 
@@ -27,9 +26,7 @@ export function SpotEdit({ storyId, spotId }: { storyId: string; spotId: string 
   if (!story || !spot) {
     return (
       <div className="px-5 pt-6">
-        <Link href={`${home}/${storyId}?tab=spots`} className="text-sm font-medium">
-          ←
-        </Link>
+        <BackLink href={`${home}/${storyId}?tab=spots`} />
         <p className="pt-6 text-sm text-muted-foreground">That spot is not in this story.</p>
       </div>
     );
@@ -38,9 +35,7 @@ export function SpotEdit({ storyId, spotId }: { storyId: string; spotId: string 
   return (
     <div className="grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href={back} className="text-sm font-medium" aria-label="Back">
-          ←
-        </Link>
+        <BackLink href={back} />
         <h1 className="truncate text-lg font-medium">Edit spot</h1>
       </div>
       <p className="text-sm text-muted-foreground">{spot.title}</p>

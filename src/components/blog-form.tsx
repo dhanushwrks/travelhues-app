@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { ArchiveAction } from "@/components/archive-action";
+import { BackLink } from "@/components/back-link";
 import { BlogEditor } from "@/components/blog-editor";
 import { compressImage } from "@/components/profile-fields";
 import { Loader, PageLoader } from "@/components/loader";
@@ -51,9 +51,7 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
   if (blogId && story && !existing) {
     return (
       <div className="px-5 pt-6">
-        <Link href={`${home}/${storyId}?tab=blogs`} className="text-sm font-medium">
-          ←
-        </Link>
+        <BackLink href={`${home}/${storyId}?tab=blogs`} />
         <p className="pt-6 text-sm text-muted-foreground">That blog is not in this story.</p>
       </div>
     );
@@ -87,9 +85,7 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
   return (
     <form onSubmit={save} className="grid h-full gap-4 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href={blogId ? `${home}/${storyId}/blogs/${blogId}` : `${home}/${storyId}?tab=blogs`} className="text-sm font-medium">
-          ←
-        </Link>
+        <BackLink href={blogId ? `${home}/${storyId}/blogs/${blogId}` : `${home}/${storyId}?tab=blogs`} />
         <h1 className="text-lg font-medium">{blogId ? "Edit blog" : "New blog"}</h1>
       </div>
       <label className="grid gap-1 text-sm">

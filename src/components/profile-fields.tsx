@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, CircleX, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { SocialIcon } from "@/components/social-links";
 import { apiBase } from "@/lib/api";
 import { countryFlag } from "@/lib/countries";
-import { platforms, type SocialLink } from "@/lib/profile";
+import {
+  platformIds,
+  platformPlaceholders,
+  platforms,
+  type PlatformId,
+  type SocialLink,
+} from "@/lib/profile";
 
 export type Country = { code: string; name: string };
 
@@ -255,7 +263,13 @@ export function SocialEditor({
   value: SocialLink[];
   onChange: (links: SocialLink[]) => void;
 }) {
-  const links = value.length > 0 ? value : [{ platform: "instagram", url: "" }];
+  const links =
+    value.length > 0
+      ? value.map((link) => ({
+          ...link,
+          platform: platformIds.has(link.platform) ? link.platform : "youtube",
+        }))
+      : [{ platform: "youtube", url: "" }];
 
   function update(index: number, patch: Partial<SocialLink>) {
     onChange(links.map((link, item) => (item === index ? { ...link, ...patch } : link)));
@@ -263,47 +277,131 @@ export function SocialEditor({
 
   return (
     <div className="grid gap-3">
-      {links.map((link, index) => (
-        <div key={index} className="grid gap-2">
-          <Field label={index === 0 ? "Social link" : "Another link"}>
-            <select
-              className={controlClass}
-              value={link.platform}
-              onChange={(event) => update(index, { platform: event.target.value })}
-            >
-              {platforms.map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <input
-            className={controlClass}
-            type="url"
-            placeholder="instagram.com/you"
-            value={link.url}
-            onChange={(event) => update(index, { url: event.target.value })}
-          />
-          {links.length > 1 ? (
+      <h3 className="text-base font-semibold">Social Links</h3>
+      {links.map((link, index) => {
+        const platform = (platformIds.has(link.platform) ? link.platform : "youtube") as PlatformId;
+        return (
+          <div key={index} className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-1 rounded-xl border border-border bg-background">
+              <PlatformPicker
+                value={platform}
+                onChange={(next) => update(index, { platform: next })}
+              />
+              <div className="relative min-w-0 flex-1 border-l border-border">
+                <input
+                  className="w-full rounded-r-xl bg-transparent py-3 pr-10 pl-3 text-sm outline-none"
+                  type="url"
+                  inputMode="url"
+                  placeholder={platformPlaceholders[platform]}
+                  value={link.url}
+                  aria-label={`${platforms.find(([id]) => id === platform)?.[1] ?? "Social"} URL`}
+                  onChange={(event) => update(index, { url: event.target.value })}
+                />
+                {link.url ? (
+                  <button
+                    type="button"
+                    aria-label="Clear URL"
+                    className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground"
+                    onClick={() => update(index, { url: "" })}
+                  >
+                    <CircleX className="size-4" strokeWidth={1.75} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
             <button
               type="button"
-              className="justify-self-start text-sm text-muted-foreground"
-              onClick={() => onChange(links.filter((_, item) => item !== index))}
+              aria-label="Remove social link"
+              className="shrink-0 p-1 text-foreground"
+              onClick={() => {
+                const next = links.filter((_, item) => item !== index);
+                onChange(next.length > 0 ? next : [{ platform: "youtube", url: "" }]);
+              }}
             >
-              Remove
+              <X className="size-5" strokeWidth={1.75} />
             </button>
-          ) : null}
-        </div>
-      ))}
-      {links.length < 6 ? (
+          </div>
+        );
+      })}
+      {links.length < platforms.length ? (
         <button
           type="button"
-          className="rounded-2xl border border-border px-4 py-3 text-sm"
-          onClick={() => onChange([...links, { platform: "instagram", url: "" }])}
+          className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-foreground"
+          onClick={() => onChange([...links, { platform: "youtube", url: "" }])}
         >
-          Add a link
+          + Add social link
         </button>
+      ) : null}
+    </div>
+  );
+}
+
+function PlatformPicker({
+  value,
+  onChange,
+}: {
+  value: PlatformId;
+  onChange: (platform: PlatformId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const label = platforms.find(([id]) => id === value)?.[1] ?? "Platform";
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: MouseEvent) {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="relative shrink-0">
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex h-full items-center gap-1.5 rounded-l-xl px-3 py-3 text-foreground"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <SocialIcon platform={value} />
+        <ChevronDown className="size-3.5 text-muted-foreground" strokeWidth={2} />
+      </button>
+      {open ? (
+        <ul
+          role="listbox"
+          aria-label="Social platforms"
+          className="absolute top-full left-0 z-20 mt-1 grid gap-0.5 rounded-xl border border-border bg-card p-1 shadow-lg"
+        >
+          {platforms.map(([id, name]) => (
+            <li key={id} role="option" aria-selected={id === value}>
+              <button
+                type="button"
+                title={name}
+                aria-label={name}
+                className={`grid size-9 place-items-center rounded-lg ${
+                  id === value ? "bg-secondary text-foreground" : "text-foreground hover:bg-secondary/70"
+                }`}
+                onClick={() => {
+                  onChange(id);
+                  setOpen(false);
+                }}
+              >
+                <SocialIcon platform={id} />
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
     </div>
   );

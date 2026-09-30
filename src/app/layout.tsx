@@ -38,6 +38,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const jar = await cookies();
   const role = jar.get("th_role")?.value === "tcc" ? "tcc" : "traveler";
+  const username = jar.get("th_username")?.value ?? "";
 
   return (
     <html
@@ -46,7 +47,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="h-dvh overflow-clip bg-background font-sans text-foreground">
         <PwaRegister />
-        <AppShell role={role}>{children}</AppShell>
+        <AppShell role={role} username={username}>
+          {children}
+        </AppShell>
       </body>
     </html>
   );

@@ -5,8 +5,9 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpDown, ChevronLeft, X } from "lucide-react";
+import { ArrowUpDown, X } from "lucide-react";
 
+import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
 import { apiBase, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
@@ -170,9 +171,7 @@ export function SearchScreen({
     <div ref={scroller} className="h-full overflow-y-auto pb-8">
       <header>
         <div className="relative flex items-center justify-center px-5 pt-6">
-          <Link href="/" aria-label="Explore" className="absolute left-5 grid size-10 place-items-center rounded-full">
-            <ChevronLeft className="size-5" />
-          </Link>
+          <BackLink href="/" label="Explore" className="absolute left-5" />
           <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
         </div>
         <div className="grid gap-3 px-5 pt-5">

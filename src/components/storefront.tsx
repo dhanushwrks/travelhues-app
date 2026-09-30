@@ -2,28 +2,31 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Bookmark, Heart, MapPin, Route, Share2, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 
+import { BackLink } from "@/components/back-link";
+import { ProfileMast } from "@/components/profile-mast";
+import { SocialLinks } from "@/components/social-links";
 import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Glimpse } from "@/lib/glimpse";
-import { blogExcerpt } from "@/lib/mock/studio";
+import { storyLikeCount, type Library } from "@/lib/marks";
 import type { Person } from "@/lib/profile";
-import { ProfileMast } from "@/components/profile-mast";
-import { SocialLinks } from "@/components/social-links";
-import { itineraryHref, blogHref, storyHref, type Story, type StoryBlog } from "@/lib/types";
+import { storyHref, type Story } from "@/lib/types";
 
 const worldCountries = 197;
 
 type Shelf = "posts" | "shorts" | "stories";
-type StoryPiece = "spots" | "plans" | "blogs";
 
 export function Storefront({
   person,
   shorts,
+  library,
 }: {
   person: Person;
   shorts: Glimpse[];
+  library: Library;
 }) {
   const [shelf, setShelf] = useState<Shelf>("stories");
   const traveled = [...new Set(person.countriesTraveled.map((code) => code.toUpperCase()))].filter((code) =>
@@ -33,12 +36,14 @@ export function Storefront({
   return (
     <div className="h-full overflow-y-auto pb-10">
       <header className="flex items-center gap-2 px-5 pt-5">
+        <BackLink href="/" />
         <Image src="/travelhues-mark.png" alt="" width={28} height={28} />
         <h1 className="text-lg font-medium">Storefront</h1>
       </header>
       <ProfileMast
         className="mx-4"
         name={person.displayName}
+        introVideoUrl={person.introVideoUrl}
         cover={person.coverUrl ? <UserPhoto src={mediaUrl(person.coverUrl)} className="absolute inset-0 size-full object-cover" /> : null}
         avatar={person.avatarUrl ? <UserPhoto src={mediaUrl(person.avatarUrl)} className="absolute inset-0 size-full object-cover" /> : null}
       />
@@ -81,15 +86,12 @@ export function Storefront({
         <p className="px-5 pt-8 text-sm text-muted-foreground">No posts yet.</p>
       ) : null}
       {shelf === "shorts" ? <ShortsGrid shorts={shorts} /> : null}
-      {shelf === "stories" ? <StoryShelf stories={person.stories} /> : null}
+      {shelf === "stories" ? <StoryShelf stories={person.stories} library={library} /> : null}
     </div>
   );
 }
 
-function StoryShelf({ stories }: { stories: Story[] }) {
-  const [open, setOpen] = useState(stories[0]?.slug ?? "");
-  const [section, setSection] = useState<Record<string, StoryPiece>>({});
-
+function StoryShelf({ stories, library }: { stories: Story[]; library: Library }) {
   if (stories.length === 0) {
     return <p className="px-5 pt-8 text-sm text-muted-foreground">No stories yet.</p>;
   }
@@ -97,14 +99,12 @@ function StoryShelf({ stories }: { stories: Story[] }) {
   return (
     <ul className="grid gap-6 px-5 pt-6 md:grid-cols-2">
       {stories.map((story) => {
-        const active = section[story.slug] ?? "spots";
-        const expanded = open === story.slug;
-        const spots = story.spots.filter((spot) => !spot.archived);
-        const plans = story.itineraries.filter((plan) => !plan.archived);
-        const blogs = (story.blogs ?? []).filter((blog) => !blog.archived);
+        const spots = story.spots.filter((spot) => !spot.archived).length;
+        const itineraries = story.itineraries.filter((plan) => !plan.archived).length;
+        const likes = storyLikeCount(library, story.slug);
         return (
           <li key={story.slug} className="overflow-hidden rounded-3xl bg-secondary">
-            <button type="button" className="block w-full text-left" onClick={() => setOpen(expanded ? "" : story.slug)}>
+            <Link href={storyHref(story)} className="block">
               <span className="relative block aspect-[16/9] bg-muted">
                 <Cover src={story.coverUrl} />
               </span>
@@ -114,100 +114,36 @@ function StoryShelf({ stories }: { stories: Story[] }) {
                   {countryFlag(story.destination.country)} {countryName(story.destination.country)}
                 </span>
               </span>
-            </button>
-            <div className="mt-3 flex border-t border-border">
-              <ShelfTab
-                label="Spots"
-                count={spots.length}
-                pressed={expanded && active === "spots"}
-                onClick={() => openSection(story.slug, "spots")}
-              />
-              <ShelfTab
-                label="Plans"
-                count={plans.length}
-                pressed={expanded && active === "plans"}
-                onClick={() => openSection(story.slug, "plans")}
-              />
-              <ShelfTab
-                label="Blogs"
-                count={blogs.length}
-                pressed={expanded && active === "blogs"}
-                onClick={() => openSection(story.slug, "blogs")}
-              />
-            </div>
-            {expanded ? (
-              <div className="px-4 py-4">
-                {active === "spots" ? <SpotList story={story} spots={spots} /> : null}
-                {active === "plans" ? <PlanList story={story} plans={plans} /> : null}
-                {active === "blogs" ? <BlogList story={story} blogs={blogs} /> : null}
-              </div>
-            ) : null}
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-4 text-sm text-muted-foreground">
+                <Count icon={MapPin} value={spots} label="spots" />
+                <Count icon={Route} value={itineraries} label="itineraries" />
+                <Count icon={Heart} value={likes} label="likes" />
+                <Count icon={Share2} value={0} label="shares" />
+                <Count icon={Bookmark} value={0} label="saves" />
+              </p>
+            </Link>
           </li>
         );
       })}
     </ul>
   );
-
-  function openSection(slug: string, next: StoryPiece) {
-    setOpen(slug);
-    setSection((current) => ({ ...current, [slug]: next }));
-  }
 }
 
-function SpotList({ story, spots }: { story: Story; spots: Story["spots"] }) {
-  if (spots.length === 0) return <Empty label="No spots in this story yet." />;
+function Count({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+}) {
   return (
-    <ul className="grid gap-3">
-      {spots.map((spot) => (
-        <li key={spot.id}>
-          <Link href={storyHref(story, spot.id)} className="flex items-center gap-3">
-            <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-muted">
-              <Cover src={spot.images[0] ?? ""} />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-medium">{spot.title}</span>
-              <span className="block truncate text-xs text-muted-foreground">{spot.address}</span>
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function PlanList({ story, plans }: { story: Story; plans: Story["itineraries"] }) {
-  if (plans.length === 0) return <Empty label="No plans in this story yet." />;
-  return (
-    <ul className="grid gap-3">
-      {plans.map((plan) => (
-        <li key={plan.slug}>
-          <Link href={itineraryHref(story, plan.slug)} className="block">
-            <span className="block text-sm font-medium">{plan.title}</span>
-            <span className="block text-xs text-muted-foreground">
-              {plan.days.length} {plan.days.length === 1 ? "day" : "days"}
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function BlogList({ story, blogs }: { story: Story; blogs: StoryBlog[] }) {
-  if (blogs.length === 0) return <Empty label="No blogs in this story yet." />;
-  return (
-    <ul className="grid gap-3">
-      {blogs.map((blog) => (
-        <li key={blog.slug}>
-          <Link href={blogHref(story, blog.slug)} className="block">
-            <span className="block text-sm font-medium">{blog.title}</span>
-            <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
-              {blogExcerpt(blog.body, 100)}
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <span className="inline-flex items-center gap-1.5" aria-label={`${value} ${label}`}>
+      <Icon className="size-4 text-primary" aria-hidden />
+      <span className="font-medium text-foreground">{value}</span>
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }
 
@@ -256,10 +192,6 @@ function ShelfTab({
       <span className="ml-1 text-muted-foreground">{count}</span>
     </button>
   );
-}
-
-function Empty({ label }: { label: string }) {
-  return <p className="text-sm text-muted-foreground">{label}</p>;
 }
 
 function Cover({ src }: { src: string }) {

@@ -4,19 +4,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
-import { CreateMenu, GlimpseComposer, PostForm } from "@/components/storefront-create";
+import { mediaUrl } from "@/lib/api";
 import { postsServerSnapshot, postsSnapshot, storefrontBio, subscribeStudio } from "@/lib/mock/studio";
 import { useDesk } from "@/lib/studio-desk";
 
 export function CreatorStorefront({
   name,
   username,
+  avatarUrl = "",
 }: {
   name: string;
   username: string;
+  avatarUrl?: string;
 }) {
   const [tab, setTab] = useState<"posts" | "glimpses">("posts");
-  const [composer, setComposer] = useState<"post" | "glimpse" | null>(null);
   const posts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
   const { stories } = useDesk();
   const storyCount = stories.length;
@@ -25,27 +26,27 @@ export function CreatorStorefront({
   const glimpseCount = posts.filter((post) => post.kind === "glimpse").length;
   const postCount = posts.length - glimpseCount;
   const initial = (name || username || "T").slice(0, 1);
+  const avatar = mediaUrl(avatarUrl);
 
   return (
-    <div className="relative h-full">
     <div className="h-full overflow-y-auto pb-24">
       <header className="px-5 pt-6">
-        <div className="flex items-center justify-between gap-3">
-          <Image
-            src="/travelhues-logo.png"
-            alt="Travelhues"
-            width={374}
-            height={102}
-            priority
-            className="h-10 w-auto"
-          />
-          <Link href="/account" className="shrink-0 text-sm">
-            Settings
-          </Link>
-        </div>
+        <Image
+          src="/travelhues-logo.png"
+          alt="Travelhues"
+          width={374}
+          height={102}
+          priority
+          className="h-10 w-auto"
+        />
         <div className="mt-5 flex items-center gap-4">
-          <span className="grid size-20 shrink-0 place-items-center rounded-full bg-secondary font-display text-3xl">
-            {initial}
+          <span className="relative grid size-20 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary font-display text-3xl">
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatar} alt="" className="absolute inset-0 size-full object-cover" />
+            ) : (
+              initial
+            )}
           </span>
           <dl className="grid flex-1 grid-cols-3 text-center">
             <Count value={postCount} label="Posts" />
@@ -94,30 +95,6 @@ export function CreatorStorefront({
           ))}
         </ul>
       )}
-    </div>
-    {composer === "post" ? (
-      <div className="absolute inset-0 z-10 overflow-y-auto bg-card">
-        <PostForm
-          onClose={() => setComposer(null)}
-          onPosted={() => {
-            setTab("posts");
-            setComposer(null);
-          }}
-        />
-      </div>
-    ) : composer === "glimpse" ? (
-      <div className="absolute inset-0 z-10 overflow-y-auto bg-card">
-        <GlimpseComposer
-          onClose={() => setComposer(null)}
-          onPosted={() => {
-            setTab("glimpses");
-            setComposer(null);
-          }}
-        />
-      </div>
-    ) : (
-      <CreateMenu onChoose={setComposer} />
-    )}
     </div>
   );
 }

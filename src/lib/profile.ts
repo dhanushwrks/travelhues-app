@@ -16,19 +16,41 @@ export type Person = {
   socials: SocialLink[];
   avatarUrl: string;
   coverUrl: string;
+  /** TCC introduction clip (≤30s). Empty when unset. */
+  introVideoUrl?: string;
   role: "tcc" | "traveler";
   hidden: boolean;
   counts: { stories: number; spots: number; itineraries: number };
   stories: Story[];
   email?: string;
   dateOfBirth?: string;
+  hasPassword?: boolean;
+  canChangeUsername?: boolean;
 };
 
 export const platforms = [
+  ["youtube", "YouTube"],
   ["instagram", "Instagram"],
   ["facebook", "Facebook"],
-  ["youtube", "YouTube"],
-  ["x", "X"],
-  ["tiktok", "TikTok"],
+  ["linkedin", "LinkedIn"],
   ["website", "Website"],
 ] as const;
+
+export type PlatformId = (typeof platforms)[number][0];
+
+export const platformIds = new Set<string>(platforms.map(([id]) => id));
+
+export const platformPlaceholders: Record<PlatformId, string> = {
+  youtube: "youtube.com/@you",
+  instagram: "instagram.com/you",
+  facebook: "facebook.com/you",
+  linkedin: "linkedin.com/in/you",
+  website: "yoursite.com",
+};
+
+export function normalizeSocials(links: SocialLink[]): SocialLink[] {
+  return links.map((link) => ({
+    ...link,
+    platform: platformIds.has(link.platform) ? link.platform : "youtube",
+  }));
+}

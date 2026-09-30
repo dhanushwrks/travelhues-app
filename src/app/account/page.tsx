@@ -18,7 +18,7 @@ export default async function AccountPage() {
 
   return (
     <ProfileView person={person} editHref="/account/edit">
-      <AccountSettings hidden={person.hidden} />
+      <AccountSettings hidden={person.hidden} hasPassword={person.hasPassword !== false} />
     </ProfileView>
   );
 }

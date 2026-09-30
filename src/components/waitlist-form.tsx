@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ConsentCheckbox, consentRequiredMessage } from "@/components/consent-checkbox";
 import { DateField } from "@/components/date-field";
 import { PageLoader } from "@/components/loader";
 import { HobbyChips, OnboardingScreen, onboardingInput } from "@/components/onboarding";
@@ -18,6 +19,7 @@ export function WaitlistForm() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [name, setName] = useState("");
   const [country, setCountry] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -29,6 +31,7 @@ export function WaitlistForm() {
 
   function problem() {
     if (step === 0 && !name.trim()) return "Add your name";
+    if (step === 0 && !consent) return consentRequiredMessage;
     if (step === 1 && !country) return "Choose your country";
     if (step === 2 && !dateOfBirth) return "Add your date of birth";
     if (step === 3 && !socials.some((link) => webAddress(link.url))) return "Add a link we can open, like instagram.com/you";
@@ -72,6 +75,11 @@ export function WaitlistForm() {
   }
 
   async function submit() {
+    if (!consent) {
+      setError(consentRequiredMessage);
+      setStep(0);
+      return;
+    }
     setPending(true);
     try {
       const response = await fetch(`${apiBase}/waitlist`, {
@@ -114,14 +122,23 @@ export function WaitlistForm() {
       title: "Your name",
       lead: "This is the name travelers see on your page.",
       body: (
-        <input
-          className={onboardingInput}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Your name"
-          autoComplete="name"
-          aria-label="Name"
-        />
+        <div className="grid gap-3">
+          <input
+            className={onboardingInput}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Your name"
+            autoComplete="name"
+            aria-label="Name"
+          />
+          <ConsentCheckbox
+            checked={consent}
+            onChange={(checked) => {
+              setConsent(checked);
+              if (checked) setError("");
+            }}
+          />
+        </div>
       ),
     },
     {

@@ -3,12 +3,16 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ChevronLeft, MapPin, Pencil } from "lucide-react";
+import { MapPin, Pencil } from "lucide-react";
 
+import { BackLink } from "@/components/back-link";
+import { ItineraryView } from "@/components/itinerary-view";
 import { Loader, PageLoader } from "@/components/loader";
+import { readCookie } from "@/lib/browser-session";
 import { formatInr } from "@/lib/format";
+import { emptyLibrary } from "@/lib/marks";
 import { blogMarkup, categoryName, type StoryTab } from "@/lib/mock/studio";
-import { useDesk, useDeskHome } from "@/lib/studio-desk";
+import { deskPlanAsPublic, deskStoryAsPublic, useDesk, useDeskHome } from "@/lib/studio-desk";
 
 const PinMap = dynamic(() => import("@/components/maps").then((mod) => mod.PinMap), {
   ssr: false,
@@ -37,9 +41,7 @@ export function StudioItem({
   if (!story && status !== "ready") {
     return (
       <div className="px-5 pt-6">
-        <Link href={home} className="text-sm font-medium">
-          ←
-        </Link>
+        <BackLink href={home} />
         {status === "error" ? <p className="pt-6 text-sm text-primary">{problem}</p> : <PageLoader label="Loading the story" />}
       </div>
     );
@@ -117,67 +119,20 @@ export function StudioItem({
   if (tab === "plans") {
     const plan = story.plans.find((item) => item.id === itemId);
     if (!plan) return <Missing href={back} label="plan" />;
+    const username = readCookie("th_username") || "you";
+    const displayName = decodeURIComponent(readCookie("th_name") || "You");
+    const publicStory = deskStoryAsPublic(story, { username, displayName });
+    const itinerary = deskPlanAsPublic(plan);
     return (
-      <article className="h-full overflow-y-auto pb-10">
-        <ViewHeader href={back} editHref={`${home}/${story.id}/plans/${plan.id}/edit`} />
-        <Gallery images={plan.images} />
-        <div className="grid gap-3 px-5 pt-4">
-          <p className="text-sm text-muted-foreground">
-            {plan.days.length} {plan.days.length === 1 ? "day" : "days"}
-          </p>
-          <h2 className="font-display text-3xl">{plan.title}</h2>
-          <p className="text-[15px] leading-6">{plan.summary}</p>
-        </div>
-        <ol className="grid gap-6 px-5 pt-6">
-          {plan.days.map((day, index) => (
-            <li key={day.id}>
-              <p className="text-sm text-muted-foreground">Day {index + 1}</p>
-              <h3 className="mt-1 text-lg font-medium">{day.title || "Untitled day"}</h3>
-              {day.blocks.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">Nothing on this day.</p>
-              ) : (
-                <ul className="mt-3 grid gap-3">
-                  {day.blocks.map((block) => {
-                    if (block.kind === "note") {
-                      return (
-                        <li key={block.id} className="rounded-2xl bg-secondary px-3 py-3 text-sm leading-6">
-                          <p>{block.body}</p>
-                          {block.minutes ? <p className="mt-1 text-muted-foreground">{block.minutes}</p> : null}
-                        </li>
-                      );
-                    }
-                    const spot = story.spots.find((item) => item.id === block.spotId);
-                    if (!spot) {
-                      return (
-                        <li key={block.id} className="rounded-2xl bg-secondary px-3 py-3 text-sm text-muted-foreground">
-                          This spot is no longer in the story.
-                        </li>
-                      );
-                    }
-                    return (
-                      <li key={block.id}>
-                        <Link href={`${home}/${story.id}/spots/${spot.id}`} className="flex gap-3 rounded-2xl bg-secondary p-2">
-                          <span className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
-                            <Cover src={spot.images[0] ?? ""} />
-                          </span>
-                          <span className="min-w-0 py-1">
-                            <span className="block truncate text-sm font-medium">{spot.title}</span>
-                            <span className="mt-0.5 block text-sm text-muted-foreground">
-                              {categoryName(spot.category)}
-                              {spot.duration ? ` · ${spot.duration}` : ""}
-                              {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
-                            </span>
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ol>
-      </article>
+      <ItineraryView
+        story={publicStory}
+        itinerary={itinerary}
+        traveler={false}
+        library={emptyLibrary}
+        editHref={`${home}/${story.id}/plans/${plan.id}/edit`}
+        backHref={back}
+        backLabel={trip ? "Trip" : "Story"}
+      />
     );
   }
 
@@ -201,9 +156,7 @@ export function StudioItem({
 function ViewHeader({ href, editHref }: { href: string; editHref: string }) {
   return (
     <header className="relative flex items-center justify-center px-5 pt-6">
-      <Link href={href} aria-label="Back" className="absolute left-5 grid size-10 place-items-center rounded-full">
-        <ChevronLeft className="size-5" />
-      </Link>
+      <BackLink href={href} className="absolute left-5" />
       <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
       <Link
         href={editHref}
@@ -220,9 +173,7 @@ function ViewHeader({ href, editHref }: { href: string; editHref: string }) {
 function Missing({ href, label }: { href: string; label: string }) {
   return (
     <div className="px-5 pt-6">
-      <Link href={href} className="text-sm font-medium">
-        ←
-      </Link>
+      <BackLink href={href} />
       <p className="pt-6 text-sm text-muted-foreground">That {label} is not in this story.</p>
     </div>
   );

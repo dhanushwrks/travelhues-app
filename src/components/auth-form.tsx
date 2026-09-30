@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
+import { ConsentCheckbox, consentRequiredMessage } from "@/components/consent-checkbox";
 import { GoogleSignInButton } from "@/components/google-sign-in";
+import { BackLink } from "@/components/back-link";
 import { Loader } from "@/components/loader";
 import { apiBase } from "@/lib/api";
 import { saveSession, type AccountRole } from "@/lib/browser-session";
@@ -23,10 +25,15 @@ export function AuthForm({
   const router = useRouter();
   const [error, setError] = useState(notice);
   const [pending, setPending] = useState(false);
+  const [consent, setConsent] = useState(false);
   const creator = intent === "tcc";
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mode === "signup" && !consent) {
+      setError(consentRequiredMessage);
+      return;
+    }
     setPending(true);
     setError("");
     const form = new FormData(event.currentTarget);
@@ -82,9 +89,7 @@ export function AuthForm({
   return (
     <div className="flex w-full flex-col">
       <div className="relative flex items-center justify-center px-5 pt-6">
-        <Link href="/login" className="absolute left-5 text-sm font-medium" aria-label="Choose user or creator">
-          ←
-        </Link>
+        <BackLink href="/login" label="Choose user or creator" className="absolute left-5" />
         <Image
           src="/travelhues-logo.png"
           alt="Travelhues"
@@ -101,17 +106,39 @@ export function AuthForm({
       <p className="text-sm leading-6 text-muted-foreground">{lead}</p>
       {!creator && mode === "login" ? (
         <>
-          <GoogleSignInButton className="rounded-full border border-border bg-background px-4 py-3 text-sm font-medium" />
+          <ConsentCheckbox
+            id="google-legal-consent"
+            required={false}
+            checked={consent}
+            onChange={(checked) => {
+              setConsent(checked);
+              if (checked) setError("");
+            }}
+          />
+          <GoogleSignInButton
+            allowed={consent}
+            onBlocked={() => setError(consentRequiredMessage)}
+            className="rounded-full border border-border bg-background px-4 py-3 text-sm font-medium"
+          />
           <p className="text-center text-sm text-muted-foreground">or</p>
         </>
       ) : null}
       {mode === "signup" ? <Input name="displayName" label="Name" /> : null}
       <Input name="email" label="Email" type="email" />
       <Input name="password" label="Password" type="password" />
+      {mode === "signup" ? (
+        <ConsentCheckbox
+          checked={consent}
+          onChange={(checked) => {
+            setConsent(checked);
+            if (checked) setError("");
+          }}
+        />
+      ) : null}
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || (mode === "signup" && !consent)}
         className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
         {pending ? <Loader label={mode === "signup" ? "Creating account" : "Signing in"} /> : mode === "signup" ? "Create account" : "Sign in"}

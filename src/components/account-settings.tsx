@@ -7,9 +7,18 @@ import { apiBase, apiMessage } from "@/lib/api";
 import { clearSession, readCookie } from "@/lib/browser-session";
 import { Loader } from "@/components/loader";
 
-export function AccountSettings({ hidden, creator = true }: { hidden: boolean; creator?: boolean }) {
+export function AccountSettings({
+  hidden,
+  creator = true,
+  hasPassword = true,
+}: {
+  hidden: boolean;
+  creator?: boolean;
+  hasPassword?: boolean;
+}) {
   const router = useRouter();
   const [isHidden, setHidden] = useState(hidden);
+  const [passwordReady, setPasswordReady] = useState(hasPassword);
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,6 +29,9 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
   const [accountPending, setAccountPending] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+
+  const settingPassword = !passwordReady;
+  const passwordLabel = settingPassword ? "Set password" : "Change password";
 
   async function saveHidden(next: boolean) {
     setHidden(next);
@@ -46,7 +58,7 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
       setError("New password and confirmation do not match");
       return;
     }
-    if (password === currentPassword) {
+    if (!settingPassword && password === currentPassword) {
       setError("Choose a password that is different from the current one");
       return;
     }
@@ -63,7 +75,11 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
         "Content-Type": "application/json",
         Authorization: `Bearer ${readCookie("th_access")}`,
       },
-      body: JSON.stringify({ currentPassword, password, confirmPassword }),
+      body: JSON.stringify(
+        settingPassword
+          ? { password, confirmPassword }
+          : { currentPassword, password, confirmPassword },
+      ),
     });
     setSaving(false);
     if (!response.ok) {
@@ -76,7 +92,9 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
     setConfirmPassword("");
     setChanging(false);
     setReviewing(false);
-    setNotice("Password updated");
+    setPasswordReady(true);
+    setNotice(settingPassword ? "Password set" : "Password updated");
+    router.refresh();
   }
 
   useEffect(() => {
@@ -132,27 +150,29 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
       ) : null}
       {changing ? (
         <form onSubmit={reviewPassword} className="grid gap-3">
+          {settingPassword ? null : (
+            <PasswordField
+              label="Current password"
+              value={currentPassword}
+              autoComplete="current-password"
+              onChange={setCurrentPassword}
+            />
+          )}
           <PasswordField
-            label="Current password"
-            value={currentPassword}
-            autoComplete="current-password"
-            onChange={setCurrentPassword}
-          />
-          <PasswordField
-            label="New password"
+            label={settingPassword ? "Password" : "New password"}
             value={password}
             autoComplete="new-password"
             onChange={setPassword}
           />
           <PasswordField
-            label="Confirm new password"
+            label={settingPassword ? "Confirm password" : "Confirm new password"}
             value={confirmPassword}
             autoComplete="new-password"
             onChange={setConfirmPassword}
           />
           <div className="flex gap-4">
             <button type="submit" className="text-sm font-medium">
-              Review change
+              {settingPassword ? "Review password" : "Review change"}
             </button>
             <button
               type="button"
@@ -171,11 +191,13 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
         </form>
       ) : (
         <button type="button" className="justify-self-start text-sm font-medium underline" onClick={() => setChanging(true)}>
-          Change password
+          {passwordLabel}
         </button>
       )}
       <p className="-mt-2 text-sm text-muted-foreground">
-        Asks for the current password, then confirms before it changes.
+        {settingPassword
+          ? "Add a password so you can also sign in with email."
+          : "Asks for the current password, then confirms before it changes."}
       </p>
       {reviewing ? (
         <div
@@ -194,10 +216,12 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
           >
             <div className="grid gap-1">
               <h4 id="password-confirm-title" className="font-display text-2xl">
-                Change password?
+                {settingPassword ? "Set password?" : "Change password?"}
               </h4>
               <p className="text-sm text-muted-foreground">
-                The new password replaces the current one. Use it the next time you sign in.
+                {settingPassword
+                  ? "You can keep using Google, and also sign in with email and this password."
+                  : "The new password replaces the current one. Use it the next time you sign in."}
               </p>
             </div>
             <div className="flex justify-end gap-3">
@@ -215,7 +239,11 @@ export function AccountSettings({ hidden, creator = true }: { hidden: boolean; c
                 disabled={saving}
                 onClick={() => void savePassword()}
               >
-                {saving ? <Loader label="Changing" className="size-4" /> : "Change password"}
+                {saving ? (
+                  <Loader label={settingPassword ? "Setting" : "Changing"} className="size-4" />
+                ) : (
+                  passwordLabel
+                )}
               </button>
             </div>
           </div>
@@ -373,7 +401,7 @@ function PasswordField({
         value={value}
         autoComplete={autoComplete}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none"
+        className="rounded-2xl border border-border bg-background px-4 py-3 text-base outline-none"
       />
     </label>
   );

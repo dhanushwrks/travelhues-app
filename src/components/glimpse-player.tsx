@@ -12,9 +12,11 @@ import { linkHref, type Glimpse } from "@/lib/glimpse";
 export function GlimpsePlayer({
   initial,
   startId,
+  traveler = true,
 }: {
   initial: Glimpse[];
   startId: string;
+  traveler?: boolean;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [glimpses, setGlimpses] = useState(initial);
@@ -73,6 +75,7 @@ export function GlimpsePlayer({
   }, [active, sound]);
 
   async function toggleLike(glimpse: Glimpse) {
+    if (!traveler) return;
     const response = await fetch(`${apiBase}/glimpses/${glimpse.id}/like`, {
       method: "POST",
       headers: { Authorization: `Bearer ${readCookie("th_access")}` },
@@ -87,6 +90,7 @@ export function GlimpsePlayer({
   }
 
   function toggleSave(id: string) {
+    if (!traveler) return;
     setSaved((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
       window.localStorage.setItem("th_saved_shorts", JSON.stringify(next));
@@ -188,14 +192,21 @@ export function GlimpsePlayer({
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
             <div className="absolute right-3 bottom-24 z-10 grid justify-items-center gap-4 text-center text-white md:bottom-6">
-              <RailButton
-                label={glimpse.liked ? "Unlike" : "Like"}
-                pressed={glimpse.liked}
-                count={glimpse.likes}
-                onClick={() => void toggleLike(glimpse)}
-              >
-                <Heart className={`size-7 ${glimpse.liked ? "fill-primary text-primary" : ""}`} />
-              </RailButton>
+              {traveler ? (
+                <RailButton
+                  label={glimpse.liked ? "Unlike" : "Like"}
+                  pressed={glimpse.liked}
+                  count={glimpse.likes}
+                  onClick={() => void toggleLike(glimpse)}
+                >
+                  <Heart className={`size-7 ${glimpse.liked ? "fill-primary text-primary" : ""}`} />
+                </RailButton>
+              ) : (
+                <div className="grid justify-items-center gap-0.5 text-xs drop-shadow" aria-label={`${glimpse.likes} likes`}>
+                  <Heart className="size-7" />
+                  <span>{glimpse.likes}</span>
+                </div>
+              )}
               <RailButton
                 label="Notes"
                 count={glimpse.comments.length}
@@ -206,13 +217,15 @@ export function GlimpsePlayer({
               <RailButton label="Share" onClick={() => void share(glimpse)}>
                 <Share2 className="size-7" />
               </RailButton>
-              <RailButton
-                label={saved.includes(glimpse.id) ? "Remove save" : "Save"}
-                pressed={saved.includes(glimpse.id)}
-                onClick={() => toggleSave(glimpse.id)}
-              >
-                <Bookmark className={`size-7 ${saved.includes(glimpse.id) ? "fill-current" : ""}`} />
-              </RailButton>
+              {traveler ? (
+                <RailButton
+                  label={saved.includes(glimpse.id) ? "Remove save" : "Save"}
+                  pressed={saved.includes(glimpse.id)}
+                  onClick={() => toggleSave(glimpse.id)}
+                >
+                  <Bookmark className={`size-7 ${saved.includes(glimpse.id) ? "fill-current" : ""}`} />
+                </RailButton>
+              ) : null}
             </div>
             <div className="pointer-events-none absolute inset-x-4 bottom-24 flex items-end gap-3 pr-16 text-white md:bottom-6">
               <Link

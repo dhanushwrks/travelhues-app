@@ -5,12 +5,24 @@ import { useState } from "react";
 import { Loader } from "@/components/loader";
 import { browserSupabase } from "@/lib/supabase";
 
-export function GoogleSignInButton({ className }: { className?: string }) {
+export function GoogleSignInButton({
+  className,
+  allowed = true,
+  onBlocked,
+}: {
+  className?: string;
+  allowed?: boolean;
+  onBlocked?: () => void;
+}) {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
   async function continueWithGoogle() {
     setError("");
+    if (!allowed) {
+      onBlocked?.();
+      return;
+    }
     setPending(true);
     const supabase = browserSupabase();
     if (!supabase) {

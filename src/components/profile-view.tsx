@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Link2 } from "lucide-react";
 
 import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Person } from "@/lib/profile";
 import { ProfileMast } from "@/components/profile-mast";
+import { ShareProfileButton } from "@/components/share-profile-button";
 import { SocialLinks } from "@/components/social-links";
 import { storyHref } from "@/lib/types";
 
@@ -39,6 +39,7 @@ export function ProfileView({
       <ProfileMast
         className="mx-4"
         name={person.displayName}
+        introVideoUrl={person.role === "tcc" ? person.introVideoUrl : undefined}
         cover={person.coverUrl ? <UserPhoto src={mediaUrl(person.coverUrl)} className="absolute inset-0 size-full object-cover" /> : null}
         avatar={person.avatarUrl ? <UserPhoto src={mediaUrl(person.avatarUrl)} className="absolute inset-0 size-full object-cover" /> : null}
       />
@@ -48,11 +49,7 @@ export function ProfileView({
             <h2 className="font-display text-3xl">Hey, {first}</h2>
             <p className="text-sm text-muted-foreground">@{person.username}</p>
           </div>
-          {person.role === "tcc" ? (
-            <Link href={`/u/${person.username}`} aria-label="Storefront" className="mt-1">
-              <Link2 className="size-5" />
-            </Link>
-          ) : null}
+          {person.role === "tcc" ? <ShareProfileButton username={person.username} /> : null}
         </div>
         <div className="mt-3 flex items-center justify-between text-sm">
           <p>

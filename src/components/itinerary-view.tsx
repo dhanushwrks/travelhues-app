@@ -33,12 +33,16 @@ export function ItineraryView({
   traveler,
   library,
   editHref,
+  backHref,
+  backLabel,
 }: {
   story: Story;
   itinerary: Itinerary;
   traveler: boolean;
   library: Library;
   editHref?: string;
+  backHref?: string;
+  backLabel?: string;
 }) {
   const [day, setDay] = useState<number | "overview">("overview");
   const [mode, setMode] = useState<"list" | "map">("list");
@@ -81,11 +85,11 @@ export function ItineraryView({
       <header className="shrink-0 bg-card">
         <div className="space-y-3 px-5 pt-4">
           <Link
-            href={storyHref(story)}
+            href={backHref ?? storyHref(story)}
             className="inline-flex h-11 items-center gap-1 text-sm font-medium text-primary"
           >
             <ChevronLeft className="size-4" />
-            {story.title}
+            {backLabel ?? story.title}
           </Link>
           <div>
             <div className="flex items-start justify-between gap-3">

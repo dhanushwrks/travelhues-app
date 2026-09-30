@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 
 import { ArchiveAction } from "@/components/archive-action";
+import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
 import { formatInr } from "@/lib/format";
 import { PictureTray } from "@/components/picture-tray";
@@ -118,9 +119,7 @@ export function PlanForm({
   if (planId && (!mounted || (!existing && !resume))) {
     return (
       <div className="px-5 pt-6">
-        <Link href={`${home}/${storyId}?tab=plans`} className="text-sm font-medium">
-          ←
-        </Link>
+        <BackLink href={`${home}/${storyId}?tab=plans`} />
         {status === "ready" ? (
           <p className="pt-6 text-sm text-muted-foreground">
             {trip ? "That itinerary is not in this trip." : "That plan is not in this story."}
@@ -213,9 +212,7 @@ export function PlanForm({
   return (
     <form onSubmit={save} className="grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href={back} className="text-sm font-medium" aria-label="Story">
-          ←
-        </Link>
+        <BackLink href={back} label="Story" />
         <h1 className="text-lg font-medium">
           {planId ? (trip ? "Edit itinerary" : "Edit plan") : trip ? "New itinerary" : "New plan"}
         </h1>

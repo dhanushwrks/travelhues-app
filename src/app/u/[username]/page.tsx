@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { Storefront } from "@/components/storefront";
-import { loadGlimpses, loadProfile } from "@/lib/remote";
+import { emptyLibrary } from "@/lib/marks";
+import { loadGlimpses, loadLibrary, loadProfile } from "@/lib/remote";
 import { requireSession } from "@/lib/session";
 
 export async function generateMetadata({
@@ -24,12 +25,13 @@ export default async function CreatorPage({
 }) {
   const { username } = await params;
   const session = await requireSession();
-  const [person, glimpses] = await Promise.all([
+  const [person, glimpses, library] = await Promise.all([
     loadProfile(session.token, username),
     loadGlimpses(session.token),
+    loadLibrary(session.token),
   ]);
   if (!person || person.role !== "tcc") notFound();
   const shorts = (glimpses ?? []).filter((item) => item.username === person.username);
 
-  return <Storefront person={person} shorts={shorts} />;
+  return <Storefront person={person} shorts={shorts} library={library ?? emptyLibrary} />;
 }

@@ -3,6 +3,7 @@
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
+import { BackLink } from "@/components/back-link";
 import { Loader } from "@/components/loader";
 import { savePost, type PostMedia } from "@/lib/mock/studio";
 
@@ -103,9 +104,7 @@ export function PostForm({ onClose, onPosted }: { onClose: () => void; onPosted:
 
   return (
     <form onSubmit={publish} className="grid gap-4 px-5 pt-5 pb-10">
-      <button type="button" onClick={onClose} className="w-fit text-sm font-medium">
-        ←
-      </button>
+      <BackLink onClick={onClose} />
       <h1 className="font-display text-3xl">New post</h1>
       <div className="grid gap-2">
         <p className="text-sm text-muted-foreground">1 to 5 photos or videos. Videos up to 60 seconds.</p>
@@ -220,9 +219,7 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
 
   return (
     <form onSubmit={publish} className="grid gap-4 px-5 pt-5 pb-10">
-      <button type="button" onClick={onClose} className="w-fit text-sm font-medium">
-        ←
-      </button>
+      <BackLink onClick={onClose} />
       <h1 className="font-display text-3xl">New short</h1>
       <p className="text-sm text-muted-foreground">One video, up to 60 seconds.</p>
       <label className="grid cursor-pointer gap-2 text-sm">

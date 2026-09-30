@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
+import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
 import { countryFlag } from "@/lib/countries";
 import { createDeskStory, updateDeskStory, useDesk, useDeskHome } from "@/lib/studio-desk";
@@ -124,9 +125,7 @@ export function StoryForm({
   if (editing && !existing && status !== "ready") {
     return (
       <div className="px-5 pt-6">
-        <Link href={home} className="text-sm font-medium">
-          ←
-        </Link>
+        <BackLink href={home} />
         {status === "error" ? (
           <p className="pt-6 text-sm text-primary">{problem}</p>
         ) : (
@@ -139,9 +138,7 @@ export function StoryForm({
   if (editing && !existing) {
     return (
       <div className="px-5 pt-6">
-        <Link href={home} className="text-sm font-medium">
-          ←
-        </Link>
+        <BackLink href={home} />
         <p className="pt-6 text-sm text-muted-foreground">
           {trip ? "That trip is not in your list." : "That story is not on this desk."}
         </p>
@@ -161,9 +158,7 @@ export function StoryForm({
   return (
     <form onSubmit={save} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href={back} className="text-sm font-medium" aria-label={trip ? "My trips" : "Studio"}>
-          ←
-        </Link>
+        <BackLink href={back} label={trip ? "My trips" : "Studio"} />
         <h1 className="text-lg font-medium">{heading}</h1>
       </div>
       {editing ? null : (

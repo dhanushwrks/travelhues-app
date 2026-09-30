@@ -31,6 +31,7 @@ export function MarkControls({
   const [error, setError] = useState("");
 
   async function toggle(action: "like" | "save") {
+    if (!traveler) return;
     setError("");
     const response = await fetch(`${apiBase}/marks`, {
       method: "POST",

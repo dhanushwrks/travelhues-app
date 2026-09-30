@@ -2,7 +2,14 @@ export const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://65.2.235.120.
 
 export function mediaUrl(path: string) {
   if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("blob:") ||
+    path.startsWith("data:")
+  ) {
+    return path;
+  }
   return `${apiBase}${path}`;
 }
 

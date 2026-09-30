@@ -61,7 +61,7 @@ export function TravelerProfile({ person, library }: { person: Person; library: 
           </span>
           <ChevronRight className="size-5 text-muted-foreground" />
         </Link>
-        <AccountSettings hidden={person.hidden} creator={false} />
+        <AccountSettings hidden={person.hidden} creator={false} hasPassword={person.hasPassword !== false} />
       </div>
     </div>
   );

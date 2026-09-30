@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { BackLink } from "@/components/back-link";
 import { PlaceCard, PlacePicker, PlaceSearch, blankPlace, nearbyPlaces, type ChosenPlace } from "@/components/maps";
 import { Loader } from "@/components/loader";
 import { PictureTray } from "@/components/picture-tray";
@@ -154,9 +155,7 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
     <form onSubmit={save} className="flex h-full min-h-0 flex-col md:mx-auto md:max-w-2xl">
       <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto px-5 pt-5 pb-6 contain-paint">
       <div className="flex items-center gap-3">
-        <Link href={back} className="text-sm font-medium" aria-label="Story">
-          ←
-        </Link>
+        <BackLink href={back} label="Story" />
         <h1 className="text-lg font-medium">New spot</h1>
       </div>
       <p className="text-sm leading-6">

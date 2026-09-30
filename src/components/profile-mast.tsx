@@ -1,9 +1,12 @@
+import { ProfileAvatar } from "@/components/profile-avatar";
+
 export function ProfileMast({
   name,
   cover,
   avatar,
   coverSlot,
   avatarSlot,
+  introVideoUrl,
   className = "",
 }: {
   name: string;
@@ -11,6 +14,7 @@ export function ProfileMast({
   avatar?: React.ReactNode;
   coverSlot?: React.ReactNode;
   avatarSlot?: React.ReactNode;
+  introVideoUrl?: string;
   className?: string;
 }) {
   return (
@@ -19,12 +23,7 @@ export function ProfileMast({
         {cover}
       </div>
       {coverSlot ? <div className="absolute top-3 right-3 z-20">{coverSlot}</div> : null}
-      <div className="absolute bottom-0 left-4 z-10 size-28">
-        <span className="relative grid size-full place-items-center overflow-hidden rounded-full border-[5px] border-card bg-secondary font-display text-3xl">
-          {avatar ?? name.slice(0, 1)}
-        </span>
-        {avatarSlot}
-      </div>
+      <ProfileAvatar name={name} avatar={avatar} introVideoUrl={introVideoUrl} avatarSlot={avatarSlot} />
     </div>
   );
 }

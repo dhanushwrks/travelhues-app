@@ -12,7 +12,6 @@ import {
   postsServerSnapshot,
   postsSnapshot,
   subscribeStudio,
-  togglePostLike,
   type MediaPost,
   type PostMedia,
 } from "@/lib/mock/studio";
@@ -28,7 +27,7 @@ export function PostView({ id, name }: { id: string; name: string }) {
     return (
       <div className="px-5 pt-8">
         <Link href="/storefront" className="text-sm font-medium">
-          Storefront
+          Home
         </Link>
         <p className="pt-6 text-sm text-muted-foreground">This post is gone.</p>
       </div>
@@ -72,22 +71,17 @@ export function PostView({ id, name }: { id: string; name: string }) {
       </section>
       <section className="flex min-h-0 flex-1 flex-col px-5 pt-4 pb-8 lg:overflow-y-auto lg:px-8 lg:pt-6">
         <Link href="/storefront" className="text-sm font-medium">
-          Storefront
+          Home
         </Link>
         <p className="mt-4 text-[15px] leading-6">{post.caption}</p>
         <div className="mt-4 flex items-center gap-2">
-          <button
-            type="button"
-            aria-pressed={board.liked}
-            onClick={() => togglePostLike(id)}
-            className={`inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium ${
-              board.liked ? "bg-primary text-primary-foreground" : "bg-secondary"
-            }`}
+          <span
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-medium"
+            aria-label={`${board.likes} likes`}
           >
-            <Heart className={`size-4 ${board.liked ? "fill-current" : ""}`} />
-            {board.liked ? "Liked" : "Like"}
+            <Heart className="size-4" />
             <span>{board.likes}</span>
-          </button>
+          </span>
           <span className="inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-medium">
             <MessageCircle className="size-4" />
             {board.comments.length}
