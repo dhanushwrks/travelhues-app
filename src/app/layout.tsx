@@ -3,6 +3,7 @@ import { Sora } from "next/font/google";
 import { cookies } from "next/headers";
 
 import { AppShell } from "@/components/app-shell";
+import { PwaRegister } from "@/components/pwa-register";
 import "./globals.css";
 
 const sora = Sora({
@@ -16,6 +17,15 @@ export const metadata: Metadata = {
     template: "%s · Travelhues",
   },
   description: "Stories, spots, and day-by-day itineraries.",
+  applicationName: "Travelhues",
+  appleWebApp: {
+    capable: true,
+    title: "Travelhues",
+    statusBarStyle: "default",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
@@ -34,6 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${sora.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background font-sans text-foreground">
+        <PwaRegister />
         <AppShell role={role}>{children}</AppShell>
       </body>
     </html>
