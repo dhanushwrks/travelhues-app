@@ -3,9 +3,9 @@
 import { MapPin } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { PlaceCard, PlacePicker, PlaceSearch, blankPlace, type ChosenPlace } from "@/components/maps";
+import { PlaceCard, PlacePicker, PlaceSearch, blankPlace, nearbyPlaces, type ChosenPlace } from "@/components/maps";
 import { PictureTray } from "@/components/picture-tray";
 import { fetchSpotCatalog, seedSpotCatalog, type SpotCatalogItem } from "@/lib/spot-catalog";
 import { createDeskSpot, useDesk } from "@/lib/studio-desk";
@@ -36,6 +36,8 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
   const [catalog, setCatalog] = useState<SpotCatalogItem[]>(seedSpotCatalog);
   const [placeName, setPlaceName] = useState("");
   const [placeCard, setPlaceCard] = useState<ChosenPlace | null>(null);
+  const [nearby, setNearby] = useState<ChosenPlace[]>([]);
+  const [looking, setLooking] = useState(false);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [images, setImages] = useState<string[]>([]);
@@ -49,6 +51,33 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const chosen = catalog.find((item) => item.slug === category);
+  const pinTicket = useRef(0);
+
+  function movePin(nextLat: number, nextLng: number) {
+    const ticket = ++pinTicket.current;
+    setLat(nextLat);
+    setLng(nextLng);
+    setNearby([]);
+    setLooking(true);
+    setPlaceCard(blankPlace({ name: "Pinned place", lat: nextLat, lng: nextLng }));
+    void nearbyPlaces(nextLat, nextLng)
+      .then((found) => {
+        if (ticket === pinTicket.current) setNearby(found);
+      })
+      .catch(() => {
+        if (ticket === pinTicket.current) setNearby([]);
+      })
+      .finally(() => {
+        if (ticket === pinTicket.current) setLooking(false);
+      });
+  }
+
+  function acceptNearby(place: ChosenPlace) {
+    if (lat == null || lng == null) return;
+    setPlaceName(place.name);
+    setPlaceCard({ ...place, lat, lng });
+    setNearby([]);
+  }
 
   useEffect(() => {
     let active = true;
@@ -190,11 +219,14 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
       </div>
       <div className="grid gap-2 text-sm">
         <span className="font-medium">Where is it</span>
-        <span className="text-muted-foreground">Search for the place. The card under the map is the one travelers can trust.</span>
+        <span className="text-muted-foreground">Search, drop a pin, or locate. The pin stays on those coordinates, then asks if a nearby place is the one.</span>
         <PlaceSearch
           country={story?.country}
           center={center}
           onChoose={(place) => {
+            pinTicket.current += 1;
+            setLooking(false);
+            setNearby([]);
             setPlaceCard(place);
             setPlaceName(place.name);
             setLat(place.lat);
@@ -207,27 +239,44 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
             lng={lng}
             centerLat={center.lat}
             centerLng={center.lng}
-            onPick={(nextLat, nextLng) => {
-              setLat(nextLat);
-              setLng(nextLng);
-              setPlaceCard((current) =>
-                current && Math.abs(current.lat - nextLat) < 0.0002 && Math.abs(current.lng - nextLng) < 0.0002
-                  ? current
-                  : blankPlace({
-                      name: current?.name || "Pinned place",
-                      lat: nextLat,
-                      lng: nextLng,
-                    }),
-              );
-            }}
-            onNamed={(name) => {
-              setPlaceName((current) => current || name);
-              setPlaceCard((current) => (current && current.name !== "Pinned place" ? current : current ? { ...current, name } : current));
-            }}
+            onPick={movePin}
           />
+          {looking ? (
+            <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">Looking for a place at this pin</p>
+          ) : null}
+          {nearby[0] ? (
+            <div className="border-t border-border bg-card px-3 py-3">
+              <p className="text-sm">Is this {nearby[0].name}?</p>
+              {nearby[0].type || nearby[0].address ? (
+                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{[nearby[0].type, nearby[0].address].filter(Boolean).join(" · ")}</p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => acceptNearby(nearby[0])} className="rounded-full bg-primary px-3 py-1.5 text-sm text-primary-foreground">
+                  Yes, this place
+                </button>
+                <button type="button" onClick={() => setNearby([])} className="rounded-full border border-border px-3 py-1.5 text-sm">
+                  Just this pin
+                </button>
+              </div>
+              {nearby.length > 1 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {nearby.slice(1).map((place) => (
+                    <button
+                      key={place.placeId || `${place.name}-${place.lat}`}
+                      type="button"
+                      onClick={() => acceptNearby(place)}
+                      className="rounded-full bg-background px-3 py-1.5 text-sm"
+                    >
+                      {place.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {placeCard ? <PlaceCard place={placeCard} /> : (
             <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
-              The place card shows up here, with a photo, rating, and the address.
+              The place card shows up here, with a photo, a short description, and reviews.
             </p>
           )}
         </div>

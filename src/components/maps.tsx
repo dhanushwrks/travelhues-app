@@ -135,9 +135,14 @@ function quietMapOptions(options: google.maps.MapOptions): google.maps.MapOption
     renderingType: google.maps.RenderingType.RASTER,
     backgroundColor: "#efece6",
     clickableIcons: false,
+    keyboardShortcuts: false,
+    cameraControl: false,
     mapTypeControl: false,
     streetViewControl: false,
     fullscreenControl: false,
+    rotateControl: false,
+    scaleControl: false,
+    zoomControl: true,
     ...options,
   };
 }
@@ -253,6 +258,13 @@ export function RouteMap({
   return <div ref={containerRef} className="h-full min-h-40 w-full" />;
 }
 
+export type PlaceQuote = {
+  author: string;
+  rating: number | null;
+  text: string;
+  when: string;
+};
+
 export type ChosenPlace = {
   name: string;
   lat: number;
@@ -262,7 +274,10 @@ export type ChosenPlace = {
   ratingCount: number | null;
   type: string;
   summary: string;
+  reviewSummary: string;
+  reviews: PlaceQuote[];
   photoUrl: string;
+  placeId: string;
   source: "google" | "map";
 };
 
@@ -273,7 +288,10 @@ export function blankPlace(partial: Pick<ChosenPlace, "name" | "lat" | "lng"> & 
     ratingCount: null,
     type: "",
     summary: "",
+    reviewSummary: "",
+    reviews: [],
     photoUrl: "",
+    placeId: "",
     source: "map",
     ...partial,
   };
@@ -346,14 +364,107 @@ async function googlePlaces(text: string, country: string | undefined, center: {
     }));
 }
 
-async function nominatimName(lat: number, lng: number) {
-  const params = new URLSearchParams({ format: "jsonv2", lat: String(lat), lon: String(lng), zoom: "16" });
+function quotesFrom(place: google.maps.places.Place): PlaceQuote[] {
+  return (place.reviews ?? []).slice(0, 3).flatMap((review) => {
+    const text = review.text || review.originalText || "";
+    if (!text) return [];
+    return [
+      {
+        author: review.authorAttribution?.displayName || "Google reviewer",
+        rating: review.rating,
+        text,
+        when: review.relativePublishTimeDescription || "",
+      },
+    ];
+  });
+}
+
+function chosenFromGoogle(
+  place: google.maps.places.Place,
+  fallback: { name: string; lat: number; lng: number; address?: string; placeId?: string },
+): ChosenPlace | null {
+  const point = place.location;
+  const name = place.displayName || fallback.name;
+  if (!name) return null;
+  return {
+    name,
+    lat: point?.lat() ?? fallback.lat,
+    lng: point?.lng() ?? fallback.lng,
+    address: place.formattedAddress || fallback.address || "",
+    rating: place.rating ?? null,
+    ratingCount: place.userRatingCount ?? null,
+    type: place.primaryTypeDisplayName || "",
+    summary: place.editorialSummary || "",
+    reviewSummary: place.reviewSummary?.text || "",
+    reviews: quotesFrom(place),
+    photoUrl: place.photos?.[0]?.getURI({ maxWidth: 640 }) || "",
+    placeId: place.id || fallback.placeId || "",
+    source: "google",
+  };
+}
+
+async function withReviews(place: google.maps.places.Place, chosen: ChosenPlace) {
+  try {
+    await place.fetchFields({ fields: ["reviews", "reviewSummary"] });
+  } catch {
+    return chosen;
+  }
+  return {
+    ...chosen,
+    reviewSummary: place.reviewSummary?.text || chosen.reviewSummary,
+    reviews: quotesFrom(place),
+  };
+}
+
+async function nominatimAt(lat: number, lng: number) {
+  const params = new URLSearchParams({ format: "jsonv2", lat: String(lat), lon: String(lng), zoom: "18" });
   const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
     headers: { Accept: "application/json" },
   });
-  if (!response.ok) return "";
+  if (!response.ok) return null;
   const body = (await response.json()) as { name?: string; display_name?: string };
-  return body.name || body.display_name?.split(",")[0] || "";
+  const name = body.name || body.display_name?.split(",")[0] || "";
+  if (!name) return null;
+  return blankPlace({ name, lat, lng, address: body.display_name || "" });
+}
+
+export async function nearbyPlaces(lat: number, lng: number): Promise<ChosenPlace[]> {
+  if (!placesBlocked) {
+    try {
+      await loadPlaces();
+      const { places } = await google.maps.places.Place.searchNearby({
+        fields: [
+          "displayName",
+          "location",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "photos",
+          "primaryTypeDisplayName",
+          "editorialSummary",
+          "id",
+        ],
+        locationRestriction: { center: { lat, lng }, radius: 200 },
+        maxResultCount: 4,
+        rankPreference: "DISTANCE",
+      });
+      const found = places.flatMap((place) => {
+        const chosen = chosenFromGoogle(place, { name: "", lat, lng });
+        return chosen ? [{ place, chosen }] : [];
+      });
+      if (found[0]) found[0].chosen = await withReviews(found[0].place, found[0].chosen);
+      if (found.length > 0) return found.map((item) => item.chosen);
+    } catch (reason) {
+      const message = placeSearchError(reason);
+      if (message.startsWith("Place search is not enabled")) placesBlocked = true;
+    }
+  }
+  try {
+    const named = await nominatimAt(lat, lng);
+    return named ? [named] : [];
+  } catch {
+    return [];
+  }
 }
 
 export function PlaceSearch({
@@ -421,29 +532,27 @@ export function PlaceSearch({
             "photos",
             "primaryTypeDisplayName",
             "editorialSummary",
+            "id",
           ],
         });
         const point = place.location;
         if (!point) throw new Error("That place has no point on the map");
-        name = place.displayName || hit.title;
-        lat = point.lat();
-        lng = point.lng();
+        const picked = chosenFromGoogle(place, {
+          name: hit.title,
+          lat: point.lat(),
+          lng: point.lng(),
+          address: hit.detail,
+          placeId: hit.prediction.placeId,
+        });
+        if (!picked) throw new Error("That place has no name");
+        name = picked.name;
+        lat = picked.lat;
+        lng = picked.lng;
         chosen.current = name;
         setQuery(name);
         setSuggestions([]);
         setOpen(false);
-        onChooseRef.current({
-          name,
-          lat,
-          lng,
-          address: place.formattedAddress || hit.detail,
-          rating: place.rating ?? null,
-          ratingCount: place.userRatingCount ?? null,
-          type: place.primaryTypeDisplayName || "",
-          summary: place.editorialSummary || "",
-          photoUrl: place.photos?.[0]?.getURI({ maxWidth: 320 }) || "",
-          source: "google",
-        });
+        onChooseRef.current(await withReviews(place, picked));
         return;
       }
       if (lat == null || lng == null) throw new Error("That place has no point on the map");
@@ -523,20 +632,17 @@ export function PlacePicker({
   centerLat,
   centerLng,
   onPick,
-  onNamed,
 }: {
   lat: number | null;
   lng: number | null;
   centerLat: number;
   centerLng: number;
   onPick: (lat: number, lng: number) => void;
-  onNamed?: (name: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const onPickRef = useRef(onPick);
-  const onNamedRef = useRef(onNamed);
   const targetRef = useRef({ lat, lng });
   const [error, setError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
@@ -545,8 +651,7 @@ export function PlacePicker({
 
   useEffect(() => {
     onPickRef.current = onPick;
-    onNamedRef.current = onNamed;
-  }, [onPick, onNamed]);
+  }, [onPick]);
 
   function showPin(map: google.maps.Map, position: { lat: number; lng: number }, zoomIn: boolean) {
     if (!markerRef.current) {
@@ -618,11 +723,6 @@ export function PlacePicker({
         if (map) showPin(map, next, true);
         onPickRef.current(next.lat, next.lng);
         setLocating(false);
-        void nominatimName(next.lat, next.lng)
-          .then((label) => {
-            if (label) onNamedRef.current?.(label);
-          })
-          .catch(() => undefined);
       },
       () => {
         setLocating(false);
@@ -642,10 +742,10 @@ export function PlacePicker({
           type="button"
           onClick={locate}
           disabled={locating}
-          aria-label="Locate on the map"
-          className="absolute right-3 bottom-3 grid size-11 place-items-center rounded-full bg-background shadow-sm disabled:opacity-60"
+          className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-background px-3 py-2 text-sm shadow-sm disabled:opacity-60"
         >
-          <LocateFixed className="size-5" />
+          <LocateFixed className="size-4" />
+          {locating ? "Locating" : "Locate"}
         </button>
       </div>
       {error ? <p className="px-3 py-2 text-center text-xs text-primary">{error}</p> : null}
@@ -706,14 +806,89 @@ export function PinMap({
   return <div ref={containerRef} className="h-40 w-full" />;
 }
 
+function GooglePlaceDetails({ placeId, onFail }: { placeId: string; onFail: () => void }) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const onFailRef = useRef(onFail);
+  onFailRef.current = onFail;
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    let cancelled = false;
+    let timer = 0;
+
+    loadPlaces()
+      .then(() => {
+        if (cancelled) return;
+        const details = new google.maps.places.PlaceDetailsElement();
+        details.style.width = "100%";
+        details.style.maxHeight = "22rem";
+        details.style.overflow = "auto";
+        details.style.border = "none";
+        details.style.colorScheme = "light";
+        details.style.setProperty("--gmp-mat-color-surface", "#f4f7f6");
+        details.style.setProperty("--gmp-mat-color-on-surface", "#12232a");
+        details.style.setProperty("--gmp-mat-color-on-surface-variant", "#5c6570");
+        details.style.setProperty("--gmp-mat-color-primary", "#e12e2f");
+        details.style.setProperty("--gmp-mat-color-outline-decorative", "transparent");
+        details.style.setProperty("--gmp-mat-font-family", "inherit");
+
+        const request = new google.maps.places.PlaceDetailsPlaceRequestElement({ place: placeId });
+        const config = new google.maps.places.PlaceContentConfigElement();
+        const media = new google.maps.places.PlaceMediaElement();
+        media.lightboxPreferred = true;
+        config.append(
+          media,
+          new google.maps.places.PlaceRatingElement(),
+          new google.maps.places.PlaceTypeElement(),
+          new google.maps.places.PlaceSummaryElement(),
+          new google.maps.places.PlaceReviewSummaryElement(),
+          new google.maps.places.PlaceReviewsElement(),
+          new google.maps.places.PlaceAttributionElement(),
+        );
+        details.append(request, config);
+        timer = window.setTimeout(() => onFailRef.current(), 8000);
+        details.addEventListener("gmp-load", () => window.clearTimeout(timer));
+        details.addEventListener("gmp-error", () => {
+          window.clearTimeout(timer);
+          onFailRef.current();
+        });
+        host.replaceChildren(details);
+      })
+      .catch(() => {
+        if (!cancelled) onFailRef.current();
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      host.replaceChildren();
+    };
+  }, [placeId]);
+
+  return <div ref={hostRef} className="border-t border-border bg-card" />;
+}
+
 export function PlaceCard({ place }: { place: ChosenPlace }) {
+  const [widgetFailed, setWidgetFailed] = useState(false);
   const reviews =
     place.ratingCount != null
       ? `${place.ratingCount.toLocaleString()} ${place.ratingCount === 1 ? "review" : "reviews"}`
       : "";
+
+  useEffect(() => {
+    setWidgetFailed(false);
+  }, [place.placeId]);
+
+  if (place.placeId && !widgetFailed) {
+    return <GooglePlaceDetails placeId={place.placeId} onFail={() => setWidgetFailed(true)} />;
+  }
+
+  const rich = Boolean(place.reviewSummary || place.reviews.length);
+
   return (
-    <article className="flex gap-3 border-t border-border bg-card p-3">
-      <div className="relative size-[4.5rem] shrink-0 overflow-hidden rounded-2xl bg-[#efece6]">
+    <article className={rich ? "grid gap-3 border-t border-border bg-card p-3" : "flex gap-3 border-t border-border bg-card p-3"}>
+      <div className={rich ? "relative h-40 w-full overflow-hidden rounded-2xl bg-[#efece6]" : "relative size-[4.5rem] shrink-0 overflow-hidden rounded-2xl bg-[#efece6]"}>
         {place.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={place.photoUrl} alt="" className="size-full object-cover" />
@@ -739,6 +914,17 @@ export function PlaceCard({ place }: { place: ChosenPlace }) {
         ) : null}
         {place.type ? <p className="mt-0.5 text-sm text-muted-foreground">{place.type}</p> : null}
         {place.summary ? <p className="mt-1 line-clamp-2 text-sm leading-5">{place.summary}</p> : null}
+        {place.reviewSummary ? <p className="mt-1 line-clamp-3 text-sm leading-5">{place.reviewSummary}</p> : null}
+        {place.reviews.slice(0, 2).map((review) => (
+          <blockquote key={`${review.author}-${review.when}-${review.text.slice(0, 24)}`} className="mt-2 border-l-2 border-[#d5e3e6] pl-2">
+            <p className="line-clamp-3 text-sm leading-5">{review.text}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {review.author}
+              {review.rating != null ? ` · ${review.rating.toFixed(1)}` : ""}
+              {review.when ? ` · ${review.when}` : ""}
+            </p>
+          </blockquote>
+        ))}
         {place.address ? <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">{place.address}</p> : null}
         {place.source === "google" ? <p className="mt-1 text-[11px] text-muted-foreground">Google</p> : null}
       </div>
