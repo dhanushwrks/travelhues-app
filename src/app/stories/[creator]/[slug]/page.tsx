@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 
 import { StoryBrowser } from "@/components/story-browser";
+import { StoryHero } from "@/components/story-hero";
 import { emptyLibrary } from "@/lib/marks";
-import { loadLibrary, loadStory } from "@/lib/remote";
+import { loadGlimpses, loadLibrary, loadStory } from "@/lib/remote";
 import { requireSession } from "@/lib/session";
-import { storyHref, storyImages } from "@/lib/types";
+import { storyHref } from "@/lib/types";
 
 export async function generateMetadata({
   params,
@@ -32,9 +31,10 @@ export default async function StoryPage({
   const { creator, slug } = await params;
   const { spot = "", tab = "" } = await searchParams;
   const session = await requireSession();
-  const [story, library] = await Promise.all([
+  const [story, library, glimpses] = await Promise.all([
     loadStory(session.token, slug),
     loadLibrary(session.token),
+    loadGlimpses(session.token),
   ]);
   if (!story) notFound();
   if (story.creator.username !== creator) {
@@ -44,46 +44,22 @@ export default async function StoryPage({
     redirect(`${storyHref(story)}${extra.size ? `?${extra.toString()}` : ""}`);
   }
 
-  const images = storyImages(story);
+  const highlight =
+    (glimpses ?? []).find((item) => item.link?.storySlug === story.slug && item.videoUrl)?.videoUrl ?? "";
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="relative">
-        <div className="flex snap-x snap-mandatory overflow-x-auto">
-          {images.map((src) => (
-            <div
-              key={src}
-              className={`relative aspect-[4/5] shrink-0 snap-center bg-muted md:aspect-[16/8] md:max-h-[32rem] ${
-                images.length > 1 ? "w-[86%]" : "w-full"
-              }`}
-            >
-              <Image
-                src={src}
-                alt=""
-                fill
-                priority={src === images[0]}
-                className="object-cover"
-                sizes="(min-width: 768px) 72rem, 100vw"
-              />
-            </div>
-          ))}
-        </div>
-        <Link
-          href="/"
-          className="absolute top-4 left-4 inline-flex h-11 items-center gap-1 rounded-full bg-white/90 px-3 text-sm font-medium text-foreground"
-        >
-          <ChevronLeft className="size-4" />
-          Explore
-        </Link>
-      </div>
-      <div className="space-y-3 px-5 pt-5">
+      <StoryHero
+        cover={story.coverUrl}
+        videoUrl={highlight}
+        portrait={story.creator.avatarUrl}
+        name={story.creator.displayName}
+      />
+      <div className="space-y-3 px-5 pt-2">
         <h1 className="font-display text-4xl md:text-5xl">{story.title}</h1>
         <p className="text-[15px] leading-6">{story.summary}</p>
-        <Link href={`/u/${story.creator.username}`} className="inline-flex items-center gap-2 text-sm">
-          <span className="relative size-8 overflow-hidden rounded-full bg-muted">
-            <Image src={story.creator.avatarUrl} alt="" fill className="object-cover" sizes="32px" />
-          </span>
-          <span className="font-medium">{story.creator.displayName}</span>
+        <Link href={`/u/${story.creator.username}`} className="inline-flex text-sm font-medium">
+          {story.creator.displayName}
         </Link>
       </div>
       <StoryBrowser

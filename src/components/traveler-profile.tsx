@@ -3,7 +3,9 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { AccountSettings } from "@/components/account-settings";
+import { ProfileMast } from "@/components/profile-mast";
 import { mediaUrl } from "@/lib/api";
+import { countryFlag, countryName } from "@/lib/countries";
 import type { Library } from "@/lib/marks";
 import type { Person } from "@/lib/profile";
 
@@ -23,15 +25,29 @@ export function TravelerProfile({ person, library }: { person: Person; library: 
           Edit
         </Link>
       </header>
-      <div className="relative mt-4 h-40 bg-secondary md:h-56">
-        {cover ? <Photo src={cover} className="size-full object-cover" /> : null}
-        <span className="absolute bottom-4 left-5 z-10 grid size-24 place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary font-display text-3xl">
-          {avatar ? <Photo src={avatar} className="size-full object-cover" /> : person.displayName.slice(0, 1)}
-        </span>
-      </div>
-      <div className="px-5 pt-4">
-        <h2 className="mt-3 font-display text-3xl">Hey, {first}</h2>
+      <ProfileMast
+        className="mx-4"
+        name={person.displayName}
+        cover={cover ? <Photo src={cover} className="absolute inset-0 size-full object-cover" /> : null}
+        avatar={avatar ? <Photo src={avatar} className="absolute inset-0 size-full object-cover" /> : null}
+      />
+      <div className="px-5 pt-2">
+        <h2 className="font-display text-3xl">Hey, {first}</h2>
         <p className="text-sm text-muted-foreground">@{person.username}</p>
+        {person.country ? (
+          <p className="mt-2 text-sm">
+            {countryFlag(person.country)} {countryName(person.country)}
+          </p>
+        ) : null}
+        {person.hobbies.length > 0 ? (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {person.hobbies.map((hobby) => (
+              <li key={hobby} className="rounded-full bg-secondary px-3 py-1 text-sm">
+                {hobby}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <Link
           href="/account/saved"
           className="mt-6 flex items-center justify-between rounded-2xl bg-secondary px-4 py-4"

@@ -22,7 +22,7 @@ import {
   type PlanDraft,
   type StorySpot,
 } from "@/lib/mock/studio";
-import { createDeskPlan, updateDeskPlan, useDesk } from "@/lib/studio-desk";
+import { createDeskPlan, updateDeskPlan, useDesk, useDeskHome } from "@/lib/studio-desk";
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
 
@@ -36,6 +36,8 @@ export function PlanForm({
   resume?: boolean;
 }) {
   const router = useRouter();
+  const home = useDeskHome();
+  const trip = home === "/trips";
   const { stories, status } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const existing = planId ? story?.plans.find((item) => item.id === planId) : undefined;
@@ -88,18 +90,20 @@ export function PlanForm({
   useEffect(() => setMounted(true), []);
 
   const day = days[active] ?? days[0];
-  const back = planId ? `/studio/${storyId}/plans/${planId}` : `/studio/${storyId}?tab=plans`;
+  const back = planId ? `${home}/${storyId}/plans/${planId}` : `${home}/${storyId}?tab=plans`;
 
   if (planId && (!mounted || (!existing && !resume))) {
     return (
       <div className="px-5 pt-6">
-        <Link href={`/studio/${storyId}?tab=plans`} className="text-sm font-medium">
+        <Link href={`${home}/${storyId}?tab=plans`} className="text-sm font-medium">
           ←
         </Link>
         {status === "ready" ? (
-          <p className="pt-6 text-sm text-muted-foreground">That plan is not in this story.</p>
+          <p className="pt-6 text-sm text-muted-foreground">
+            {trip ? "That itinerary is not in this trip." : "That plan is not in this story."}
+          </p>
         ) : (
-          <PageLoader label="Loading the plan" />
+          <PageLoader label={trip ? "Loading the itinerary" : "Loading the plan"} />
         )}
       </div>
     );
@@ -175,11 +179,11 @@ export function PlanForm({
       };
       if (planId) await updateDeskPlan(storyId, planId, saved);
       else await createDeskPlan(storyId, saved);
-      router.push(planId ? `/studio/${storyId}/plans/${planId}` : `/studio/${storyId}?tab=plans`);
+      router.push(planId ? `${home}/${storyId}/plans/${planId}` : `${home}/${storyId}?tab=plans`);
       router.refresh();
     } catch (caught) {
       setSaving(false);
-      setError(caught instanceof Error ? caught.message : "Could not save the plan");
+      setError(caught instanceof Error ? caught.message : trip ? "Could not save the itinerary" : "Could not save the plan");
     }
   }
 
@@ -189,11 +193,22 @@ export function PlanForm({
         <Link href={back} className="text-sm font-medium" aria-label="Story">
           ←
         </Link>
-        <h1 className="text-lg font-medium">{planId ? "Edit plan" : "New plan"}</h1>
+        <h1 className="text-lg font-medium">
+          {planId ? (trip ? "Edit itinerary" : "Edit plan") : trip ? "New itinerary" : "New plan"}
+        </h1>
       </div>
       <p className="text-sm leading-6">
-        <span className="font-medium">What is a plan?</span> The days, in order. Each day has a title and a schedule:
-        a note, or a spot already in this story.
+        {trip ? (
+          <>
+            <span className="font-medium">What is an itinerary?</span> The days, in order. Each day has a title and a
+            schedule: a note, or a spot you already added to this trip.
+          </>
+        ) : (
+          <>
+            <span className="font-medium">What is a plan?</span> The days, in order. Each day has a title and a schedule:
+            a note, or a spot already in this story.
+          </>
+        )}
       </p>
       <PictureTray images={images} onChange={setImages} />
       <label className="grid gap-1 text-sm">
@@ -334,8 +349,8 @@ export function PlanForm({
             writePlanDraft(storyId, { title, summary, images, days, active });
             router.push(
               planId
-                ? `/studio/${storyId}/spots/new?from=plan&plan=${planId}`
-                : `/studio/${storyId}/spots/new?from=plan`,
+                ? `${home}/${storyId}/spots/new?from=plan&plan=${planId}`
+                : `${home}/${storyId}/spots/new?from=plan`,
             );
           }}
         />

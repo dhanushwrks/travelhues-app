@@ -7,7 +7,7 @@ import { useState } from "react";
 import { PageLoader } from "@/components/loader";
 import { countryFlag, countryName } from "@/lib/countries";
 import { blogExcerpt, categoryName, type StoryTab } from "@/lib/mock/studio";
-import { useDesk } from "@/lib/studio-desk";
+import { useDesk, useDeskHome } from "@/lib/studio-desk";
 
 const categoryOrder = ["stay", "food", "sightseeing", "activity", "shop"];
 const blogThumb = "/blog-thumb.svg";
@@ -19,6 +19,9 @@ const tabs: { id: StoryTab; label: string }[] = [
 ];
 
 export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab: StoryTab }) {
+  const home = useDeskHome();
+  const trip = home === "/trips";
+  const visibleTabs = trip ? tabs.filter((item) => item.id !== "blogs") : tabs;
   const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const [tab, setTab] = useState<StoryTab>(initialTab);
@@ -27,10 +30,10 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
   if (!story && status !== "ready") {
     return (
       <div className="px-5 pt-6">
-        <Link href="/studio" className="text-sm text-primary">
-          Studio
+        <Link href={home} className="text-sm text-primary">
+          {trip ? "My trips" : "Studio"}
         </Link>
-        {status === "error" ? <p className="pt-6 text-sm text-primary">{problem}</p> : <PageLoader label="Loading the story" />}
+        {status === "error" ? <p className="pt-6 text-sm text-primary">{problem}</p> : <PageLoader label={trip ? "Loading the trip" : "Loading the story"} />}
       </div>
     );
   }
@@ -38,10 +41,12 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
   if (!story) {
     return (
       <div className="px-5 pt-6">
-        <Link href="/studio" className="text-sm text-primary">
-          Studio
+        <Link href={home} className="text-sm text-primary">
+          {trip ? "My trips" : "Studio"}
         </Link>
-        <p className="pt-6 text-sm text-muted-foreground">That story is not on this desk.</p>
+        <p className="pt-6 text-sm text-muted-foreground">
+          {trip ? "That trip is not in your list." : "That story is not on this desk."}
+        </p>
       </div>
     );
   }
@@ -49,7 +54,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
   return (
     <div className="h-full overflow-y-auto pb-10">
       <div className="flex items-center gap-3 px-5 pt-5">
-        <Link href="/studio" className="text-sm font-medium" aria-label="Studio">
+        <Link href={home} className="text-sm font-medium" aria-label={trip ? "My trips" : "Studio"}>
           ←
         </Link>
         <h1 className="truncate text-lg font-medium">{story.title}</h1>
@@ -68,12 +73,25 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
         <p className="mt-3 text-[15px] leading-6">{story.about}</p>
         <dl className="mt-4 flex gap-6 text-sm">
           <Count value={story.spots.length} label={story.spots.length === 1 ? "spot" : "spots"} />
-          <Count value={story.plans.length} label={story.plans.length === 1 ? "plan" : "plans"} />
-          <Count value={story.blogs.length} label={story.blogs.length === 1 ? "blog" : "blogs"} />
+          <Count
+            value={story.plans.length}
+            label={
+              trip
+                ? story.plans.length === 1
+                  ? "itinerary"
+                  : "itineraries"
+                : story.plans.length === 1
+                  ? "plan"
+                  : "plans"
+            }
+          />
+          {trip ? null : (
+            <Count value={story.blogs.length} label={story.blogs.length === 1 ? "blog" : "blogs"} />
+          )}
         </dl>
       </div>
-      <div className="mt-5 grid grid-cols-3 border-b border-border">
-        {tabs.map((item) => (
+      <div className={`mt-5 grid border-b border-border ${visibleTabs.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+        {visibleTabs.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -83,7 +101,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
               tab === item.id ? "border-b-2 border-foreground text-foreground" : "text-muted-foreground"
             }`}
           >
-            {item.label}
+            {trip && item.id === "plans" ? "Itineraries" : item.label}
           </button>
         ))}
       </div>
@@ -103,13 +121,15 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
       <ul className="grid grid-cols-2 items-stretch gap-3 px-5 pt-4 lg:grid-cols-3">
         <li className="flex">
           <Link
-            href={`/studio/${story.id}/${tab}/new`}
+            href={`${home}/${story.id}/${tab}/new`}
             className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-dashed border-foreground/25"
           >
             <span className="grid aspect-[4/3] place-items-center px-4 text-center">
               <span>
-                <span className="block text-sm font-medium">{addLabel[tab]}</span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">{addHint[tab]}</span>
+                <span className="block text-sm font-medium">{trip && tab === "plans" ? "Add an itinerary" : addLabel[tab]}</span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                  {trip && tab === "plans" ? "The days, built from your spots." : addHint[tab]}
+                </span>
               </span>
             </span>
             <span className="block flex-1 px-3 py-3" aria-hidden>
@@ -123,7 +143,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
               .filter((spot) => spotFilter === "all" || spot.category === spotFilter)
               .map((spot) => (
               <li key={spot.id} className="flex">
-                <Link href={`/studio/${story.id}/spots/${spot.id}`} className="flex h-full w-full">
+                <Link href={`${home}/${story.id}/spots/${spot.id}`} className="flex h-full w-full">
                   <Card imageUrl={spot.images[0] ?? ""} title={spot.title} detail={spot.summary} archived={spot.archived} />
                 </Link>
               </li>
@@ -132,7 +152,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
         {tab === "plans"
           ? story.plans.map((plan) => (
               <li key={plan.id} className="flex">
-                <Link href={`/studio/${story.id}/plans/${plan.id}`} className="flex h-full w-full">
+                <Link href={`${home}/${story.id}/plans/${plan.id}`} className="flex h-full w-full">
                   <Card
                     imageUrl={plan.images[0] ?? story.coverUrl}
                     title={plan.title}
@@ -146,7 +166,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
         {tab === "blogs"
           ? story.blogs.map((blog) => (
               <li key={blog.id} className="flex">
-                <Link href={`/studio/${story.id}/blogs/${blog.id}`} className="flex h-full w-full">
+                <Link href={`${home}/${story.id}/blogs/${blog.id}`} className="flex h-full w-full">
                   <Card
                     imageUrl={blog.coverUrl || blogThumb}
                     title={blog.title}

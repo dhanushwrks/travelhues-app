@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader } from "@/components/loader";
+import { ProfileMast } from "@/components/profile-mast";
 import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,11 +12,9 @@ import {
   CountryMultiField,
   Field,
   HobbyField,
-  PhotoField,
   SocialEditor,
   compressImage,
   controlClass,
-  readImage,
   useCountries,
 } from "@/components/profile-fields";
 import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
@@ -99,35 +98,36 @@ export function EditProfileForm({ person }: { person: Person }) {
       </div>
       {creator ? (
         <>
-          <PhotoField
-            label="Profile photo"
-            preview={avatar}
-            onFile={(file) => {
-              readImage(file)
-                .then((value) => {
-                  setClearAvatar(false);
-                  setAvatarData(value);
-                  setAvatar(value);
-                })
-                .catch((caught: unknown) => {
-                  setError(caught instanceof Error ? caught.message : "Could not read that photo");
-                });
+          <UserPhotos
+            name={displayName}
+            lockUsername={false}
+            avatar={clearAvatar ? "" : avatar}
+            cover={clearCover ? "" : cover}
+            onAvatar={(value) => {
+              setError("");
+              if (!value) {
+                setAvatar("");
+                setAvatarData("");
+                setClearAvatar(true);
+                return;
+              }
+              setClearAvatar(false);
+              setAvatar(value);
+              setAvatarData(value);
             }}
-          />
-          <PhotoField
-            label="Cover photo"
-            preview={cover}
-            onFile={(file) => {
-              readImage(file)
-                .then((value) => {
-                  setClearCover(false);
-                  setCoverData(value);
-                  setCover(value);
-                })
-                .catch((caught: unknown) => {
-                  setError(caught instanceof Error ? caught.message : "Could not read that photo");
-                });
+            onCover={(value) => {
+              setError("");
+              if (!value) {
+                setCover("");
+                setCoverData("");
+                setClearCover(true);
+                return;
+              }
+              setClearCover(false);
+              setCover(value);
+              setCoverData(value);
             }}
+            onError={setError}
           />
           <Field label="Username" hint="Lowercase, used in your page address">
             <input className={controlClass} value={username} onChange={(event) => setUsername(event.target.value.toLowerCase())} required />
@@ -137,6 +137,7 @@ export function EditProfileForm({ person }: { person: Person }) {
         <UserPhotos
           name={displayName}
           username={person.username}
+          lockUsername
           avatar={clearAvatar ? "" : avatar}
           cover={clearCover ? "" : cover}
           onAvatar={(value) => {
@@ -175,6 +176,12 @@ export function EditProfileForm({ person }: { person: Person }) {
       <Field label="About">
         <textarea className={`${controlClass} min-h-32`} value={bio} onChange={(event) => setBio(event.target.value)} />
       </Field>
+      {creator ? null : (
+        <>
+          <CountryField countries={countries} label="Country" value={country} onChange={setCountry} />
+          <HobbyField value={hobbies} onChange={setHobbies} />
+        </>
+      )}
       {creator ? (
         <>
           <CountryField countries={countries} label="Country" value={country} onChange={setCountry} />
@@ -202,6 +209,7 @@ export function EditProfileForm({ person }: { person: Person }) {
 function UserPhotos({
   name,
   username,
+  lockUsername = false,
   avatar,
   cover,
   onAvatar,
@@ -209,7 +217,8 @@ function UserPhotos({
   onError,
 }: {
   name: string;
-  username: string;
+  username?: string;
+  lockUsername?: boolean;
   avatar: string;
   cover: string;
   onAvatar: (value: string) => void;
@@ -217,25 +226,24 @@ function UserPhotos({
   onError: (message: string) => void;
 }) {
   return (
-    <div className="-mx-5">
-      <div className="relative h-40 bg-secondary md:h-56">
-        {cover ? <img src={cover} alt="" className="size-full object-cover" /> : null}
-        <PhotoAction
-          label={cover ? "Edit cover photo" : "Add cover photo"}
-          hasPhoto={Boolean(cover)}
-          className="absolute right-4 bottom-3"
-          menuClass="right-0"
-          maxEdge={1600}
-          onPick={onCover}
-          onRemove={() => onCover("")}
-          onError={onError}
-        />
-      </div>
-      <div className="px-5">
-        <div className="relative -mt-12 size-24">
-          <span className="grid size-full place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary font-display text-3xl">
-            {avatar ? <img src={avatar} alt="" className="size-full object-cover" /> : name.slice(0, 1) || "?"}
-          </span>
+    <div className="-mx-4">
+      <ProfileMast
+        name={name || "?"}
+        cover={cover ? <img src={cover} alt="" className="absolute inset-0 size-full object-cover" /> : null}
+        avatar={avatar ? <img src={avatar} alt="" className="absolute inset-0 size-full object-cover" /> : null}
+        coverSlot={
+          <PhotoAction
+            label={cover ? "Edit cover photo" : "Add cover photo"}
+            hasPhoto={Boolean(cover)}
+            className="relative"
+            menuClass="right-0"
+            maxEdge={1600}
+            onPick={onCover}
+            onRemove={() => onCover("")}
+            onError={onError}
+          />
+        }
+        avatarSlot={
           <PhotoAction
             label={avatar ? "Edit profile photo" : "Add profile photo"}
             hasPhoto={Boolean(avatar)}
@@ -246,10 +254,14 @@ function UserPhotos({
             onRemove={() => onAvatar("")}
             onError={onError}
           />
+        }
+      />
+      {lockUsername ? (
+        <div className="px-4">
+          <p className="text-sm text-muted-foreground">@{username}</p>
+          <p className="text-sm text-muted-foreground">Username cannot be changed</p>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">@{username}</p>
-        <p className="text-sm text-muted-foreground">Username cannot be changed</p>
-      </div>
+      ) : null}
     </div>
   );
 }

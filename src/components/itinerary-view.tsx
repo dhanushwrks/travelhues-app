@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, List, Map } from "lucide-react";
 
 import { Loader } from "@/components/loader";
@@ -43,6 +43,9 @@ export function ItineraryView({
   const [day, setDay] = useState<number | "overview">("overview");
   const [mode, setMode] = useState<"list" | "map">("list");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const hideIntro = scrolled || mode === "map";
 
   const visibleDays = useMemo(
     () =>
@@ -75,51 +78,62 @@ export function ItineraryView({
 
   return (
     <div className="flex h-full flex-col">
-      <header className="space-y-3 px-5 pt-4">
-        <Link
-          href={storyHref(story)}
-          className="inline-flex h-11 items-center gap-1 text-sm font-medium text-primary"
-        >
-          <ChevronLeft className="size-4" />
-          {story.title}
-        </Link>
-        <div>
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="font-display text-3xl leading-tight">{itinerary.title}</h1>
-            {editHref ? (
-              <Link href={editHref} className="mt-1 shrink-0 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium">
-                Edit
+      <header className="shrink-0 bg-card">
+        <div className="space-y-3 px-5 pt-4">
+          <Link
+            href={storyHref(story)}
+            className="inline-flex h-11 items-center gap-1 text-sm font-medium text-primary"
+          >
+            <ChevronLeft className="size-4" />
+            {story.title}
+          </Link>
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="font-display text-3xl leading-tight">{itinerary.title}</h1>
+              {editHref ? (
+                <Link href={editHref} className="mt-1 shrink-0 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium">
+                  Edit
+                </Link>
+              ) : null}
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Itinerary by{" "}
+              <Link href={`/u/${story.creator.username}`} className="text-foreground">
+                {story.creator.displayName}
               </Link>
-            ) : null}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Itinerary by{" "}
-            <Link href={`/u/${story.creator.username}`} className="text-foreground">
-              {story.creator.displayName}
-            </Link>
-          </p>
-        </div>
-        <div>
-          <h2 className="text-sm font-medium">What you’ll do</h2>
-          <p className="mt-1 text-[15px] leading-6">{itinerary.summary}</p>
-          {budget.total > 0 ? (
-            <p className="mt-3 text-sm leading-6">
-              <span className="font-medium">Average budget </span>
-              <span className="text-muted-foreground">
-                {formatInr(budget.perDay)} a day, {formatInr(budget.total)} for the stops on this plan.
-              </span>
             </p>
-          ) : null}
+          </div>
+          <div
+            className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
+              hideIntro ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+            }`}
+          >
+            <div className="overflow-hidden" inert={hideIntro ? true : undefined}>
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-sm font-medium">What you’ll do</h2>
+                  <p className="mt-1 text-[15px] leading-6">{itinerary.summary}</p>
+                  {budget.total > 0 ? (
+                    <p className="mt-3 text-sm leading-6">
+                      <span className="font-medium">Average budget </span>
+                      <span className="text-muted-foreground">
+                        {formatInr(budget.perDay)} a day, {formatInr(budget.total)} for the stops on this plan.
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+                <MarkControls
+                  traveler={traveler}
+                  storySlug={story.slug}
+                  kind="itinerary"
+                  itinerarySlug={itinerary.slug}
+                  {...markState(library, "itinerary", story.slug, itinerary.slug)}
+                  icons
+                />
+              </div>
+            </div>
+          </div>
         </div>
-        <MarkControls
-          traveler={traveler}
-          storySlug={story.slug}
-          kind="itinerary"
-          itinerarySlug={itinerary.slug}
-          {...markState(library, "itinerary", story.slug, itinerary.slug)}
-          icons
-        />
-      </header>
       <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-2">
         <DayChip
           label="Overview"
@@ -154,8 +168,13 @@ export function ItineraryView({
           onClick={() => setMode("map")}
         />
       </div>
+      </header>
       <div className="grid min-h-0 flex-1 lg:grid-cols-2">
-        <div className={`min-h-0 overflow-y-auto px-5 pt-2 pb-8 ${mode === "map" ? "hidden lg:block" : ""}`}>
+        <div
+          ref={listRef}
+          onScroll={() => setScrolled((listRef.current?.scrollTop ?? 0) > 12)}
+          className={`min-h-0 overflow-y-auto px-5 pt-2 pb-8 ${mode === "map" ? "hidden lg:block" : ""}`}
+        >
           {timeline.map((section) => (
             <section key={section.key} className="mb-8">
               <h3 className="text-base font-medium">
@@ -203,7 +222,7 @@ export function ItineraryView({
             </section>
           ))}
         </div>
-        <div className={`h-full min-h-[24rem] overflow-hidden lg:border-l lg:border-border ${mode === "list" ? "hidden lg:block" : ""}`}>
+        <div className={`h-full min-h-0 overflow-hidden lg:border-l lg:border-border ${mode === "list" ? "hidden lg:block" : ""}`}>
           <RouteMap
             key={`${day}-${points.map((point) => point.id).join("-")}`}
             points={points}

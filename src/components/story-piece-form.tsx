@@ -9,7 +9,7 @@ import { Loader } from "@/components/loader";
 import { PlanForm } from "@/components/plan-form";
 import { SpotForm } from "@/components/spot-form";
 import { blogExcerpt, type StoryTab } from "@/lib/mock/studio";
-import { addDeskBlog, refreshDesk, useDesk } from "@/lib/studio-desk";
+import { addDeskBlog, refreshDesk, useDesk, useDeskHome } from "@/lib/studio-desk";
 
 const titles: Record<StoryTab, string> = {
   spots: "New spot",
@@ -29,6 +29,8 @@ export function StoryPieceForm({
   planId?: string;
 }) {
   const router = useRouter();
+  const home = useDeskHome();
+  const trip = home === "/trips";
   useDesk();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -43,8 +45,8 @@ export function StoryPieceForm({
         returnTo={
           fromPlan
             ? planId
-              ? `/studio/${storyId}/plans/${planId}/edit?resume=1`
-              : `/studio/${storyId}/plans/new`
+              ? `${home}/${storyId}/plans/${planId}/edit?resume=1`
+              : `${home}/${storyId}/plans/new`
             : undefined
         }
       />
@@ -71,14 +73,14 @@ export function StoryPieceForm({
       setError(caught instanceof Error ? caught.message : "Could not save the blog");
       return;
     }
-    router.push(`/studio/${storyId}?tab=${tab}`);
+    router.push(`${home}/${storyId}?tab=${tab}`);
     router.refresh();
   }
 
   return (
     <form onSubmit={save} className="grid h-full gap-4 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href={`/studio/${storyId}`} className="text-sm font-medium" aria-label="Story">
+        <Link href={`${home}/${storyId}`} className="text-sm font-medium" aria-label={trip ? "Trip" : "Story"}>
           ←
         </Link>
         <h1 className="text-lg font-medium">{titles[tab]}</h1>

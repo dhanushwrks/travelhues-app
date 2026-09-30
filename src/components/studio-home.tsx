@@ -5,33 +5,44 @@ import Link from "next/link";
 
 import { PageLoader } from "@/components/loader";
 import { countryFlag, countryName } from "@/lib/countries";
-import { useDesk } from "@/lib/studio-desk";
+import { useDesk, useDeskHome } from "@/lib/studio-desk";
 
-export function StudioHome() {
+export function StudioHome({
+  title = "Studio",
+  lead = "A story is one place. Spots, plans, and blogs live inside it.",
+  action = "New story",
+  empty = "No stories yet. Start with the place you know best.",
+  loading = "Loading your stories",
+}: {
+  title?: string;
+  lead?: string;
+  action?: string;
+  empty?: string;
+  loading?: string;
+}) {
+  const home = useDeskHome();
   const { stories, status, problem } = useDesk();
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-6 pb-10">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="font-display text-3xl">Studio</h1>
-        <Link href="/studio/new" className="text-sm font-medium text-primary">
-          New story
+        <h1 className="font-display text-3xl">{title}</h1>
+        <Link href={`${home}/new`} className="text-sm font-medium text-primary">
+          {action}
         </Link>
       </div>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        A story is one place. Spots, plans, and blogs live inside it.
-      </p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{lead}</p>
       {status === "error" ? (
         <p className="pt-8 text-sm text-primary">{problem}</p>
       ) : stories.length === 0 && status !== "ready" ? (
-        <PageLoader label="Loading your stories" />
+        <PageLoader label={loading} />
       ) : stories.length === 0 ? (
-        <p className="pt-8 text-sm text-muted-foreground">No stories yet. Start with the place you know best.</p>
+        <p className="pt-8 text-sm text-muted-foreground">{empty}</p>
       ) : (
         <ul className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {stories.map((story) => (
             <li key={story.id}>
-              <Link href={`/studio/${story.id}`} className="block">
+              <Link href={`${home}/${story.id}`} className="block">
                 <span className="relative block aspect-[16/9] overflow-hidden rounded-3xl bg-secondary">
                   <Cover src={story.coverUrl} />
                 </span>

@@ -9,7 +9,7 @@ import { PlaceCard, PlacePicker, PlaceSearch, blankPlace, nearbyPlaces, type Cho
 import { Loader } from "@/components/loader";
 import { PictureTray } from "@/components/picture-tray";
 import { fetchSpotCatalog, seedSpotCatalog, type SpotCatalogItem } from "@/lib/spot-catalog";
-import { createDeskSpot, useDesk } from "@/lib/studio-desk";
+import { createDeskSpot, useDesk, useDeskHome } from "@/lib/studio-desk";
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
 
@@ -24,7 +24,8 @@ const ages = ["All ages", "Families", "Adults"];
 
 export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: string }) {
   const router = useRouter();
-  const back = returnTo ?? `/studio/${storyId}?tab=spots`;
+  const home = useDeskHome();
+  const back = returnTo ?? `${home}/${storyId}?tab=spots`;
   const { stories } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const center = centers[story?.country ?? ""] ?? centers.IN;

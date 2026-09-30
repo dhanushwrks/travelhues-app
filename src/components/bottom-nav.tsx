@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, LayoutGrid, PenLine, UserRound } from "lucide-react";
+import { Compass, LayoutGrid, Luggage, PenLine, UserRound } from "lucide-react";
 
 const travelerItems = [
   {
@@ -16,6 +16,12 @@ const travelerItems = [
       path.startsWith("/shorts") ||
       path.startsWith("/glimpse") ||
       path.startsWith("/u/"),
+  },
+  {
+    href: "/trips",
+    label: "My trips",
+    icon: Luggage,
+    active: (path: string) => path === "/trips" || path.startsWith("/trips/"),
   },
   {
     href: "/account",
@@ -84,7 +90,7 @@ export function AppNav({
 
   return (
     <nav className="border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
-      <ul className="grid grid-cols-2">
+      <ul className={items.length > 2 ? "grid grid-cols-3" : "grid grid-cols-2"}>
         {items.map((item) => {
           const selected = item.active(pathname);
           const Icon = item.icon;

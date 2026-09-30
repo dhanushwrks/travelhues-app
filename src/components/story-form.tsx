@@ -6,10 +6,12 @@ import { useState, type FormEvent } from "react";
 
 import { Loader } from "@/components/loader";
 import { countryFlag } from "@/lib/countries";
-import { createDeskStory } from "@/lib/studio-desk";
+import { createDeskStory, useDeskHome } from "@/lib/studio-desk";
 
 export function StoryForm({ countries }: { countries: { code: string; name: string }[] }) {
   const router = useRouter();
+  const home = useDeskHome();
+  const trip = home === "/trips";
   const [country, setCountry] = useState(countries[0]?.code ?? "");
   const [title, setTitle] = useState("");
   const [about, setAbout] = useState("");
@@ -78,25 +80,34 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
         about: about.trim(),
         coverUrl,
       });
-      router.push(`/studio/${id}`);
+      router.push(`${home}/${id}`);
       router.refresh();
     } catch (caught) {
       setSaving(false);
-      setError(caught instanceof Error ? caught.message : "Could not save the story");
+      setError(caught instanceof Error ? caught.message : trip ? "Could not save the trip" : "Could not save the story");
     }
   }
 
   return (
     <form onSubmit={create} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/studio" className="text-sm font-medium" aria-label="Studio">
+        <Link href={home} className="text-sm font-medium" aria-label={trip ? "My trips" : "Studio"}>
           ←
         </Link>
-        <h1 className="text-lg font-medium">New story</h1>
+        <h1 className="text-lg font-medium">{trip ? "New trip" : "New story"}</h1>
       </div>
       <p className="text-sm leading-6">
-        <span className="font-medium">What is a story?</span> A story is one country you know well enough to share:
-        the places worth stopping, a plan for the days, and the notes you would send a friend.
+        {trip ? (
+          <>
+            <span className="font-medium">What is a trip?</span> A trip is one place you are planning. You add the
+            spots yourself, then build an itinerary from those spots.
+          </>
+        ) : (
+          <>
+            <span className="font-medium">What is a story?</span> A story is one country you know well enough to share:
+            the places worth stopping, a plan for the days, and the notes you would send a friend.
+          </>
+        )}
       </p>
       <label className="grid gap-1 text-sm">
         <span className="font-medium">Country</span>
@@ -114,11 +125,11 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
         </select>
       </label>
       <label className="grid gap-1 text-sm">
-        <span className="font-medium">Story title</span>
+        <span className="font-medium">{trip ? "Trip title" : "Story title"}</span>
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Title for your story"
+          placeholder={trip ? "Title for your trip" : "Title for your story"}
           className="rounded-2xl border border-border bg-background px-4 py-3"
         />
       </label>
@@ -140,17 +151,19 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
         accept="image/jpeg,image/png"
         onFile={(file) => void onCover(file)}
       />
-      <UploadWell
-        label="Highlight video"
-        hint="A short video of the story. MP4 or MOV, under 100 MB"
-        changeLabel="Change video"
-        video={videoUrl}
-        accept="video/mp4,video/quicktime"
-        onFile={(file) => void onVideo(file)}
-      />
+      {trip ? null : (
+        <UploadWell
+          label="Highlight video"
+          hint="A short video of the story. MP4 or MOV, under 100 MB"
+          changeLabel="Change video"
+          video={videoUrl}
+          accept="video/mp4,video/quicktime"
+          onFile={(file) => void onVideo(file)}
+        />
+      )}
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/studio" className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
+        <Link href={home} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
           Cancel
         </Link>
         <button
@@ -158,11 +171,13 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
           disabled={reading || saving}
           className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving || reading ? <Loader label={reading ? "Reading photo" : "Saving"} /> : "Create story"}
+          {saving || reading ? <Loader label={reading ? "Reading photo" : "Saving"} /> : trip ? "Create trip" : "Create story"}
         </button>
       </div>
       <p className="text-sm leading-6 text-muted-foreground">
-        After this, you can add spots, a plan, and blogs inside the story.
+        {trip
+          ? "After this, add spots, then build an itinerary from those spots."
+          : "After this, you can add spots, a plan, and blogs inside the story."}
       </p>
     </form>
   );

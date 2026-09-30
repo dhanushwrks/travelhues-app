@@ -5,6 +5,7 @@ import { Link2 } from "lucide-react";
 import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Person } from "@/lib/profile";
+import { ProfileMast } from "@/components/profile-mast";
 import { SocialLinks } from "@/components/social-links";
 import { storyHref } from "@/lib/types";
 
@@ -35,12 +36,14 @@ export function ProfileView({
           </Link>
         ) : null}
       </header>
-      <div className="relative mt-4 h-40 bg-secondary md:h-56">
-        {person.coverUrl ? <UserPhoto src={mediaUrl(person.coverUrl)} className="size-full object-cover" /> : null}
-        <Portrait src={person.avatarUrl} name={person.displayName} />
-      </div>
-      <div className="px-5 pt-4">
-        <div className="mt-3 flex items-start justify-between gap-3">
+      <ProfileMast
+        className="mx-4"
+        name={person.displayName}
+        cover={person.coverUrl ? <UserPhoto src={mediaUrl(person.coverUrl)} className="absolute inset-0 size-full object-cover" /> : null}
+        avatar={person.avatarUrl ? <UserPhoto src={mediaUrl(person.avatarUrl)} className="absolute inset-0 size-full object-cover" /> : null}
+      />
+      <div className="px-5 pt-2">
+        <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-3xl">Hey, {first}</h2>
             <p className="text-sm text-muted-foreground">@{person.username}</p>
@@ -118,21 +121,6 @@ function Stat({ value, label }: { value: number; label: string }) {
       <dt className="font-display text-2xl">{value}</dt>
       <dd className="text-xs text-muted-foreground">{label}</dd>
     </div>
-  );
-}
-
-function Portrait({ src, name }: { src: string; name: string }) {
-  const url = mediaUrl(src);
-  return (
-    <span className="absolute bottom-4 left-5 z-10 grid size-24 place-items-center overflow-hidden rounded-full border-4 border-card bg-secondary font-display text-3xl">
-      {url.includes("images.unsplash.com") ? (
-        <Image src={url} alt="" fill className="object-cover" sizes="80px" />
-      ) : url ? (
-        <UserPhoto src={url} className="size-full object-cover" />
-      ) : (
-        name.slice(0, 1)
-      )}
-    </span>
   );
 }
 

@@ -1,20 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
+import { BookOpen, Heart, MapPin, Route, Share2, type LucideIcon } from "lucide-react";
 
-import { MarkControls } from "@/components/mark-controls";
 import { countryLabel } from "@/lib/countries";
-import { markState, type Library } from "@/lib/marks";
-import { itineraryHref, storyHref, type Story } from "@/lib/types";
+import { storyLikeCount, type Library } from "@/lib/marks";
+import { storyHref, type Story } from "@/lib/types";
 
-export function DestinationCard({
-  story,
-  traveler,
-  library,
-}: {
-  story: Story;
-  traveler: boolean;
-  library: Library;
-}) {
+export function DestinationCard({ story, library }: { story: Story; library: Library }) {
+  const blogs = story.blogs?.length ?? 0;
+  const likes = storyLikeCount(library, story.slug);
+
   return (
     <article className="overflow-hidden rounded-3xl bg-card ring-1 ring-border">
       <Link href={storyHref(story)} className="block">
@@ -33,33 +28,27 @@ export function DestinationCard({
             {countryLabel(story.destination.country)} · {story.creator.displayName}
           </span>
         </span>
-      </Link>
-      {story.itineraries.length > 0 ? (
-        <ul className="mt-3 divide-y divide-border px-4 pb-3">
-          {story.itineraries.map((itinerary) => {
-            const state = markState(library, "itinerary", story.slug, itinerary.slug);
-            return (
-              <li key={itinerary.slug} className="grid gap-2 py-3">
-                <Link href={itineraryHref(story, itinerary.slug)}>
-                  <span className="block text-base font-medium">{itinerary.title}</span>
-                  <span className="block text-sm text-muted-foreground">
-                    {itinerary.days.length} {itinerary.days.length === 1 ? "day" : "days"}
-                  </span>
-                </Link>
-                <MarkControls
-                  traveler={traveler}
-                  storySlug={story.slug}
-                  kind="itinerary"
-                  itinerarySlug={itinerary.slug}
-                  liked={state.liked}
-                  saved={state.saved}
-                  likes={state.likes}
-                />
-              </li>
-            );
-          })}
+        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2 px-4 pb-4 text-sm text-muted-foreground">
+          <Count icon={MapPin} value={story.spots.length} label={story.spots.length === 1 ? "spot" : "spots"} />
+          <Count
+            icon={Route}
+            value={story.itineraries.length}
+            label={story.itineraries.length === 1 ? "itinerary" : "itineraries"}
+          />
+          <Count icon={BookOpen} value={blogs} label={blogs === 1 ? "blog" : "blogs"} />
+          <Count icon={Heart} value={likes} label={likes === 1 ? "like" : "likes"} />
+          <Count icon={Share2} value={0} label="shares" />
         </ul>
-      ) : null}
+      </Link>
     </article>
+  );
+}
+
+function Count({ icon: Icon, value, label }: { icon: LucideIcon; value: number; label: string }) {
+  return (
+    <li className="inline-flex items-center gap-1.5" aria-label={`${value} ${label}`}>
+      <Icon className="size-4 text-primary" aria-hidden />
+      <span className="font-medium text-foreground">{value}</span>
+    </li>
   );
 }

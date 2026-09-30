@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Loader, PageLoader } from "@/components/loader";
 import { formatInr } from "@/lib/format";
 import { blogMarkup, categoryName, type StoryTab } from "@/lib/mock/studio";
-import { setDeskArchived, useDesk } from "@/lib/studio-desk";
+import { setDeskArchived, useDesk, useDeskHome } from "@/lib/studio-desk";
 
 const PinMap = dynamic(() => import("@/components/maps").then((mod) => mod.PinMap), {
   ssr: false,
@@ -29,14 +29,16 @@ export function StudioItem({
   tab: StoryTab;
   itemId: string;
 }) {
+  const home = useDeskHome();
+  const trip = home === "/trips";
   const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
-  const back = `/studio/${storyId}?tab=${tab}`;
+  const back = `${home}/${storyId}?tab=${tab}`;
 
   if (!story && status !== "ready") {
     return (
       <div className="px-5 pt-6">
-        <Link href="/studio" className="text-sm font-medium">
+        <Link href={home} className="text-sm font-medium">
           ←
         </Link>
         {status === "error" ? <p className="pt-6 text-sm text-primary">{problem}</p> : <PageLoader label="Loading the story" />}
@@ -44,7 +46,7 @@ export function StudioItem({
     );
   }
 
-  if (!story) return <Missing href="/studio" label="story" />;
+  if (!story) return <Missing href={home} label={trip ? "trip" : "story"} />;
 
   if (tab === "spots") {
     const spot = story.spots.find((item) => item.id === itemId);
@@ -130,7 +132,7 @@ export function StudioItem({
           kind="plans"
           itemId={plan.id}
           archived={plan.archived ?? false}
-          editHref={`/studio/${story.id}/plans/${plan.id}/edit`}
+          editHref={`${home}/${story.id}/plans/${plan.id}/edit`}
         />
         <Gallery images={plan.images} />
         <div className="grid gap-3 px-5 pt-4">
@@ -168,7 +170,7 @@ export function StudioItem({
                     }
                     return (
                       <li key={block.id}>
-                        <Link href={`/studio/${story.id}/spots/${spot.id}`} className="flex gap-3 rounded-2xl bg-secondary p-2">
+                        <Link href={`${home}/${story.id}/spots/${spot.id}`} className="flex gap-3 rounded-2xl bg-secondary p-2">
                           <span className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
                             <Cover src={spot.images[0] ?? ""} />
                           </span>

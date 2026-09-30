@@ -34,7 +34,6 @@ export default async function ExplorePage({
   const destinations = visibleStories
     .filter((story) => story.itineraries.length > 0)
     .sort((a, b) => b.itineraries.length - a.itineraries.length);
-  const traveler = session.role === "traveler";
   const marks = library ?? emptyLibrary;
   const first = session.displayName.split(" ")[0] || "there";
 
@@ -64,7 +63,7 @@ export default async function ExplorePage({
           </p>
         ) : (
           destinations.map((story) => (
-            <DestinationCard key={story.slug} story={story} traveler={traveler} library={marks} />
+            <DestinationCard key={story.slug} story={story} library={marks} />
           ))
         )}
       </section>

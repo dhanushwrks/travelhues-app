@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { createContext, createElement, useContext, useEffect, useSyncExternalStore, type ReactNode } from "react";
 
 import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
@@ -16,6 +16,16 @@ import {
   type StorySpot,
 } from "@/lib/mock/studio";
 import type { Spot, Story } from "@/lib/types";
+
+const DeskHomeContext = createContext("/studio");
+
+export function DeskScope({ home, children }: { home: string; children: ReactNode }) {
+  return createElement(DeskHomeContext.Provider, { value: home }, children);
+}
+
+export function useDeskHome() {
+  return useContext(DeskHomeContext);
+}
 
 const emptyStories: CreatorStory[] = [];
 const listeners = new Set<() => void>();

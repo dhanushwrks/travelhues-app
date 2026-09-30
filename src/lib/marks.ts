@@ -19,6 +19,16 @@ export function targetKey(kind: "itinerary" | "spot", storySlug: string, itinera
   return kind === "spot" ? `spot:${storySlug}:${spotId}` : `itinerary:${storySlug}:${itinerarySlug}`;
 }
 
+export function storyLikeCount(library: Library, slug: string) {
+  let total = 0;
+  for (const count of library.counts) {
+    if (count.key.startsWith(`spot:${slug}:`) || count.key.startsWith(`itinerary:${slug}:`)) {
+      total += count.likes;
+    }
+  }
+  return total;
+}
+
 export function markState(
   library: Library,
   kind: "itinerary" | "spot",
