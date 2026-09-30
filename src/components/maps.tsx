@@ -1,6 +1,8 @@
 "use client";
 
 import { LocateFixed, Search, Star } from "lucide-react";
+
+import { Loader } from "@/components/loader";
 import { useEffect, useRef, useState } from "react";
 
 const apiKey =
@@ -216,11 +218,11 @@ export function RouteMap({
             map,
             position: { lat: point.lat, lng: point.lng },
             title: point.label,
-            icon: circleIcon(14),
+            icon: circleIcon(16),
             label: {
               text: String(index + 1),
               color: "#ffffff",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: "600",
               fontFamily: "Sora, sans-serif",
             },
@@ -620,7 +622,11 @@ export function PlaceSearch({
           </li>
         </ul>
       ) : null}
-      {busy ? <p className="text-sm text-muted-foreground">Finding that place</p> : null}
+      {busy ? (
+        <p className="flex items-center text-sm text-muted-foreground">
+          <Loader label="Finding that place" />
+        </p>
+      ) : null}
       {error ? <p className="text-sm text-primary">{error}</p> : null}
     </div>
   );
@@ -744,7 +750,7 @@ export function PlacePicker({
           disabled={locating}
           className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-background px-3 py-2 text-sm shadow-sm disabled:opacity-60"
         >
-          <LocateFixed className="size-4" />
+          {locating ? <Loader className="size-4" /> : <LocateFixed className="size-4" />}
           {locating ? "Locating" : "Locate"}
         </button>
       </div>

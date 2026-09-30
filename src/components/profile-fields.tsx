@@ -38,7 +38,7 @@ export function Field({
 }) {
   return (
     <label className="grid gap-1.5 text-sm">
-      <span>{label}</span>
+      {label ? <span>{label}</span> : null}
       {children}
       {hint ? <span className="text-muted-foreground">{hint}</span> : null}
     </label>

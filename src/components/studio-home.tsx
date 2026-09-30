@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { PageLoader } from "@/components/loader";
 import { countryFlag, countryName } from "@/lib/countries";
 import { useDesk } from "@/lib/studio-desk";
 
@@ -23,7 +24,7 @@ export function StudioHome() {
       {status === "error" ? (
         <p className="pt-8 text-sm text-primary">{problem}</p>
       ) : stories.length === 0 && status !== "ready" ? (
-        <p className="pt-8 text-sm text-muted-foreground">Loading your stories</p>
+        <PageLoader label="Loading your stories" />
       ) : stories.length === 0 ? (
         <p className="pt-8 text-sm text-muted-foreground">No stories yet. Start with the place you know best.</p>
       ) : (

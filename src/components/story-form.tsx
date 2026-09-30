@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { Loader } from "@/components/loader";
 import { countryFlag } from "@/lib/countries";
 import { createDeskStory } from "@/lib/studio-desk";
 
@@ -155,9 +156,9 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
         <button
           type="submit"
           disabled={reading || saving}
-          className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving ? "Saving" : "Create story"}
+          {saving || reading ? <Loader label={reading ? "Reading photo" : "Saving"} /> : "Create story"}
         </button>
       </div>
       <p className="text-sm leading-6 text-muted-foreground">

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
 
+import { Loader } from "@/components/loader";
+import { formatInr } from "@/lib/format";
 import { PictureTray } from "@/components/picture-tray";
 import { SpotPicker } from "@/components/spot-picker";
 import {
@@ -295,9 +297,9 @@ export function PlanForm({ storyId }: { storyId: string }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving ? "Saving" : "Create plan"}
+          {saving ? <Loader label="Saving" /> : "Create plan"}
         </button>
       </div>
     </form>
@@ -341,7 +343,7 @@ function BlockCard({
               <p className="text-muted-foreground">
                 {categoryName(spot.category)}
                 {spot.duration ? ` · ${spot.duration}` : ""}
-                {spot.cost ? ` · ฿${spot.cost}` : ""}
+                {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
               </p>
             ) : null}
           </>

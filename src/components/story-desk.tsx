@@ -4,9 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import { PageLoader } from "@/components/loader";
 import { countryFlag, countryName } from "@/lib/countries";
-import { blogExcerpt, type StoryTab } from "@/lib/mock/studio";
+import { blogExcerpt, categoryName, type StoryTab } from "@/lib/mock/studio";
 import { useDesk } from "@/lib/studio-desk";
+
+const categoryOrder = ["stay", "food", "sightseeing", "activity", "shop"];
+const blogThumb = "/blog-thumb.svg";
 
 const tabs: { id: StoryTab; label: string }[] = [
   { id: "spots", label: "Spots" },
@@ -18,6 +22,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
   const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const [tab, setTab] = useState<StoryTab>(initialTab);
+  const [spotFilter, setSpotFilter] = useState("all");
 
   if (!story && status !== "ready") {
     return (
@@ -25,9 +30,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
         <Link href="/studio" className="text-sm text-primary">
           Studio
         </Link>
-        <p className="pt-6 text-sm text-muted-foreground">
-          {status === "error" ? problem : "Loading the story"}
-        </p>
+        {status === "error" ? <p className="pt-6 text-sm text-primary">{problem}</p> : <PageLoader label="Loading the story" />}
       </div>
     );
   }
@@ -84,22 +87,43 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
           </button>
         ))}
       </div>
-      <ul className="grid grid-cols-2 gap-3 px-5 pt-4 lg:grid-cols-3">
-        <li>
+      {tab === "spots" ? (
+        <div className="flex gap-2 overflow-x-auto px-5 pt-4">
+          <FilterChip label="All" pressed={spotFilter === "all"} onClick={() => setSpotFilter("all")} />
+          {spotCategories(story.spots).map((category) => (
+            <FilterChip
+              key={category}
+              label={categoryName(category)}
+              pressed={spotFilter === category}
+              onClick={() => setSpotFilter(category)}
+            />
+          ))}
+        </div>
+      ) : null}
+      <ul className="grid grid-cols-2 items-stretch gap-3 px-5 pt-4 lg:grid-cols-3">
+        <li className="flex">
           <Link
             href={`/studio/${story.id}/${tab}/new`}
-            className="grid min-h-40 place-items-center rounded-2xl border border-dashed border-foreground/25 px-3 text-center"
+            className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-dashed border-foreground/25"
           >
-            <span>
-              <span className="block text-sm font-medium">{addLabel[tab]}</span>
-              <span className="mt-1 block text-xs leading-5 text-muted-foreground">{addHint[tab]}</span>
+            <span className="grid aspect-[4/3] place-items-center px-4 text-center">
+              <span>
+                <span className="block text-sm font-medium">{addLabel[tab]}</span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">{addHint[tab]}</span>
+              </span>
+            </span>
+            <span className="block flex-1 px-3 py-3" aria-hidden>
+              <span className="block text-sm font-medium opacity-0">Title</span>
+              <span className="mt-1 block line-clamp-2 text-xs leading-5 opacity-0">Detail</span>
             </span>
           </Link>
         </li>
         {tab === "spots"
-          ? story.spots.map((spot) => (
-              <li key={spot.id}>
-                <Link href={`/studio/${story.id}/spots/${spot.id}`} className="block">
+          ? story.spots
+              .filter((spot) => spotFilter === "all" || spot.category === spotFilter)
+              .map((spot) => (
+              <li key={spot.id} className="flex">
+                <Link href={`/studio/${story.id}/spots/${spot.id}`} className="flex h-full w-full">
                   <Card imageUrl={spot.images[0] ?? ""} title={spot.title} detail={spot.summary} />
                 </Link>
               </li>
@@ -107,10 +131,10 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
           : null}
         {tab === "plans"
           ? story.plans.map((plan) => (
-              <li key={plan.id}>
-                <Link href={`/studio/${story.id}/plans/${plan.id}`} className="block">
+              <li key={plan.id} className="flex">
+                <Link href={`/studio/${story.id}/plans/${plan.id}`} className="flex h-full w-full">
                   <Card
-                    imageUrl={plan.images[0] ?? ""}
+                    imageUrl={plan.images[0] ?? story.coverUrl}
                     title={plan.title}
                     detail={`${plan.days.length} ${plan.days.length === 1 ? "day" : "days"}`}
                   />
@@ -120,13 +144,9 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
           : null}
         {tab === "blogs"
           ? story.blogs.map((blog) => (
-              <li key={blog.id}>
-                <Link
-                  href={`/studio/${story.id}/blogs/${blog.id}`}
-                  className="flex min-h-40 flex-col justify-end rounded-2xl bg-secondary px-3 py-4"
-                >
-                  <span className="text-sm font-medium">{blog.title}</span>
-                  <span className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">{blogExcerpt(blog.body)}</span>
+              <li key={blog.id} className="flex">
+                <Link href={`/studio/${story.id}/blogs/${blog.id}`} className="flex h-full w-full">
+                  <Card imageUrl={blog.coverUrl || blogThumb} title={blog.title} detail={blogExcerpt(blog.body)} />
                 </Link>
               </li>
             ))
@@ -157,13 +177,35 @@ function Count({ value, label }: { value: number; label: string }) {
   );
 }
 
+function spotCategories(spots: { category: string }[]) {
+  const present = new Set(spots.map((spot) => spot.category));
+  const known = categoryOrder.filter((category) => present.has(category));
+  const extra = [...present].filter((category) => !categoryOrder.includes(category)).sort();
+  return [...known, ...extra];
+}
+
+function FilterChip({ label, pressed, onClick }: { label: string; pressed: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={`h-9 shrink-0 rounded-full px-3.5 text-sm ${
+        pressed ? "bg-foreground text-background" : "bg-secondary text-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 function Card({ imageUrl, title, detail }: { imageUrl: string; title: string; detail: string }) {
   return (
-    <article className="overflow-hidden rounded-2xl bg-secondary">
+    <article className="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-secondary">
       <span className="relative block aspect-[4/3] bg-muted">
         <Cover src={imageUrl} />
       </span>
-      <span className="block px-3 py-3">
+      <span className="block flex-1 px-3 py-3">
         <span className="block text-sm font-medium">{title}</span>
         <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">{detail}</span>
       </span>

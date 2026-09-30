@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Loader } from "@/components/loader";
 import { Field, controlClass } from "@/components/profile-fields";
 import { apiBase, apiMessage } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
@@ -144,9 +145,9 @@ export function GlimpseForm({
       <button
         type="submit"
         disabled={pending || open.length === 0}
-        className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {pending ? "Please wait" : "Post glimpse"}
+        {pending ? <Loader label="Posting" /> : "Post glimpse"}
       </button>
     </form>
   );

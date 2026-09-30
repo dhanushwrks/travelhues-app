@@ -3,6 +3,7 @@
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
+import { Loader } from "@/components/loader";
 import { savePost, type PostMedia } from "@/lib/mock/studio";
 
 const maxItems = 5;
@@ -165,9 +166,9 @@ export function PostForm({ onClose, onPosted }: { onClose: () => void; onPosted:
       <button
         type="submit"
         disabled={reading}
-        className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        Post
+        {reading ? <Loader label="Preparing" /> : "Post"}
       </button>
     </form>
   );
@@ -254,9 +255,9 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
       <button
         type="submit"
         disabled={reading}
-        className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        Post
+        {reading ? <Loader label="Preparing" /> : "Post"}
       </button>
     </form>
   );

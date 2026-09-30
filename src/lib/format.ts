@@ -1,8 +1,8 @@
 import type { Spot, SpotType } from "@/lib/types";
 
-const baht = new Intl.NumberFormat("en-TH", {
+const rupee = new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "THB",
+  currency: "INR",
   maximumFractionDigits: 0,
 });
 
@@ -15,9 +15,13 @@ export function formatDuration(minutes: number, type: SpotType) {
   return `${hours} h ${rest} min`;
 }
 
+export function formatInr(amount: number) {
+  return rupee.format(Math.round(amount));
+}
+
 export function formatCost(amount: number, type: SpotType) {
   if (amount <= 0) return "Free";
-  const priced = `about ${baht.format(amount)}`;
+  const priced = `about ${formatInr(amount)}`;
   if (type === "stay") return `${priced} a night`;
   return priced;
 }

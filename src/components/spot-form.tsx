@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { PlaceCard, PlacePicker, PlaceSearch, blankPlace, nearbyPlaces, type ChosenPlace } from "@/components/maps";
+import { Loader } from "@/components/loader";
 import { PictureTray } from "@/components/picture-tray";
 import { fetchSpotCatalog, seedSpotCatalog, type SpotCatalogItem } from "@/lib/spot-catalog";
 import { createDeskSpot, useDesk } from "@/lib/studio-desk";
@@ -242,7 +243,9 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
             onPick={movePin}
           />
           {looking ? (
-            <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">Looking for a place at this pin</p>
+            <p className="flex items-center border-t border-border px-4 py-3 text-sm text-muted-foreground">
+              <Loader label="Looking for a place at this pin" />
+            </p>
           ) : null}
           {nearby[0] ? (
             <div className="border-t border-border bg-card px-3 py-3">
@@ -305,7 +308,7 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
               inputMode="numeric"
               value={cost}
               onChange={(event) => setCost(event.target.value)}
-              placeholder="Baht"
+              placeholder="Rupees"
               className={field}
             />
           </label>
@@ -344,9 +347,9 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving ? "Saving" : "Create spot"}
+          {saving ? <Loader label="Saving" /> : "Create spot"}
         </button>
       </div>
     </form>

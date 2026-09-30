@@ -5,12 +5,18 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 
+import { Loader, PageLoader } from "@/components/loader";
+import { formatInr } from "@/lib/format";
 import { blogMarkup, categoryName, type StoryTab } from "@/lib/mock/studio";
 import { useDesk } from "@/lib/studio-desk";
 
 const PinMap = dynamic(() => import("@/components/maps").then((mod) => mod.PinMap), {
   ssr: false,
-  loading: () => <div className="h-40 bg-muted" />,
+  loading: () => (
+    <div className="grid h-40 place-items-center bg-muted">
+      <Loader className="size-5 text-primary" />
+    </div>
+  ),
 });
 
 export function StudioItem({
@@ -32,9 +38,7 @@ export function StudioItem({
         <Link href="/studio" className="text-sm font-medium">
           ←
         </Link>
-        <p className="pt-6 text-sm text-muted-foreground">
-          {status === "error" ? problem : "Loading the story"}
-        </p>
+        {status === "error" ? <p className="pt-6 text-sm text-primary">{problem}</p> : <PageLoader label="Loading the story" />}
       </div>
     );
   }
@@ -46,7 +50,7 @@ export function StudioItem({
     if (!spot) return <Missing href={back} label="spot" />;
     const details = [
       spot.duration ? ["Duration", spot.duration] : null,
-      spot.cost ? ["Cost", `฿${spot.cost}`] : null,
+      spot.cost ? ["Cost", formatInr(Number(spot.cost))] : null,
       spot.difficulty ? ["Difficulty", spot.difficulty] : null,
       spot.season ? ["Season", spot.season] : null,
       spot.ageGroup ? ["Age group", spot.ageGroup] : null,
@@ -159,7 +163,7 @@ export function StudioItem({
                             <span className="mt-0.5 block text-sm text-muted-foreground">
                               {categoryName(spot.category)}
                               {spot.duration ? ` · ${spot.duration}` : ""}
-                              {spot.cost ? ` · ฿${spot.cost}` : ""}
+                              {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
                             </span>
                           </span>
                         </Link>
@@ -180,6 +184,9 @@ export function StudioItem({
   return (
     <article className="h-full overflow-y-auto pb-10">
       <ViewHeader href={back} title={blog.title} />
+      <div className="relative mx-5 mt-4 aspect-[4/3] overflow-hidden rounded-3xl bg-secondary">
+        <Cover src={blog.coverUrl || "/blog-thumb.svg"} />
+      </div>
       <h2 className="mt-4 px-5 font-display text-3xl">{blog.title}</h2>
       <div
         className="blog-view mt-4 px-5 text-[15px] leading-7"

@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { formatInr } from "@/lib/format";
 import { categoryName, type StorySpot } from "@/lib/mock/studio";
 
 const pageSize = 8;
@@ -113,7 +114,7 @@ export function SpotPicker({
                     <span className="mt-0.5 block text-muted-foreground">
                       {categoryName(spot.category)}
                       {spot.duration ? ` · ${spot.duration}` : ""}
-                      {spot.cost ? ` · ฿${spot.cost}` : ""}
+                      {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
                     </span>
                   </span>
                 </button>

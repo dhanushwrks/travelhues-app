@@ -175,10 +175,15 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
 
 export async function addDeskBlog(storyId: string, blog: StoryBlog) {
   const token = tokenOrThrow();
+  let coverUrl = blog.coverUrl ?? "";
+  if (coverUrl && !coverUrl.startsWith("http://") && !coverUrl.startsWith("https://")) {
+    coverUrl = await uploadImage(token, coverUrl);
+  }
   await send(token, `/stories/${storyId}/blogs`, {
     slug: slugify(blog.title, "blog"),
     title: blog.title,
     body: blog.body,
+    coverUrl,
   });
   await pull(token);
 }
@@ -258,6 +263,7 @@ function toDesk(story: Story): CreatorStory {
       id: blog.slug,
       title: blog.title,
       body: blog.body,
+      coverUrl: blog.coverUrl ? mediaUrl(blog.coverUrl) : "",
     })),
   };
 }

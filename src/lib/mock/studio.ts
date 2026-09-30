@@ -107,6 +107,7 @@ export type StoryBlog = {
   id: string;
   title: string;
   body: string;
+  coverUrl?: string;
 };
 
 const blogTags = /^(p|h2|strong|em|u|ul|ol|li|blockquote|a|br)$/i;

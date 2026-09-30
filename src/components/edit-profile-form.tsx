@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader } from "@/components/loader";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -148,8 +149,8 @@ export function EditProfileForm({ person }: { person: Person }) {
         <Link href="/account" className="rounded-2xl bg-foreground px-4 py-3 text-center text-sm text-background">
           Cancel
         </Link>
-        <button type="submit" disabled={pending} className="rounded-2xl bg-primary/15 px-4 py-3 text-sm disabled:opacity-60">
-          {pending ? "Please wait" : "Save changes"}
+        <button type="submit" disabled={pending} className="flex items-center justify-center rounded-2xl bg-primary/15 px-4 py-3 text-sm disabled:opacity-60">
+          {pending ? <Loader label="Saving" /> : "Save changes"}
         </button>
       </div>
     </form>

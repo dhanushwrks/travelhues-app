@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 
+import { Loader } from "@/components/loader";
 import { browserSupabase } from "@/lib/supabase";
 
 export function GoogleSignInButton({ className }: { className?: string }) {
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
 
   async function continueWithGoogle() {
     setError("");
+    setPending(true);
     const supabase = browserSupabase();
     if (!supabase) {
+      setPending(false);
       setError("Google sign-in is not configured");
       return;
     }
@@ -18,7 +22,10 @@ export function GoogleSignInButton({ className }: { className?: string }) {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (oauthError) setError(oauthError.message);
+    if (oauthError) {
+      setPending(false);
+      setError(oauthError.message);
+    }
   }
 
   return (
@@ -26,10 +33,10 @@ export function GoogleSignInButton({ className }: { className?: string }) {
       <button
         type="button"
         onClick={continueWithGoogle}
-        className={`flex items-center justify-center gap-2 ${className ?? ""}`}
+        disabled={pending}
+        className={`flex items-center justify-center gap-2 disabled:opacity-60 ${className ?? ""}`}
       >
-        <GoogleMark />
-        Continue with Google
+        {pending ? <Loader label="Opening Google" /> : <><GoogleMark />Continue with Google</>}
       </button>
       {error ? <p className="text-sm text-primary">{error}</p> : null}
     </div>

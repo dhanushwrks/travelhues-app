@@ -134,9 +134,19 @@ export function StoryBrowser({
           ) : (
             <ul className="grid gap-4 md:grid-cols-2">
               {blogs.map((blog) => (
-                <li key={blog.slug} className="rounded-2xl bg-white px-4 py-4 ring-1 ring-border">
-                  <p className="text-base font-medium">{blog.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{plainText(blog.body)}</p>
+                <li key={blog.slug} className="overflow-hidden rounded-2xl bg-white ring-1 ring-border">
+                  <span className="relative block aspect-[4/3] bg-muted">
+                    {blog.coverUrl?.includes("images.unsplash.com") ? (
+                      <Image src={blog.coverUrl} alt="" fill className="object-cover" sizes="430px" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={blog.coverUrl || "/blog-thumb.svg"} alt="" className="size-full object-cover" />
+                    )}
+                  </span>
+                  <span className="block px-4 py-3">
+                    <p className="text-base font-medium">{blog.title}</p>
+                    <p className="mt-1 line-clamp-3 text-sm leading-6 text-muted-foreground">{plainText(blog.body)}</p>
+                  </span>
                 </li>
               ))}
             </ul>

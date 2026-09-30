@@ -3,6 +3,7 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 
+import { Loader } from "@/components/loader";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { spotTypeMeta } from "@/components/spot-type";
 import { formatCost, formatDuration } from "@/lib/format";
@@ -14,7 +15,11 @@ const PinMap = dynamic(
   () => import("@/components/maps").then((mod) => mod.PinMap),
   {
     ssr: false,
-    loading: () => <div className="h-40 bg-muted" />,
+    loading: () => (
+      <div className="grid h-40 place-items-center bg-muted">
+        <Loader className="size-5 text-primary" />
+      </div>
+    ),
   },
 );
 

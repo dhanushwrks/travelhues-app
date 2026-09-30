@@ -175,6 +175,16 @@
   text-decoration: underline;
 }
 
+@keyframes request-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 .blog-editor p.is-empty::before {
   color: var(--muted-foreground);
   content: attr(data-placeholder);

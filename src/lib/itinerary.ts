@@ -1,5 +1,18 @@
 import type { Day, Spot, Story } from "@/lib/types";
 
+export function itineraryBudget(story: Story, days: Day[]) {
+  let total = 0;
+  for (const day of days) {
+    for (const block of day.blocks) {
+      if (block.kind !== "spot") continue;
+      const spot = spotById(story, block.spotId);
+      if (spot) total += spot.avgCostThb;
+    }
+  }
+  const perDay = days.length > 0 ? Math.round(total / days.length) : 0;
+  return { total, perDay };
+}
+
 export function spotById(story: Story, id: string) {
   return story.spots.find((spot) => spot.id === id);
 }

@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { GoogleSignInButton } from "@/components/google-sign-in";
+import { Loader } from "@/components/loader";
 import { apiBase } from "@/lib/api";
 import { saveSession, type AccountRole } from "@/lib/browser-session";
-import { GoogleSignInButton } from "@/components/google-sign-in";
 
 export function AuthForm({
   mode,
@@ -98,9 +99,9 @@ export function AuthForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {pending ? "Please wait" : mode === "signup" ? "Create account" : "Sign in"}
+        {pending ? <Loader label={mode === "signup" ? "Creating account" : "Signing in"} /> : mode === "signup" ? "Create account" : "Sign in"}
       </button>
       {creator ? (
         <div className="grid gap-2">

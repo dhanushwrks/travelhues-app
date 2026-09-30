@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Loader } from "@/components/loader";
 import { savePost, type MediaKind } from "@/lib/mock/studio";
 
 const kinds: { id: MediaKind; label: string }[] = [
@@ -136,9 +137,9 @@ export function PostComposer() {
       <button
         type="submit"
         disabled={reading}
-        className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        Publish
+        {reading ? <Loader label="Preparing" /> : "Publish"}
       </button>
       <p className="text-sm text-muted-foreground">
         This stays on this phone for now. It is not saved to the server yet.

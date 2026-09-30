@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Loader } from "@/components/loader";
 import { apiBase } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 
@@ -81,9 +82,9 @@ export function NewStoryForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {pending ? "Saving" : "Save story"}
+        {pending ? <Loader label="Saving" /> : "Save story"}
       </button>
     </form>
   );
