@@ -25,6 +25,11 @@ export function StudioHome({
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-6 pb-10">
+      {home === "/trips" ? (
+        <div className="mb-5 flex justify-center">
+          <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
+        </div>
+      ) : null}
       <div className="flex items-end justify-between gap-3">
         <h1 className="font-display text-3xl">{title}</h1>
         <Link href={`${home}/new`} className="text-sm font-medium text-primary">

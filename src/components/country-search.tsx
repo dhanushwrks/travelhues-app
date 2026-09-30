@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -37,15 +38,21 @@ export function CountrySearch({
     router.push(`/?country=${code}`);
   }
 
+  function clear() {
+    setOpen(false);
+    setQuery("");
+    router.push("/");
+  }
+
   return (
     <div className="grid gap-2">
-      <label className="grid gap-2 text-sm">
+      <label className="relative grid gap-2 text-sm">
         <span className="sr-only">Search countries</span>
         <input
           value={open ? query : current ? `${flagOf(current)} ${current.name}` : ""}
           placeholder={countries.length ? "Search countries" : "No countries are open yet"}
           disabled={countries.length === 0}
-          className="rounded-full border border-border bg-background px-4 py-3 outline-none"
+          className={`rounded-full border border-border bg-background px-4 py-3 outline-none ${current ? "pr-12" : ""}`}
           onFocus={() => {
             setOpen(true);
             setQuery("");
@@ -62,6 +69,17 @@ export function CountrySearch({
           }}
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
         />
+        {current ? (
+          <button
+            type="button"
+            aria-label={`Clear ${current.name}`}
+            className="absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-muted-foreground"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={clear}
+          >
+            <X className="size-4" />
+          </button>
+        ) : null}
       </label>
       {typing ? (
         <ul className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -119,11 +137,6 @@ export function CountrySearch({
             );
           })}
         </ul>
-      ) : null}
-      {current ? (
-        <button type="button" className="justify-self-start text-sm" onClick={() => router.push("/")}>
-          Clear {current.name}
-        </button>
       ) : null}
     </div>
   );

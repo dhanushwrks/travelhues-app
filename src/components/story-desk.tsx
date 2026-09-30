@@ -53,12 +53,21 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
 
   return (
     <div className="h-full overflow-y-auto pb-10">
-      <div className="flex items-center gap-3 px-5 pt-5">
-        <Link href={home} className="text-sm font-medium" aria-label={trip ? "My trips" : "Studio"}>
-          ←
-        </Link>
-        <h1 className="truncate text-lg font-medium">{story.title}</h1>
-      </div>
+      {trip ? (
+        <div className="relative flex items-center justify-center px-5 pt-6">
+          <Link href={home} aria-label="My trips" className="absolute left-5 grid size-10 place-items-center rounded-full text-sm font-medium">
+            ←
+          </Link>
+          <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 px-5 pt-5">
+          <Link href={home} className="text-sm font-medium" aria-label="Studio">
+            ←
+          </Link>
+          <h1 className="truncate text-lg font-medium">{story.title}</h1>
+        </div>
+      )}
       <div className="relative mx-5 mt-4 aspect-[16/9] overflow-hidden rounded-3xl bg-secondary">
         <Cover src={story.coverUrl} />
       </div>
@@ -122,19 +131,13 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
         <li className="flex">
           <Link
             href={`${home}/${story.id}/${tab}/new`}
-            className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-dashed border-foreground/25"
+            className="grid h-full min-h-52 w-full place-items-center rounded-2xl border border-dashed border-foreground/25 px-4 text-center"
           >
-            <span className="grid aspect-[4/3] place-items-center px-4 text-center">
-              <span>
-                <span className="block text-sm font-medium">{trip && tab === "plans" ? "Add an itinerary" : addLabel[tab]}</span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  {trip && tab === "plans" ? "The days, built from your spots." : addHint[tab]}
-                </span>
+            <span>
+              <span className="block text-sm font-medium">{trip && tab === "plans" ? "Add an itinerary" : addLabel[tab]}</span>
+              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                {trip && tab === "plans" ? "The days, built from your spots." : addHint[tab]}
               </span>
-            </span>
-            <span className="block flex-1 px-3 py-3" aria-hidden>
-              <span className="block text-sm font-medium opacity-0">Title</span>
-              <span className="mt-1 block line-clamp-2 text-xs leading-5 opacity-0">Detail</span>
             </span>
           </Link>
         </li>

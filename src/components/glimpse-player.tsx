@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Bookmark, Heart, MessageCircle, Share2, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { apiBase, apiMessage } from "@/lib/api";
+import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 import { linkHref, type Glimpse } from "@/lib/glimpse";
 
@@ -21,9 +23,11 @@ export function GlimpsePlayer({
     return index >= 0 ? index : 0;
   });
   const [sound, setSound] = useState(false);
+  const [saved, setSaved] = useState<string[]>([]);
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const root = scroller.current;
@@ -43,6 +47,17 @@ export function GlimpsePlayer({
     start?.scrollIntoView();
     return () => observer.disconnect();
   }, [startId]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("th_saved_shorts");
+      if (!stored) return;
+      const ids = JSON.parse(stored) as unknown;
+      if (Array.isArray(ids)) setSaved(ids.filter((id) => typeof id === "string"));
+    } catch {
+      setSaved([]);
+    }
+  }, []);
 
   useEffect(() => {
     const videos = scroller.current?.querySelectorAll("video");
@@ -69,6 +84,33 @@ export function GlimpsePlayer({
         item.id === glimpse.id ? { ...item, liked: payload.liked, likes: payload.likes } : item,
       ),
     );
+  }
+
+  function toggleSave(id: string) {
+    setSaved((current) => {
+      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+      window.localStorage.setItem("th_saved_shorts", JSON.stringify(next));
+      return next;
+    });
+  }
+
+  async function share(glimpse: Glimpse) {
+    const url = `${window.location.origin}/shorts?start=${glimpse.id}`;
+    setNotice("");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: glimpse.displayName || "Travelhues", text: glimpse.caption, url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setNotice("Link copied");
+    } catch {
+      setNotice(url);
+    }
   }
 
   async function sendComment(glimpseId: string) {
@@ -113,9 +155,20 @@ export function GlimpsePlayer({
 
   return (
     <div className="relative h-full bg-foreground text-background md:mx-auto md:max-w-[430px]">
-      <Link href="/" className="absolute top-4 left-4 z-10 text-sm">
-        Explore
-      </Link>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center px-4 pt-3">
+        <Link href="/" aria-label="Travelhues" className="pointer-events-auto rounded-full bg-background/95 px-3 py-1.5">
+          <Image src="/travelhues-logo.png" alt="" width={374} height={102} className="h-8 w-fit" />
+        </Link>
+      </div>
+      <button
+        type="button"
+        aria-label={sound ? "Sound on" : "Sound off"}
+        aria-pressed={sound}
+        className="absolute top-3 right-3 z-10 grid size-10 place-items-center rounded-full bg-black/40 text-white"
+        onClick={() => setSound((value) => !value)}
+      >
+        {sound ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
+      </button>
       <div ref={scroller} className="h-full snap-y snap-mandatory overflow-y-auto">
         {glimpses.map((glimpse, index) => (
           <article
@@ -134,24 +187,53 @@ export function GlimpsePlayer({
               preload={index === active ? "auto" : "metadata"}
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
-            <div className="absolute right-3 bottom-24 grid justify-items-center gap-4 text-center">
-              <button type="button" className="text-xs" onClick={() => setSound((value) => !value)}>
-                {sound ? "Sound on" : "Sound off"}
-              </button>
-              <button type="button" className="grid text-xs" onClick={() => void toggleLike(glimpse)}>
-                <span className="text-base">{glimpse.liked ? "Liked" : "Like"}</span>
-                <span>{glimpse.likes}</span>
-              </button>
-              <button type="button" className="grid text-xs" onClick={() => setCommentsFor(glimpse.id)}>
-                <span className="text-base">Notes</span>
-                <span>{glimpse.comments.length}</span>
-              </button>
+            <div className="absolute right-3 bottom-6 z-10 grid justify-items-center gap-4 text-center text-white">
+              <Link
+                href={`/u/${glimpse.username}`}
+                aria-label={glimpse.displayName || glimpse.username}
+                className="relative size-11 overflow-hidden rounded-full bg-white/20 ring-2 ring-white"
+              >
+                {glimpse.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={mediaUrl(glimpse.avatarUrl)} alt="" className="size-full object-cover" />
+                ) : (
+                  <span className="grid size-full place-items-center text-sm font-medium">
+                    {(glimpse.displayName || glimpse.username).slice(0, 1)}
+                  </span>
+                )}
+              </Link>
+              <RailButton
+                label={glimpse.liked ? "Unlike" : "Like"}
+                pressed={glimpse.liked}
+                count={glimpse.likes}
+                onClick={() => void toggleLike(glimpse)}
+              >
+                <Heart className={`size-7 ${glimpse.liked ? "fill-primary text-primary" : ""}`} />
+              </RailButton>
+              <RailButton
+                label="Notes"
+                count={glimpse.comments.length}
+                onClick={() => setCommentsFor(glimpse.id)}
+              >
+                <MessageCircle className="size-7" />
+              </RailButton>
+              <RailButton label="Share" onClick={() => void share(glimpse)}>
+                <Share2 className="size-7" />
+              </RailButton>
+              <RailButton
+                label={saved.includes(glimpse.id) ? "Remove save" : "Save"}
+                pressed={saved.includes(glimpse.id)}
+                onClick={() => toggleSave(glimpse.id)}
+              >
+                <Bookmark className={`size-7 ${saved.includes(glimpse.id) ? "fill-current" : ""}`} />
+              </RailButton>
             </div>
-            <div className="absolute inset-x-4 bottom-6 grid gap-2 pr-16">
+            <div className="pointer-events-none absolute inset-x-4 bottom-6 grid gap-2 pr-16">
               <p className="text-sm font-medium">@{glimpse.username}</p>
               <p className="text-sm leading-5">{glimpse.caption}</p>
+              {notice ? <p className="text-xs text-white/80">{notice}</p> : null}
               {glimpse.link ? (
-                <Link href={linkHref(glimpse.link)} className="justify-self-start rounded-full bg-background/90 px-3 py-1 text-xs text-foreground">
+                <Link href={linkHref(glimpse.link)} className="pointer-events-auto justify-self-start rounded-full bg-background/90 px-3 py-1 text-xs text-foreground">
                   {glimpse.link.label}
                 </Link>
               ) : null}
@@ -200,5 +282,32 @@ export function GlimpsePlayer({
         </section>
       ) : null}
     </div>
+  );
+}
+
+function RailButton({
+  label,
+  pressed,
+  count,
+  onClick,
+  children,
+}: {
+  label: string;
+  pressed?: boolean;
+  count?: number;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={pressed}
+      onClick={onClick}
+      className="grid justify-items-center gap-0.5 text-xs drop-shadow"
+    >
+      {children}
+      {typeof count === "number" ? <span>{count}</span> : null}
+    </button>
   );
 }

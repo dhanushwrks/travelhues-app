@@ -9,17 +9,19 @@ export default async function LoginDoorPage() {
 
   return (
     <div className="flex h-full flex-col">
+      <div className="flex justify-center px-5 pt-6">
+        <Image
+          src="/travelhues-logo.png"
+          alt="Travelhues"
+          width={374}
+          height={102}
+          priority
+          className="h-12 w-fit"
+        />
+      </div>
       <div className="flex flex-1 items-center justify-center overflow-y-auto px-5 py-8 md:px-10">
         <div className="w-full max-w-3xl text-center">
-          <Image
-            src="/travelhues-logo.png"
-            alt="Travelhues"
-            width={374}
-            height={102}
-            priority
-            className="mx-auto h-12 w-fit"
-          />
-          <h1 className="mt-8 font-display text-4xl">Come in</h1>
+          <h1 className="font-display text-4xl">Come in</h1>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
             Choose how you use Travelhues. The two accounts stay separate.
           </p>

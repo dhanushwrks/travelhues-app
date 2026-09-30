@@ -79,24 +79,23 @@ export function AuthForm({
       : "Browse stories from people who have already made the trip.";
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className={
-        creator
-          ? "grid w-full max-w-md gap-4 px-5 py-8 text-center"
-          : "grid w-full gap-4 px-5 pt-10 pb-8 md:mx-auto md:max-w-md md:py-16"
-      }
-    >
-      <Link href="/login" className="justify-self-start text-sm font-medium" aria-label="Choose user or creator">
-        ←
-      </Link>
-      <Image
-        src="/travelhues-logo.png"
-        alt="Travelhues"
-        width={374}
-        height={102}
-        className={creator ? "mx-auto h-12 w-fit" : "h-12 w-fit"}
-      />
+    <div className="flex w-full flex-col">
+      <div className="relative flex items-center justify-center px-5 pt-6">
+        <Link href="/login" className="absolute left-5 text-sm font-medium" aria-label="Choose user or creator">
+          ←
+        </Link>
+        <Image
+          src="/travelhues-logo.png"
+          alt="Travelhues"
+          width={374}
+          height={102}
+          className="h-12 w-fit"
+        />
+      </div>
+      <form
+        onSubmit={onSubmit}
+        className="mx-auto grid w-full max-w-md gap-4 px-5 pt-8 pb-8 text-center"
+      >
       <h1 className="font-display text-3xl">{title}</h1>
       <p className="text-sm leading-6 text-muted-foreground">{lead}</p>
       {!creator && mode === "login" ? (
@@ -119,22 +118,23 @@ export function AuthForm({
       {creator ? (
         <div className="grid gap-3">
           <p className="text-center text-sm leading-6 text-muted-foreground">
-            New to Travelhues? Join the waitlist now. Join as a creator.
+            Are you a Travel Creator? Join the waitlist now.
           </p>
           <Link href="/join" className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
             Join the waitlist
           </Link>
         </div>
       ) : mode === "signup" ? (
-        <p className="text-sm leading-6 text-muted-foreground">
-          Writing stories? <Link href="/join" className="font-medium text-foreground">Join the waitlist</Link>
+        <p className="text-center text-sm leading-6 text-muted-foreground">
+          Already have an account? <Link href="/login/user" className="font-medium text-foreground">Sign in</Link>
         </p>
       ) : (
         <p className="text-center text-sm leading-6 text-muted-foreground">
           New to Travelhues? <Link href="/signup" className="font-medium text-foreground">Sign Up</Link>
         </p>
       )}
-    </form>
+      </form>
+    </div>
   );
 }
 

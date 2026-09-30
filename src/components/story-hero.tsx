@@ -21,7 +21,17 @@ export function StoryHero({
   return (
     <div className="relative mx-4 mt-4 pb-14">
       <div className="relative h-52 overflow-hidden rounded-[1.75rem] bg-secondary md:h-72">
-        {cover ? (
+        {videoUrl ? (
+          <video
+            src={videoUrl}
+            poster={cover || undefined}
+            className="size-full object-cover"
+            autoPlay
+            loop
+            muted={!sound}
+            playsInline
+          />
+        ) : cover ? (
           <Image
             src={cover}
             alt=""
@@ -38,36 +48,26 @@ export function StoryHero({
           <ChevronLeft className="size-4" />
           Explore
         </Link>
-      </div>
-      <div className="absolute bottom-0 left-4 z-10 size-28">
-        <span className="relative block size-full overflow-hidden rounded-full border-[5px] border-card bg-secondary">
-          {videoUrl ? (
-            <video
-              src={videoUrl}
-              poster={portrait || undefined}
-              className="size-full object-cover"
-              autoPlay
-              loop
-              muted={!sound}
-              playsInline
-            />
-          ) : portrait ? (
-            <Image src={portrait} alt="" fill className="object-cover" sizes="112px" />
-          ) : (
-            <span className="grid size-full place-items-center font-display text-3xl">{name.slice(0, 1)}</span>
-          )}
-        </span>
         {videoUrl ? (
           <button
             type="button"
             aria-label={sound ? "Mute highlight" : "Play highlight with sound"}
             aria-pressed={sound}
             onClick={() => setSound((value) => !value)}
-            className="absolute -right-1 -bottom-1 grid size-8 place-items-center rounded-full bg-card text-foreground shadow-sm ring-1 ring-border"
+            className="absolute right-3 bottom-3 grid size-8 place-items-center rounded-full bg-card text-foreground shadow-sm ring-1 ring-border"
           >
             {sound ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
           </button>
         ) : null}
+      </div>
+      <div className="absolute bottom-0 left-4 z-10 size-28">
+        <span className="relative block size-full overflow-hidden rounded-full border-[5px] border-card bg-secondary">
+          {portrait ? (
+            <Image src={portrait} alt="" fill className="object-cover" sizes="112px" />
+          ) : (
+            <span className="grid size-full place-items-center font-display text-3xl">{name.slice(0, 1)}</span>
+          )}
+        </span>
       </div>
     </div>
   );
