@@ -74,7 +74,7 @@ export function StoryHero({
           )}
         </span>
         <Link href={`/u/${username}`} className="mb-2 inline-flex text-sm font-medium">
-          {name}
+          @{username}
         </Link>
       </div>
     </div>

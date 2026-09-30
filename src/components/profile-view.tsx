@@ -49,7 +49,17 @@ export function ProfileView({
             <h2 className="font-display text-3xl">Hey, {first}</h2>
             <p className="text-sm text-muted-foreground">@{person.username}</p>
           </div>
-          {person.role === "tcc" ? <ShareProfileButton username={person.username} /> : null}
+          {person.role === "tcc" ? (
+            <div className="mt-1 flex shrink-0 items-center gap-3">
+              <Link
+                href={`/u/${person.username}`}
+                className="rounded-full bg-primary/10 px-4 py-2 text-sm"
+              >
+                View storefront
+              </Link>
+              <ShareProfileButton username={person.username} />
+            </div>
+          ) : null}
         </div>
         <div className="mt-3 flex items-center justify-between text-sm">
           <p>
@@ -64,11 +74,6 @@ export function ProfileView({
           <Stat value={person.counts.spots} label="Spots" />
           <Stat value={person.counts.itineraries} label="Itineraries" />
         </dl>
-        {person.role === "tcc" && editHref ? (
-          <Link href="/stories/new" className="mt-4 inline-flex text-sm font-medium text-primary">
-            Add a story
-          </Link>
-        ) : null}
         <SocialLinks links={person.socials} />
         {person.headline ? <p className="mt-5 text-sm font-medium">{person.headline}</p> : null}
         {person.bio ? (
