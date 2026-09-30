@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { categoryLabel, type StorySpot } from "@/lib/mock/studio";
+import { categoryName, type StorySpot } from "@/lib/mock/studio";
 
 const pageSize = 8;
 
@@ -38,7 +38,7 @@ export function SpotPicker({
     const needle = query.trim().toLowerCase();
     if (!needle) return spots;
     return spots.filter((spot) =>
-      [spot.title, spot.placeName, spot.subcategory, categoryLabel[spot.category]]
+      [spot.title, spot.placeName, spot.subcategory, categoryName(spot.category)]
         .join(" ")
         .toLowerCase()
         .includes(needle),
@@ -111,7 +111,7 @@ export function SpotPicker({
                   <span className="min-w-0 py-1">
                     <span className="block truncate font-medium">{spot.title}</span>
                     <span className="mt-0.5 block text-muted-foreground">
-                      {categoryLabel[spot.category]}
+                      {categoryName(spot.category)}
                       {spot.duration ? ` · ${spot.duration}` : ""}
                       {spot.cost ? ` · ฿${spot.cost}` : ""}
                     </span>

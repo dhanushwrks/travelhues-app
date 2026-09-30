@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { spotTypeMeta } from "@/components/spot-type";
 import { formatCost, formatDuration } from "@/lib/format";
+import { unpackDescription } from "@/lib/spot-copy";
 import type { Spot } from "@/lib/types";
 import { MarkControls } from "@/components/mark-controls";
 
@@ -37,6 +38,7 @@ export function SpotSheet({
   likes?: number;
 }) {
   const meta = spot ? spotTypeMeta[spot.type] : null;
+  const copy = spot ? unpackDescription(spot.description) : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -72,12 +74,28 @@ export function SpotSheet({
                   likes={likes}
                 />
               ) : null}
-              <p className="text-[15px] leading-6">{spot.description}</p>
+              <p className="text-[15px] leading-6 whitespace-pre-wrap">{copy?.summary}</p>
+              {copy?.tips ? (
+                <div className="rounded-2xl bg-secondary px-4 py-3">
+                  <p className="text-sm font-medium">Tips</p>
+                  <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{copy.tips}</p>
+                </div>
+              ) : null}
               <p className="text-sm text-muted-foreground">
                 {formatDuration(spot.avgMinutes, spot.type)},{" "}
                 {formatCost(spot.avgCostThb, spot.type)}
               </p>
               <p className="text-sm text-muted-foreground">{spot.address}</p>
+              {copy?.affiliate ? (
+                <a href={copy.affiliate} target="_blank" rel="noopener noreferrer" className="text-sm text-primary">
+                  Booking link
+                </a>
+              ) : null}
+              {copy?.reference ? (
+                <a href={copy.reference} target="_blank" rel="noopener noreferrer" className="text-sm text-primary">
+                  Reference
+                </a>
+              ) : null}
               {spot.tags.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
                   {spot.tags.map((tag) => (

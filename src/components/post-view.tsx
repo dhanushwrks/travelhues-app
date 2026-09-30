@@ -1,0 +1,189 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+
+import { readCookie } from "@/lib/browser-session";
+import {
+  addPostComment,
+  postBoard,
+  postsServerSnapshot,
+  postsSnapshot,
+  subscribeStudio,
+  togglePostLike,
+  type MediaPost,
+  type PostMedia,
+} from "@/lib/mock/studio";
+
+export function PostView({ id, name }: { id: string; name: string }) {
+  const posts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
+  const board = useSyncExternalStore(subscribeStudio, () => postBoard(id), () => postBoard(id));
+  const post = posts.find((item) => item.id === id) ?? null;
+  const [draft, setDraft] = useState("");
+  const [notice, setNotice] = useState("");
+
+  if (!post) {
+    return (
+      <div className="px-5 pt-8">
+        <Link href="/storefront" className="text-sm font-medium">
+          Storefront
+        </Link>
+        <p className="pt-6 text-sm text-muted-foreground">This post is gone.</p>
+      </div>
+    );
+  }
+
+  const frames = postFrames(post);
+
+  async function share() {
+    const url = window.location.href;
+    setNotice("");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Travelhues", text: post?.caption, url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setNotice("Link copied");
+    } catch {
+      setNotice(url);
+    }
+  }
+
+  function sendComment(event: React.FormEvent) {
+    event.preventDefault();
+    const body = draft.trim();
+    if (!body) return;
+    const author = decodeURIComponent(readCookie("th_name") || "") || name || "You";
+    addPostComment(id, author, body);
+    setDraft("");
+  }
+
+  return (
+    <div className="flex h-full flex-col overflow-y-auto lg:flex-row">
+      <section className="bg-black lg:flex lg:w-1/2 lg:items-center">
+        <Carousel frames={frames} />
+      </section>
+      <section className="flex min-h-0 flex-1 flex-col px-5 pt-4 pb-8 lg:overflow-y-auto lg:px-8 lg:pt-6">
+        <Link href="/storefront" className="text-sm font-medium">
+          Storefront
+        </Link>
+        <p className="mt-4 text-[15px] leading-6">{post.caption}</p>
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={board.liked}
+            onClick={() => togglePostLike(id)}
+            className={`inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium ${
+              board.liked ? "bg-primary text-primary-foreground" : "bg-secondary"
+            }`}
+          >
+            <Heart className={`size-4 ${board.liked ? "fill-current" : ""}`} />
+            {board.liked ? "Liked" : "Like"}
+            <span>{board.likes}</span>
+          </button>
+          <span className="inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-medium">
+            <MessageCircle className="size-4" />
+            {board.comments.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => void share()}
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-medium"
+          >
+            <Share2 className="size-4" />
+            Share
+          </button>
+        </div>
+        {notice ? <p className="mt-2 text-sm text-muted-foreground">{notice}</p> : null}
+        <h2 className="mt-6 text-sm font-medium">Comments</h2>
+        {board.comments.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">No comments yet.</p>
+        ) : (
+          <ul className="mt-3 grid gap-3">
+            {board.comments.map((comment) => (
+              <li key={comment.id}>
+                <p className="text-sm font-medium">{comment.author}</p>
+                <p className="text-sm leading-6">{comment.body}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form onSubmit={sendComment} className="mt-4 flex gap-2">
+          <input
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="Add a comment"
+            aria-label="Add a comment"
+            className="min-w-0 flex-1 rounded-full border border-border bg-background px-4 py-3 text-sm"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim()}
+            className="rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Post
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function Carousel({ frames }: { frames: PostMedia[] }) {
+  const [index, setIndex] = useState(0);
+
+  function onScroll(event: React.UIEvent<HTMLDivElement>) {
+    const el = event.currentTarget;
+    if (!el.clientWidth) return;
+    setIndex(Math.round(el.scrollLeft / el.clientWidth));
+  }
+
+  return (
+    <div className="relative w-full">
+      <div onScroll={onScroll} className="flex snap-x snap-mandatory overflow-x-auto">
+        {frames.map((frame, frameIndex) => (
+          <div key={`${frame.imageUrl}-${frame.videoUrl}-${frameIndex}`} className="relative aspect-[4/5] w-full shrink-0 snap-center bg-black">
+            <Frame frame={frame} />
+          </div>
+        ))}
+      </div>
+      {frames.length > 1 ? (
+        <p className="absolute right-3 bottom-3 rounded-full bg-black/55 px-2 py-1 text-xs text-white">
+          {index + 1} / {frames.length}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function Frame({ frame }: { frame: PostMedia }) {
+  if (frame.kind === "video" && frame.videoUrl) {
+    return <video src={frame.videoUrl} poster={frame.imageUrl || undefined} controls playsInline className="size-full object-cover" />;
+  }
+  if (frame.imageUrl.startsWith("data:") || frame.imageUrl.startsWith("blob:")) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={frame.imageUrl} alt="" className="size-full object-cover" />
+    );
+  }
+  if (!frame.imageUrl) return null;
+  return <Image src={frame.imageUrl} alt="" fill className="object-cover" sizes="(min-width: 1024px) 36rem, 100vw" />;
+}
+
+function postFrames(post: MediaPost): PostMedia[] {
+  if (post.media && post.media.length > 0) return post.media;
+  return [
+    {
+      kind: post.kind === "photo" ? "photo" : "video",
+      imageUrl: post.imageUrl,
+      videoUrl: post.videoUrl,
+    },
+  ];
+}

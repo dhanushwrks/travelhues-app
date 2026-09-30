@@ -9,6 +9,18 @@ export type PostMedia = {
   videoUrl: string;
 };
 
+export type PostComment = {
+  id: string;
+  author: string;
+  body: string;
+};
+
+export type PostBoard = {
+  liked: boolean;
+  likes: number;
+  comments: PostComment[];
+};
+
 export type MediaPost = {
   id: string;
   kind: MediaKind;
@@ -21,6 +33,10 @@ export type MediaPost = {
 export const spotCategories = ["stay", "food", "activity", "sightseeing", "shop"] as const;
 
 export type SpotCategory = (typeof spotCategories)[number];
+
+export function categoryName(slug: string) {
+  return slug in categoryLabel ? categoryLabel[slug as SpotCategory] : slug;
+}
 
 export const categoryLabel: Record<SpotCategory, string> = {
   stay: "Stay",
@@ -42,7 +58,7 @@ export type StorySpot = {
   id: string;
   title: string;
   summary: string;
-  category: SpotCategory;
+  category: string;
   subcategory: string;
   placeName: string;
   lat: number | null;
@@ -55,6 +71,7 @@ export type StorySpot = {
   ageGroup: string;
   affiliateUrl: string;
   referenceUrl: string;
+  tips: string;
 };
 
 export type PlanNote = {
@@ -142,6 +159,11 @@ export const seedPosts: MediaPost[] = [
     caption: "The lane lights up after eight.",
     imageUrl: photo("photo-1555396273-367ea4eb4db5"),
     videoUrl: "",
+    media: [
+      { kind: "photo", imageUrl: photo("photo-1555396273-367ea4eb4db5"), videoUrl: "" },
+      { kind: "photo", imageUrl: photo("photo-1508009603885-50cf7c579365"), videoUrl: "" },
+      { kind: "photo", imageUrl: photo("photo-1559339352-11d035aa65de"), videoUrl: "" },
+    ],
   },
   {
     id: "river-ferry",
@@ -214,6 +236,7 @@ export const seedStories: CreatorStory[] = [
         ageGroup: "",
         affiliateUrl: "",
         referenceUrl: "",
+        tips: "",
       },
     ],
     plans: [
@@ -308,6 +331,35 @@ export function storiesServerSnapshot() {
 
 export function savePost(post: MediaPost) {
   posts = [post, ...posts];
+  listeners.forEach((listener) => listener());
+}
+
+const boards = new Map<string, PostBoard>();
+
+export function postBoard(id: string): PostBoard {
+  const current = boards.get(id);
+  if (current) return current;
+  const next: PostBoard = { liked: false, likes: 0, comments: [] };
+  boards.set(id, next);
+  return next;
+}
+
+export function togglePostLike(id: string) {
+  const current = postBoard(id);
+  boards.set(id, {
+    ...current,
+    liked: !current.liked,
+    likes: current.likes + (current.liked ? -1 : 1),
+  });
+  listeners.forEach((listener) => listener());
+}
+
+export function addPostComment(id: string, author: string, body: string) {
+  const current = postBoard(id);
+  boards.set(id, {
+    ...current,
+    comments: [...current.comments, { id: `comment-${Date.now()}`, author, body }],
+  });
   listeners.forEach((listener) => listener());
 }
 

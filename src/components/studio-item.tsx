@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 
-import { blogMarkup, categoryLabel, type StoryTab } from "@/lib/mock/studio";
+import { blogMarkup, categoryName, type StoryTab } from "@/lib/mock/studio";
 import { useDesk } from "@/lib/studio-desk";
 
 const PinMap = dynamic(() => import("@/components/maps").then((mod) => mod.PinMap), {
@@ -57,11 +57,17 @@ export function StudioItem({
         <Gallery images={spot.images} />
         <div className="grid gap-3 px-5 pt-4">
           <p className="text-sm text-muted-foreground">
-            {categoryLabel[spot.category]}
+            {categoryName(spot.category)}
             {spot.subcategory ? ` · ${spot.subcategory}` : ""}
           </p>
           <h2 className="font-display text-3xl">{spot.title}</h2>
           <p className="text-[15px] leading-6">{spot.summary}</p>
+          {spot.tips ? (
+            <div className="rounded-2xl bg-secondary px-4 py-3">
+              <p className="text-sm font-medium">Tips</p>
+              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{spot.tips}</p>
+            </div>
+          ) : null}
           {spot.placeName ? (
             <p className="flex items-center gap-2 text-sm">
               <MapPin className="size-4 text-primary" />
@@ -151,7 +157,7 @@ export function StudioItem({
                           <span className="min-w-0 py-1">
                             <span className="block truncate text-sm font-medium">{spot.title}</span>
                             <span className="mt-0.5 block text-sm text-muted-foreground">
-                              {categoryLabel[spot.category]}
+                              {categoryName(spot.category)}
                               {spot.duration ? ` · ${spot.duration}` : ""}
                               {spot.cost ? ` · ฿${spot.cost}` : ""}
                             </span>

@@ -1,9 +1,10 @@
 "use client";
 
-import { LocateFixed, Search } from "lucide-react";
+import { LocateFixed, Search, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const apiKey =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCXkJRf9b0Y0d3bfiHNVUzG89FUdgx8Glk";
 
 type LoaderMaps = {
   Map?: typeof google.maps.Map;
@@ -110,6 +111,37 @@ function circleIcon(scale: number) {
   };
 }
 
+const quietMapStyle: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#efece6" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#5c6570" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#efece6" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
+  { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#e6e2da" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#d7e4d4" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e3dfd6" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#8b9198" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f7f4ef" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#c5d5e4" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#6a7f90" }] },
+];
+
+function quietMapOptions(options: google.maps.MapOptions): google.maps.MapOptions {
+  return {
+    styles: quietMapStyle,
+    renderingType: google.maps.RenderingType.RASTER,
+    backgroundColor: "#efece6",
+    clickableIcons: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    ...options,
+  };
+}
+
 export type MapPoint = {
   id: string;
   lng: number;
@@ -155,13 +187,13 @@ export function RouteMap({
 
         const map =
           mapRef.current ??
-          new google.maps.Map(containerRef.current, {
-            center: { lat: 15.5, lng: 100.5 },
-            zoom: 5,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-          });
+          new google.maps.Map(
+            containerRef.current,
+            quietMapOptions({
+              center: { lat: 15.5, lng: 100.5 },
+              zoom: 5,
+            }),
+          );
         mapRef.current = map;
 
         if (points.length > 1) {
@@ -225,7 +257,104 @@ export type ChosenPlace = {
   name: string;
   lat: number;
   lng: number;
+  address: string;
+  rating: number | null;
+  ratingCount: number | null;
+  type: string;
+  summary: string;
+  photoUrl: string;
+  source: "google" | "map";
 };
+
+export function blankPlace(partial: Pick<ChosenPlace, "name" | "lat" | "lng"> & Partial<ChosenPlace>): ChosenPlace {
+  return {
+    address: "",
+    rating: null,
+    ratingCount: null,
+    type: "",
+    summary: "",
+    photoUrl: "",
+    source: "map",
+    ...partial,
+  };
+}
+
+type PlaceHit = {
+  id: string;
+  title: string;
+  detail: string;
+  source: "google" | "osm";
+  prediction?: google.maps.places.PlacePrediction;
+  lat?: number;
+  lng?: number;
+};
+
+async function nominatimSearch(text: string, country?: string): Promise<PlaceHit[]> {
+  const params = new URLSearchParams({ q: text, format: "jsonv2", limit: "5" });
+  if (country && /^[A-Za-z]{2}$/.test(country)) params.set("countrycodes", country.toLowerCase());
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error("Place search is not available");
+  const rows = (await response.json()) as Array<{
+    place_id: number;
+    name?: string;
+    display_name: string;
+    lat: string;
+    lon: string;
+  }>;
+  return rows.map((row) => ({
+    id: String(row.place_id),
+    title: row.name || row.display_name.split(",")[0] || row.display_name,
+    detail: row.display_name,
+    source: "osm",
+    lat: Number(row.lat),
+    lng: Number(row.lon),
+  }));
+}
+
+async function findPlaces(text: string, country: string | undefined, center: { lat: number; lng: number }) {
+  if (!placesBlocked) {
+    try {
+      return await googlePlaces(text, country, center);
+    } catch (reason) {
+      const message = placeSearchError(reason);
+      if (!message.startsWith("Place search is not enabled")) throw reason;
+      placesBlocked = true;
+    }
+  }
+  return nominatimSearch(text, country);
+}
+
+async function googlePlaces(text: string, country: string | undefined, center: { lat: number; lng: number }) {
+  await loadPlaces();
+  const region = country && /^[A-Za-z]{2}$/.test(country) ? country.toUpperCase() : "";
+  const { suggestions } = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+    input: text,
+    includedRegionCodes: region ? [region] : undefined,
+    locationBias: center,
+  });
+  return suggestions
+    .map((item) => item.placePrediction)
+    .filter((item): item is google.maps.places.PlacePrediction => item != null)
+    .map((item) => ({
+      id: item.placeId,
+      title: item.mainText?.text || item.text.text,
+      detail: item.secondaryText?.text || "",
+      source: "google" as const,
+      prediction: item,
+    }));
+}
+
+async function nominatimName(lat: number, lng: number) {
+  const params = new URLSearchParams({ format: "jsonv2", lat: String(lat), lon: String(lng), zoom: "16" });
+  const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) return "";
+  const body = (await response.json()) as { name?: string; display_name?: string };
+  return body.name || body.display_name?.split(",")[0] || "";
+}
 
 export function PlaceSearch({
   country,
@@ -237,12 +366,11 @@ export function PlaceSearch({
   onChoose: (place: ChosenPlace) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<google.maps.places.PlacePrediction[]>([]);
+  const [suggestions, setSuggestions] = useState<PlaceHit[]>([]);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const chosen = useRef("");
-  const session = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const ticket = useRef(0);
   const onChooseRef = useRef(onChoose);
 
@@ -252,61 +380,85 @@ export function PlaceSearch({
 
   useEffect(() => {
     const text = query.trim();
-    if (placesBlocked) {
-      setError("Place search is not enabled for this map key yet.");
-      return;
-    }
     if (text.length < 2 || text === chosen.current) {
       setSuggestions([]);
       return;
     }
     const current = ++ticket.current;
     const handle = window.setTimeout(() => {
-      void loadPlaces()
-        .then(async () => {
-          session.current ??= new google.maps.places.AutocompleteSessionToken();
-          const region = country && /^[A-Za-z]{2}$/.test(country) ? country.toUpperCase() : "";
-          const { suggestions: next } = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input: text,
-            sessionToken: session.current,
-            includedRegionCodes: region ? [region] : undefined,
-            locationBias: center,
-          });
+      void findPlaces(text, country, center)
+        .then((hits) => {
           if (current !== ticket.current) return;
           setError("");
-          setSuggestions(
-            next
-              .map((item) => item.placePrediction)
-              .filter((item): item is google.maps.places.PlacePrediction => item != null),
-          );
-          setOpen(true);
+          setSuggestions(hits);
+          setOpen(hits.length > 0);
         })
         .catch((reason: unknown) => {
           if (current !== ticket.current) return;
           setSuggestions([]);
-          const message = placeSearchError(reason);
-          if (message.startsWith("Place search is not enabled")) placesBlocked = true;
-          setError(message);
+          setError(reason instanceof Error ? reason.message : "Place search is not available");
         });
-    }, 280);
+    }, 400);
     return () => window.clearTimeout(handle);
   }, [query, country, center.lat, center.lng]);
 
-  async function choose(prediction: google.maps.places.PlacePrediction) {
+  async function choose(hit: PlaceHit) {
     setBusy(true);
     setError("");
     try {
-      const place = prediction.toPlace();
-      await place.fetchFields({ fields: ["displayName", "location"] });
-      const point = place.location;
-      if (!point) throw new Error("That place has no point on the map");
-      const name = place.displayName || prediction.mainText?.text || prediction.text.text;
+      let name = hit.title;
+      let lat = hit.lat;
+      let lng = hit.lng;
+      if (hit.prediction) {
+        const place = hit.prediction.toPlace();
+        await place.fetchFields({
+          fields: [
+            "displayName",
+            "location",
+            "formattedAddress",
+            "rating",
+            "userRatingCount",
+            "photos",
+            "primaryTypeDisplayName",
+            "editorialSummary",
+          ],
+        });
+        const point = place.location;
+        if (!point) throw new Error("That place has no point on the map");
+        name = place.displayName || hit.title;
+        lat = point.lat();
+        lng = point.lng();
+        chosen.current = name;
+        setQuery(name);
+        setSuggestions([]);
+        setOpen(false);
+        onChooseRef.current({
+          name,
+          lat,
+          lng,
+          address: place.formattedAddress || hit.detail,
+          rating: place.rating ?? null,
+          ratingCount: place.userRatingCount ?? null,
+          type: place.primaryTypeDisplayName || "",
+          summary: place.editorialSummary || "",
+          photoUrl: place.photos?.[0]?.getURI({ maxWidth: 320 }) || "",
+          source: "google",
+        });
+        return;
+      }
+      if (lat == null || lng == null) throw new Error("That place has no point on the map");
       chosen.current = name;
       setQuery(name);
       setSuggestions([]);
       setOpen(false);
-      session.current = new google.maps.places.AutocompleteSessionToken();
-      onChooseRef.current({ name, lat: point.lat(), lng: point.lng() });
+      onChooseRef.current(
+        blankPlace({
+          name,
+          lat,
+          lng,
+          address: hit.detail,
+        }),
+      );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not use that place");
     } finally {
@@ -341,20 +493,22 @@ export function PlaceSearch({
       {open && suggestions.length > 0 ? (
         <ul className="absolute top-14 z-20 max-h-64 w-full overflow-y-auto rounded-2xl border border-border bg-background shadow-sm">
           {suggestions.map((item) => (
-            <li key={item.placeId}>
+            <li key={item.id}>
               <button
                 type="button"
                 onClick={() => void choose(item)}
                 className="block w-full px-4 py-3 text-left"
               >
-                <span className="block text-sm font-medium">{item.mainText?.text}</span>
-                {item.secondaryText?.text ? (
-                  <span className="mt-0.5 block text-xs text-muted-foreground">{item.secondaryText.text}</span>
+                <span className="block text-sm font-medium">{item.title}</span>
+                {item.detail && item.detail !== item.title ? (
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{item.detail}</span>
                 ) : null}
               </button>
             </li>
           ))}
-          <li className="px-4 py-2 text-[11px] text-muted-foreground">Google</li>
+          <li className="px-4 py-2 text-[11px] text-muted-foreground">
+            {suggestions.some((item) => item.source === "google") ? "Google" : "OpenStreetMap"}
+          </li>
         </ul>
       ) : null}
       {busy ? <p className="text-sm text-muted-foreground">Finding that place</p> : null}
@@ -416,14 +570,13 @@ export function PlacePicker({
         if (cancelled || !containerRef.current) return;
         const start = targetRef.current;
         const pinned = start.lat != null && start.lng != null;
-        const map = new google.maps.Map(containerRef.current, {
-          center: pinned ? { lat: start.lat as number, lng: start.lng as number } : { lat: centerLat, lng: centerLng },
-          zoom: pinned ? 15 : 5,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          clickableIcons: false,
-        });
+        const map = new google.maps.Map(
+          containerRef.current,
+          quietMapOptions({
+            center: pinned ? { lat: start.lat as number, lng: start.lng as number } : { lat: centerLat, lng: centerLng },
+            zoom: pinned ? 15 : 5,
+          }),
+        );
         mapRef.current = map;
         if (pinned) showPin(map, { lat: start.lat as number, lng: start.lng as number }, false);
         map.addListener("click", (event: google.maps.MapMouseEvent) => {
@@ -465,15 +618,8 @@ export function PlacePicker({
         if (map) showPin(map, next, true);
         onPickRef.current(next.lat, next.lng);
         setLocating(false);
-        void window.google.maps
-          .importLibrary("geocoding")
-          .then(() => new google.maps.Geocoder().geocode({ location: next }))
-          .then(({ results }) => {
-            const label = results[0]?.address_components.find((part) =>
-              part.types.some((type) =>
-                ["point_of_interest", "establishment", "premise", "route", "neighborhood"].includes(type),
-              ),
-            )?.long_name;
+        void nominatimName(next.lat, next.lng)
+          .then((label) => {
             if (label) onNamedRef.current?.(label);
           })
           .catch(() => undefined);
@@ -489,22 +635,20 @@ export function PlacePicker({
   if (error && !mapRef.current) return <MapFallback message="The map did not load. Search for the place instead." />;
 
   return (
-    <div className="relative h-56 w-full">
-      <div ref={containerRef} className="size-full" />
-      <button
-        type="button"
-        onClick={locate}
-        disabled={locating}
-        aria-label="Locate on the map"
-        className="absolute right-3 bottom-3 grid size-11 place-items-center rounded-full bg-background shadow-sm disabled:opacity-60"
-      >
-        <LocateFixed className="size-5" />
-      </button>
-      {error ? (
-        <p className="absolute inset-x-3 bottom-16 rounded-2xl bg-background/95 px-3 py-2 text-center text-xs text-primary">
-          {error}
-        </p>
-      ) : null}
+    <div>
+      <div className="relative h-72 w-full">
+        <div ref={containerRef} className="size-full" />
+        <button
+          type="button"
+          onClick={locate}
+          disabled={locating}
+          aria-label="Locate on the map"
+          className="absolute right-3 bottom-3 grid size-11 place-items-center rounded-full bg-background shadow-sm disabled:opacity-60"
+        >
+          <LocateFixed className="size-5" />
+        </button>
+      </div>
+      {error ? <p className="px-3 py-2 text-center text-xs text-primary">{error}</p> : null}
     </div>
   );
 }
@@ -531,13 +675,15 @@ export function PinMap({
     loadGoogleMaps()
       .then(() => {
         if (cancelled || !containerRef.current) return;
-        const map = new google.maps.Map(containerRef.current, {
-          center: { lat, lng },
-          zoom: 14,
-          disableDefaultUI: true,
-          gestureHandling: "none",
-          clickableIcons: false,
-        });
+        const map = new google.maps.Map(
+          containerRef.current,
+          quietMapOptions({
+            center: { lat, lng },
+            zoom: 14,
+            disableDefaultUI: true,
+            gestureHandling: "none",
+          }),
+        );
         marker = new google.maps.Marker({
           map,
           position: { lat, lng },
@@ -558,4 +704,44 @@ export function PinMap({
   if (error) return <MapFallback message={error} />;
 
   return <div ref={containerRef} className="h-40 w-full" />;
+}
+
+export function PlaceCard({ place }: { place: ChosenPlace }) {
+  const reviews =
+    place.ratingCount != null
+      ? `${place.ratingCount.toLocaleString()} ${place.ratingCount === 1 ? "review" : "reviews"}`
+      : "";
+  return (
+    <article className="flex gap-3 border-t border-border bg-card p-3">
+      <div className="relative size-[4.5rem] shrink-0 overflow-hidden rounded-2xl bg-[#efece6]">
+        {place.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={place.photoUrl} alt="" className="size-full object-cover" />
+        ) : (
+          <span className="grid size-full place-items-center text-[#8b9198]">
+            <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 2.5c-3.6 0-6.5 2.8-6.5 6.3 0 4.7 6.5 12.2 6.5 12.2s6.5-7.5 6.5-12.2c0-3.5-2.9-6.3-6.5-6.3zm0 8.6a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6z"
+              />
+            </svg>
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 py-0.5">
+        <p className="truncate text-[15px] font-medium">{place.name}</p>
+        {place.rating != null ? (
+          <p className="mt-0.5 flex items-center gap-1 text-sm">
+            <Star className="size-3.5 fill-current text-[#e12e2f]" />
+            <span>{place.rating.toFixed(1)}</span>
+            {reviews ? <span className="text-muted-foreground">· {reviews}</span> : null}
+          </p>
+        ) : null}
+        {place.type ? <p className="mt-0.5 text-sm text-muted-foreground">{place.type}</p> : null}
+        {place.summary ? <p className="mt-1 line-clamp-2 text-sm leading-5">{place.summary}</p> : null}
+        {place.address ? <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">{place.address}</p> : null}
+        {place.source === "google" ? <p className="mt-1 text-[11px] text-muted-foreground">Google</p> : null}
+      </div>
+    </article>
+  );
 }

@@ -5,12 +5,12 @@ import { useEffect, useSyncExternalStore } from "react";
 import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 import { countryName } from "@/lib/countries";
+import { fetchSpotCatalog } from "@/lib/spot-catalog";
+import { packDescription, unpackDescription } from "@/lib/spot-copy";
 import {
-  subcategories,
   type CreatorStory,
   type PlanBlock,
   type PlanDay,
-  type SpotCategory,
   type StoryBlog,
   type StoryPlan,
   type StorySpot,
@@ -36,7 +36,23 @@ const centers: Record<string, { lat: number; lng: number }> = {
 const difficulties = new Set(["Easy", "Moderate", "Hard"]);
 const seasons = new Set(["Year round", "Dry months", "Cool months", "Monsoon"]);
 const ages = new Set(["All ages", "Families", "Adults"]);
-const kinds = new Set(Object.values(subcategories).flat());
+let kindLabels = new Set([
+  "Hotel",
+  "Guesthouse",
+  "Homestay",
+  "Restaurant",
+  "Cafe",
+  "Street food",
+  "Trek",
+  "Class",
+  "Boat",
+  "Walk",
+  "Temple",
+  "Viewpoint",
+  "Neighborhood",
+  "Market",
+  "Boutique",
+]);
 
 export function subscribeDesk(onStoreChange: () => void) {
   listeners.add(onStoreChange);
@@ -125,7 +141,7 @@ export async function createDeskSpot(
     id: slugify(spot.title, "spot"),
     type: spot.category,
     title: spot.title,
-    description: packDescription(spot.summary, spot.affiliateUrl, spot.referenceUrl),
+    description: packDescription(spot.summary, spot.tips, spot.affiliateUrl, spot.referenceUrl),
     images,
     lat: spot.lat,
     lng: spot.lng,
@@ -165,6 +181,8 @@ export function addDeskBlog(storyId: string, blog: StoryBlog) {
 }
 
 async function pull(token: string) {
+  const catalog = await fetchSpotCatalog();
+  kindLabels = new Set(catalog.flatMap((item) => item.kinds));
   const seen = ++generation;
   if (!token) {
     status = "error";
@@ -246,7 +264,7 @@ function toSpot(spot: Spot): StorySpot {
     if (index < 0) return "";
     return tags.splice(index, 1)[0] ?? "";
   };
-  const subcategory = take(kinds);
+  const subcategory = take(kindLabels);
   const difficulty = take(difficulties);
   const season = take(seasons);
   const ageGroup = take(ages);
@@ -254,7 +272,7 @@ function toSpot(spot: Spot): StorySpot {
     id: spot.id,
     title: spot.title,
     summary: notes.summary,
-    category: spot.type as SpotCategory,
+    category: spot.type,
     subcategory,
     placeName: spot.address,
     lat: spot.lat,
@@ -267,6 +285,7 @@ function toSpot(spot: Spot): StorySpot {
     ageGroup,
     affiliateUrl: notes.affiliate,
     referenceUrl: notes.reference,
+    tips: notes.tips,
   };
 }
 
@@ -297,30 +316,6 @@ function toBlock(block: PlanBlock, spots: StorySpot[]) {
   if (block.kind === "note") return { kind: "note" as const, body: block.body };
   const title = spots.find((spot) => spot.id === block.spotId)?.title ?? "Stop";
   return { kind: "spot" as const, spotId: block.spotId, body: title };
-}
-
-function packDescription(summary: string, affiliate: string, reference: string) {
-  let text = summary.trim();
-  if (affiliate) text += `\n\nBooking: ${affiliate}`;
-  if (reference) text += `\n\nReference: ${reference}`;
-  return text;
-}
-
-function unpackDescription(description: string) {
-  let text = description;
-  let reference = "";
-  let affiliate = "";
-  const ref = text.match(/\n\nReference: (https:\/\/\S+)\s*$/);
-  if (ref?.index != null) {
-    reference = ref[1];
-    text = text.slice(0, ref.index);
-  }
-  const booking = text.match(/\n\nBooking: (https:\/\/\S+)\s*$/);
-  if (booking?.index != null) {
-    affiliate = booking[1];
-    text = text.slice(0, booking.index);
-  }
-  return { summary: text.trim(), affiliate, reference };
 }
 
 function toMinutes(value: string) {

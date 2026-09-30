@@ -8,7 +8,7 @@ import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { PictureTray } from "@/components/picture-tray";
 import { SpotPicker } from "@/components/spot-picker";
 import {
-  categoryLabel,
+  categoryName,
   clearPlanDraft,
   nextPieceId,
   planDraftServerSnapshot,
@@ -339,7 +339,7 @@ function BlockCard({
             <p className="font-medium">{spot?.title ?? "Spot removed"}</p>
             {spot ? (
               <p className="text-muted-foreground">
-                {categoryLabel[spot.category]}
+                {categoryName(spot.category)}
                 {spot.duration ? ` · ${spot.duration}` : ""}
                 {spot.cost ? ` · ฿${spot.cost}` : ""}
               </p>

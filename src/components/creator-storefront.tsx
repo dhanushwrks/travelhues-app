@@ -69,25 +69,27 @@ export function CreatorStorefront({
         <ul className="grid grid-cols-3 gap-px bg-border md:grid-cols-4 lg:grid-cols-6">
           {grid.map((post) => (
             <li key={post.id} className="bg-card">
-              <figure className="relative aspect-square">
-                {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={post.imageUrl} alt="" className="size-full object-cover" />
-                ) : post.imageUrl ? (
-                  <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
-                ) : (
-                  <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
-                )}
-                {post.media && post.media.length > 1 ? (
-                  <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                    {post.media.length}
-                  </figcaption>
-                ) : post.kind !== "photo" ? (
-                  <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                    {post.kind === "glimpse" ? "Glimpse" : "Video"}
-                  </figcaption>
-                ) : null}
-              </figure>
+              <Link href={`/storefront/posts/${post.id}`} className="block">
+                <figure className="relative aspect-square">
+                  {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={post.imageUrl} alt="" className="size-full object-cover" />
+                  ) : post.imageUrl ? (
+                    <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
+                  ) : (
+                    <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
+                  )}
+                  {post.media && post.media.length > 1 ? (
+                    <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                      {post.media.length}
+                    </figcaption>
+                  ) : post.kind !== "photo" ? (
+                    <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                      {post.kind === "glimpse" ? "Glimpse" : "Video"}
+                    </figcaption>
+                  ) : null}
+                </figure>
+              </Link>
             </li>
           ))}
         </ul>
