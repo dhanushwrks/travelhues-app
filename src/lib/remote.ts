@@ -42,6 +42,40 @@ export async function loadEnabledCountries() {
   return countries.filter((country) => enabled.has(country.code));
 }
 
+export type BrandLinks = {
+  instagramUrl: string;
+  linkedinUrl: string;
+  youtubeUrl: string;
+  termsUrl: string;
+  policiesUrl: string;
+};
+
+export const brandLinkDefaults: BrandLinks = {
+  instagramUrl: "https://www.instagram.com/travelhues",
+  linkedinUrl: "https://www.linkedin.com/company/travelhues",
+  youtubeUrl: "https://www.youtube.com/@travelhues",
+  termsUrl: "https://travelhues.com/terms",
+  policiesUrl: "https://travelhues.com/policies",
+};
+
+export async function loadBrandLinks(): Promise<BrandLinks> {
+  try {
+    const response = await fetch(`${base}/settings`, { cache: "no-store" });
+    if (!response.ok) return brandLinkDefaults;
+    const settings = (await response.json()) as { app?: Partial<BrandLinks> };
+    const app = settings.app ?? {};
+    return {
+      instagramUrl: app.instagramUrl ?? brandLinkDefaults.instagramUrl,
+      linkedinUrl: app.linkedinUrl ?? brandLinkDefaults.linkedinUrl,
+      youtubeUrl: app.youtubeUrl ?? brandLinkDefaults.youtubeUrl,
+      termsUrl: app.termsUrl ?? brandLinkDefaults.termsUrl,
+      policiesUrl: app.policiesUrl ?? brandLinkDefaults.policiesUrl,
+    };
+  } catch {
+    return brandLinkDefaults;
+  }
+}
+
 export function loadStories(token: string) {
   return load<Story[]>("/stories", token);
 }

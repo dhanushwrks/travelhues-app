@@ -13,22 +13,23 @@ function flagOf(country: Country) {
 
 export function CountrySearch({
   countries,
+  suggested,
   selected,
 }: {
   countries: Country[];
+  suggested: Country[];
   selected: string;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const current = countries.find((country) => country.code === selected);
+  const needle = query.trim().toLowerCase();
   const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    const pool = needle
-      ? countries.filter((country) => country.name.toLowerCase().includes(needle))
-      : countries;
-    return pool.slice(0, 8);
-  }, [countries, query]);
+    if (!needle) return [];
+    return countries.filter((country) => country.name.toLowerCase().includes(needle)).slice(0, 8);
+  }, [countries, needle]);
+  const typing = open && needle.length > 0;
 
   function choose(code: string) {
     setOpen(false);
@@ -53,10 +54,16 @@ export function CountrySearch({
             setQuery(event.target.value);
             setOpen(true);
           }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            const typed = (open ? query : "").trim();
+            router.push(typed ? `/search?q=${encodeURIComponent(typed)}` : "/search");
+          }}
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
         />
       </label>
-      {open && countries.length > 0 ? (
+      {typing ? (
         <ul className="overflow-hidden rounded-2xl border border-border bg-card">
           {matches.length === 0 ? (
             <li className="px-4 py-3 text-sm text-muted-foreground">No country matches</li>
@@ -75,10 +82,23 @@ export function CountrySearch({
               </li>
             ))
           )}
+          <li className="border-t border-border">
+            <button
+              type="button"
+              className="w-full px-4 py-3 text-left text-sm font-medium"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                const typed = query.trim();
+                router.push(typed ? `/search?q=${encodeURIComponent(typed)}` : "/search");
+              }}
+            >
+              Search stories, places, and creators
+            </button>
+          </li>
         </ul>
-      ) : countries.length > 0 ? (
-        <ul className="flex flex-wrap gap-2" aria-label="Open countries">
-          {countries.map((country) => {
+      ) : suggested.length > 0 ? (
+        <ul className="flex flex-wrap gap-2" aria-label="Suggested countries">
+          {suggested.map((country) => {
             const active = country.code === selected;
             return (
               <li key={country.code}>

@@ -151,7 +151,8 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
   }
 
   return (
-    <form onSubmit={save} className="grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
+    <form onSubmit={save} className="flex h-full min-h-0 flex-col md:mx-auto md:max-w-2xl">
+      <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto px-5 pt-5 pb-6 contain-paint">
       <div className="flex items-center gap-3">
         <Link href={back} className="text-sm font-medium" aria-label="Story">
           ←
@@ -341,7 +342,8 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
         />
       </label>
       {error ? <p className="text-sm text-primary">{error}</p> : null}
-      <div className="grid grid-cols-2 gap-3">
+      </div>
+      <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-border bg-card px-5 py-3">
         <Link href={back} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
           Cancel
         </Link>

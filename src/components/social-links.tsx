@@ -4,6 +4,7 @@ const labels: Record<string, string> = {
   instagram: "Instagram",
   facebook: "Facebook",
   youtube: "YouTube",
+  linkedin: "LinkedIn",
   x: "X",
   tiktok: "TikTok",
   website: "Website",
@@ -30,10 +31,11 @@ export function SocialLinks({ links }: { links: SocialLink[] }) {
   );
 }
 
-function SocialIcon({ platform }: { platform: string }) {
+export function SocialIcon({ platform }: { platform: string }) {
   if (platform === "instagram") return <InstagramMark />;
   if (platform === "facebook") return <FacebookMark />;
   if (platform === "youtube") return <YouTubeMark />;
+  if (platform === "linkedin") return <LinkedInMark />;
   if (platform === "x") return <XMark />;
   if (platform === "tiktok") return <TikTokMark />;
   return <LinkMark />;
@@ -53,6 +55,14 @@ function FacebookMark() {
   return (
     <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden>
       <path d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v2H8v3h2v7h3v-7h2.6l.4-3H13v-2c0-.6.4-1 1-1z" />
+    </svg>
+  );
+}
+
+function LinkedInMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden>
+      <path d="M4.7 3.5a2.2 2.2 0 1 0 .1 4.4 2.2 2.2 0 0 0-.1-4.4zM3 9h3.4v12H3zm6.4 0H12.6v1.6h.1c.4-.8 1.5-1.8 3.2-1.8 3.4 0 4 2.2 4 5.1V21h-3.3v-5.3c0-1.3 0-2.9-1.8-2.9s-2 1.4-2 2.8V21H9.4z" />
     </svg>
   );
 }

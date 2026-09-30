@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 
 import { Loader } from "@/components/loader";
@@ -40,9 +41,17 @@ export function OnboardingScreen({
         event.preventDefault();
         if (!pending) onContinue();
       }}
-      className="flex min-h-full flex-col px-5 pt-4 pb-8 md:mx-auto md:w-full md:max-w-md"
+      className="flex min-h-full flex-col px-5 pt-6 pb-8 md:mx-auto md:w-full md:max-w-md"
     >
-      <div className="flex items-center gap-3">
+      <Image
+        src="/travelhues-logo.png"
+        alt="Travelhues"
+        width={374}
+        height={102}
+        priority
+        className="mx-auto h-12 w-fit"
+      />
+      <div className="mt-6 flex items-center gap-3">
         <button type="button" onClick={onBack} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full">
           <ChevronLeft className="size-5" />
         </button>

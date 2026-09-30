@@ -11,7 +11,7 @@ import { blogExcerpt } from "@/lib/mock/studio";
 import type { Person } from "@/lib/profile";
 import { ProfileMast } from "@/components/profile-mast";
 import { SocialLinks } from "@/components/social-links";
-import { itineraryHref, storyHref, type Story, type StoryBlog } from "@/lib/types";
+import { itineraryHref, blogHref, storyHref, type Story, type StoryBlog } from "@/lib/types";
 
 const worldCountries = 197;
 
@@ -199,7 +199,7 @@ function BlogList({ story, blogs }: { story: Story; blogs: StoryBlog[] }) {
     <ul className="grid gap-3">
       {blogs.map((blog) => (
         <li key={blog.slug}>
-          <Link href={`${storyHref(story)}?tab=blogs`} className="block">
+          <Link href={blogHref(story, blog.slug)} className="block">
             <span className="block text-sm font-medium">{blog.title}</span>
             <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
               {blogExcerpt(blog.body, 100)}

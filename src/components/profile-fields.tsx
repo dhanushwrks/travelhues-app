@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { apiBase } from "@/lib/api";
+import { countryFlag } from "@/lib/countries";
 import { platforms, type SocialLink } from "@/lib/profile";
 
 export type Country = { code: string; name: string };
@@ -65,7 +66,7 @@ export function CountryField({
     <Field label={label}>
       <input
         className={controlClass}
-        value={open ? query : selected?.name ?? ""}
+        value={open ? query : selected ? countryLabel(selected) : ""}
         placeholder="Search countries"
         onFocus={() => {
           setOpen(true);
@@ -88,7 +89,7 @@ export function CountryField({
               <li key={country.code}>
                 <button
                   type="button"
-                  className="w-full px-4 py-2.5 text-left"
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     onChange(country.code);
@@ -96,7 +97,7 @@ export function CountryField({
                     setOpen(false);
                   }}
                 >
-                  {country.name}
+                  <CountryMark country={country} />
                 </button>
               </li>
             ))
@@ -147,7 +148,7 @@ export function CountryMultiField({
               <li key={country.code}>
                 <button
                   type="button"
-                  className="w-full px-4 py-2.5 text-left text-sm"
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     onChange([...value, country.code]);
@@ -155,7 +156,7 @@ export function CountryMultiField({
                     setOpen(false);
                   }}
                 >
-                  {country.name}
+                  <CountryMark country={country} />
                 </button>
               </li>
             ))
@@ -168,10 +169,16 @@ export function CountryMultiField({
             <li key={code}>
               <button
                 type="button"
-                className="rounded-full bg-secondary px-3 py-1 text-sm"
+                className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-sm"
                 onClick={() => onChange(value.filter((item) => item !== code))}
               >
-                {countries.find((country) => country.code === code)?.name ?? code} ×
+                <CountryMark
+                  country={{
+                    code,
+                    name: countries.find((country) => country.code === code)?.name ?? code,
+                  }}
+                />
+                <span aria-hidden>×</span>
               </button>
             </li>
           ))}
@@ -391,4 +398,23 @@ function filterCountries(countries: Country[], query: string) {
   const needle = query.trim().toLowerCase();
   if (!needle) return countries;
   return countries.filter((country) => country.name.toLowerCase().includes(needle));
+}
+
+function countryLabel(country: Country) {
+  const flag = countryFlag(country.code);
+  return flag ? `${flag} ${country.name}` : country.name;
+}
+
+function CountryMark({ country }: { country: Country }) {
+  const flag = countryFlag(country.code);
+  return (
+    <>
+      {flag ? (
+        <span aria-hidden className="text-lg leading-none">
+          {flag}
+        </span>
+      ) : null}
+      <span>{country.name}</span>
+    </>
+  );
 }

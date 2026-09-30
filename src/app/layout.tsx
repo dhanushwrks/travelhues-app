@@ -32,6 +32,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#e12e2f",
+  colorScheme: "only light",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -41,9 +42,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${sora.variable} h-full antialiased`}
+      className={`${sora.variable} h-dvh overflow-clip antialiased`}
     >
-      <body className="min-h-full bg-background font-sans text-foreground">
+      <body className="h-dvh overflow-clip bg-background font-sans text-foreground">
         <PwaRegister />
         <AppShell role={role}>{children}</AppShell>
       </body>

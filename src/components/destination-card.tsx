@@ -11,7 +11,7 @@ export function DestinationCard({ story, library }: { story: Story; library: Lib
   const likes = storyLikeCount(library, story.slug);
 
   return (
-    <article className="overflow-hidden rounded-3xl bg-card ring-1 ring-border">
+    <article className="h-full overflow-hidden rounded-3xl bg-card ring-1 ring-border">
       <Link href={storyHref(story)} className="block">
         <span className="relative block aspect-[16/9] bg-muted">
           <Image
@@ -28,27 +28,38 @@ export function DestinationCard({ story, library }: { story: Story; library: Lib
             {countryLabel(story.destination.country)} · {story.creator.displayName}
           </span>
         </span>
-        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2 px-4 pb-4 text-sm text-muted-foreground">
-          <Count icon={MapPin} value={story.spots.length} label={story.spots.length === 1 ? "spot" : "spots"} />
-          <Count
-            icon={Route}
-            value={story.itineraries.length}
-            label={story.itineraries.length === 1 ? "itinerary" : "itineraries"}
-          />
-          <Count icon={BookOpen} value={blogs} label={blogs === 1 ? "blog" : "blogs"} />
+        <p className="mt-3 flex items-center gap-3 px-4 text-sm text-muted-foreground">
           <Count icon={Heart} value={likes} label={likes === 1 ? "like" : "likes"} />
           <Count icon={Share2} value={0} label="shares" />
-        </ul>
+        </p>
+        <p className="mt-2 flex flex-nowrap items-center gap-x-1.5 overflow-hidden px-4 pb-4 text-[13px] text-muted-foreground">
+          <Count icon={MapPin} value={story.spots.length} label="Spots" named />
+          <span aria-hidden>|</span>
+          <Count icon={Route} value={story.itineraries.length} label="Plans" named />
+          <span aria-hidden>|</span>
+          <Count icon={BookOpen} value={blogs} label="Reads" named />
+        </p>
       </Link>
     </article>
   );
 }
 
-function Count({ icon: Icon, value, label }: { icon: LucideIcon; value: number; label: string }) {
+function Count({
+  icon: Icon,
+  value,
+  label,
+  named = false,
+}: {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+  named?: boolean;
+}) {
   return (
-    <li className="inline-flex items-center gap-1.5" aria-label={`${value} ${label}`}>
+    <span className="inline-flex items-center gap-1.5" aria-label={named ? `${label} ${value}` : `${value} ${label}`}>
       <Icon className="size-4 text-primary" aria-hidden />
+      {named ? <span>{label}</span> : null}
       <span className="font-medium text-foreground">{value}</span>
-    </li>
+    </span>
   );
 }

@@ -15,7 +15,9 @@ const travelerItems = [
       path.startsWith("/stories") ||
       path.startsWith("/shorts") ||
       path.startsWith("/glimpse") ||
-      path.startsWith("/u/"),
+      path.startsWith("/u/") ||
+      path.startsWith("/destinations") ||
+      path.startsWith("/search"),
   },
   {
     href: "/trips",

@@ -6,7 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Bold, Heading2, Italic, Link2, List, ListOrdered, Quote, Underline } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 
-export function BlogEditor({ onChange }: { onChange: (html: string) => void }) {
+export function BlogEditor({ value = "", onChange }: { value?: string; onChange: (html: string) => void }) {
   const [revision, setRevision] = useState(0);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -27,6 +27,7 @@ export function BlogEditor({ onChange }: { onChange: (html: string) => void }) {
         placeholder: "Write the post. What would you tell a friend who is going?",
       }),
     ],
+    content: value,
     editorProps: {
       attributes: {
         class: "min-h-56 px-4 py-3 text-[15px] leading-7 outline-none",

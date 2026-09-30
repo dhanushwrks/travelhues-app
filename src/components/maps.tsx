@@ -174,10 +174,6 @@ export async function renderDynamicRoute(
     const only = stopLocation(stops[0]);
     const position = typeof only === "string" ? null : only;
     if (position) placeMarkers([position]);
-    if (position) {
-      map.setCenter(position);
-      map.setZoom(13);
-    }
     return { clear };
   }
 
@@ -195,7 +191,7 @@ export async function renderDynamicRoute(
       map,
       directions: result,
       suppressMarkers: true,
-      preserveViewport: false,
+      preserveViewport: true,
       polylineOptions: {
         strokeColor: routeBlue,
         strokeWeight: 5,
@@ -223,9 +219,6 @@ export async function renderDynamicRoute(
         strokeWeight: 5,
         strokeOpacity: 0.8,
       });
-      const bounds = new google.maps.LatLngBounds();
-      positions.forEach((position) => bounds.extend(position));
-      map.fitBounds(bounds, 48);
     }
     placeMarkers(positions);
   }
@@ -310,6 +303,40 @@ function categoryIcon(type: string | undefined) {
   };
 }
 
+function zoomInto(map: google.maps.Map, container: HTMLElement, bounds: google.maps.LatLngBounds) {
+  if (bounds.isEmpty()) return () => {};
+  const center = bounds.getCenter();
+  const single =
+    bounds.getNorthEast().lat() === bounds.getSouthWest().lat() &&
+    bounds.getNorthEast().lng() === bounds.getSouthWest().lng();
+  let played = false;
+  let timer = 0;
+
+  const play = () => {
+    if (played || container.clientHeight < 40) return;
+    played = true;
+    google.maps.event.trigger(map, "resize");
+    map.setCenter(center);
+    map.setZoom(5);
+    timer = window.setTimeout(() => {
+      if (single) {
+        map.panTo(center);
+        map.setZoom(14);
+        return;
+      }
+      map.fitBounds(bounds, 64);
+    }, 420);
+  };
+
+  const observer = new ResizeObserver(play);
+  observer.observe(container);
+  play();
+  return () => {
+    window.clearTimeout(timer);
+    observer.disconnect();
+  };
+}
+
 function MapFallback({ message }: { message: string }) {
   return (
     <div className="flex h-full min-h-40 items-center justify-center bg-muted px-5 text-center text-sm text-muted-foreground">
@@ -343,17 +370,19 @@ export function RouteMap({
     let cancelled = false;
     const markers: google.maps.Marker[] = [];
     let drawn: DrawnRoute | null = null;
+    let stopZoom = () => {};
 
     loadGoogleMaps()
       .then(async () => {
         if (cancelled || !containerRef.current) return;
 
+        const center = points[0] ? { lat: points[0].lat, lng: points[0].lng } : { lat: 15.5, lng: 100.5 };
         const map =
           mapRef.current ??
           new google.maps.Map(
             containerRef.current,
             quietMapOptions({
-              center: { lat: 15.5, lng: 100.5 },
+              center,
               zoom: 5,
             }),
           );
@@ -366,31 +395,27 @@ export function RouteMap({
             points,
             (id) => onSelectRef.current(id),
           );
-          if (cancelled) drawn.clear();
-          return;
-        }
-
-        points.forEach((point) => {
-          const marker = new google.maps.Marker({
-            map,
-            position: { lat: point.lat, lng: point.lng },
-            title: point.label,
-            icon: categoryIcon(point.type),
+          if (cancelled) {
+            drawn.clear();
+            return;
+          }
+        } else {
+          points.forEach((point) => {
+            const marker = new google.maps.Marker({
+              map,
+              position: { lat: point.lat, lng: point.lng },
+              title: point.label,
+              icon: categoryIcon(point.type),
+            });
+            marker.addListener("click", () => onSelectRef.current(point.id));
+            markers.push(marker);
           });
-          marker.addListener("click", () => onSelectRef.current(point.id));
-          markers.push(marker);
-        });
+        }
 
-        if (points.length === 1) {
-          map.setCenter({ lat: points[0].lat, lng: points[0].lng });
-          map.setZoom(13);
-          return;
-        }
-        if (points.length > 1) {
-          const bounds = new google.maps.LatLngBounds();
-          points.forEach((point) => bounds.extend({ lat: point.lat, lng: point.lng }));
-          map.fitBounds(bounds, 48);
-        }
+        if (cancelled || points.length === 0 || !containerRef.current) return;
+        const bounds = new google.maps.LatLngBounds();
+        points.forEach((point) => bounds.extend({ lat: point.lat, lng: point.lng }));
+        stopZoom = zoomInto(map, containerRef.current, bounds);
       })
       .catch((reason: Error) => {
         if (!cancelled) setError(reason.message);
@@ -398,6 +423,7 @@ export function RouteMap({
 
     return () => {
       cancelled = true;
+      stopZoom();
       markers.forEach((marker) => marker.setMap(null));
       drawn?.clear();
     };

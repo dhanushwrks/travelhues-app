@@ -79,11 +79,24 @@ export function AuthForm({
       : "Browse stories from people who have already made the trip.";
 
   return (
-    <form onSubmit={onSubmit} className="grid w-full gap-4 px-5 pt-10 pb-8 md:mx-auto md:max-w-md md:py-16">
-      <Link href="/login" className="text-sm font-medium" aria-label="Choose user or creator">
+    <form
+      onSubmit={onSubmit}
+      className={
+        creator
+          ? "grid w-full max-w-md gap-4 px-5 py-8 text-center"
+          : "grid w-full gap-4 px-5 pt-10 pb-8 md:mx-auto md:max-w-md md:py-16"
+      }
+    >
+      <Link href="/login" className="justify-self-start text-sm font-medium" aria-label="Choose user or creator">
         ←
       </Link>
-      <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
+      <Image
+        src="/travelhues-logo.png"
+        alt="Travelhues"
+        width={374}
+        height={102}
+        className={creator ? "mx-auto h-12 w-fit" : "h-12 w-fit"}
+      />
       <h1 className="font-display text-3xl">{title}</h1>
       <p className="text-sm leading-6 text-muted-foreground">{lead}</p>
       {!creator && mode === "login" ? (
@@ -104,19 +117,21 @@ export function AuthForm({
         {pending ? <Loader label={mode === "signup" ? "Creating account" : "Signing in"} /> : mode === "signup" ? "Create account" : "Sign in"}
       </button>
       {creator ? (
-        <div className="grid gap-2">
+        <div className="grid gap-3">
+          <p className="text-center text-sm leading-6 text-muted-foreground">
+            New to Travelhues? Join the waitlist now. Join as a creator.
+          </p>
           <Link href="/join" className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
             Join the waitlist
           </Link>
-          <p className="text-center text-sm text-muted-foreground">That is how a new creator signs up.</p>
         </div>
       ) : mode === "signup" ? (
         <p className="text-sm leading-6 text-muted-foreground">
           Writing stories? <Link href="/join" className="font-medium text-foreground">Join the waitlist</Link>
         </p>
       ) : (
-        <p className="text-sm leading-6 text-muted-foreground">
-          Need an account? <Link href="/signup" className="font-medium text-foreground">Create one</Link>
+        <p className="text-center text-sm leading-6 text-muted-foreground">
+          New to Travelhues? <Link href="/signup" className="font-medium text-foreground">Sign Up</Link>
         </p>
       )}
     </form>
@@ -125,7 +140,7 @@ export function AuthForm({
 
 function Input({ name, label, type = "text" }: { name: string; label: string; type?: string }) {
   return (
-    <label className="grid gap-1 text-sm">
+    <label className="grid gap-1 text-left text-sm">
       <span>{label}</span>
       <input
         name={name}

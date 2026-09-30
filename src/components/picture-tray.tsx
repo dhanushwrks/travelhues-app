@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { compressImage } from "@/components/profile-fields";
+
 export function PictureTray({
   images,
   onChange,
@@ -20,11 +22,16 @@ export function PictureTray({
         setError("Pictures must be JPEG or PNG");
         return;
       }
-      if (file.size > 2_000_000) {
-        setError("Each picture must be under 2 MB");
+      if (file.size > 5_000_000) {
+        setError("Each picture must be under 5 MB");
         return;
       }
-      next.push(await readDataUrl(file));
+      try {
+        next.push(await compressImage(file, 1920));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Could not read that picture");
+        return;
+      }
     }
     setError("");
     onChange(next);
@@ -33,7 +40,7 @@ export function PictureTray({
   return (
     <div className="grid gap-2 text-sm">
       <span className="font-medium">Pictures</span>
-      <span className="text-muted-foreground">Up to five. JPEG or PNG, under 2 MB each.</span>
+      <span className="text-muted-foreground">Up to five. JPEG or PNG, under 5 MB each.</span>
       <ul className="grid grid-cols-3 gap-2">
         {images.map((src, index) => (
           <li key={src.slice(0, 48) + index} className="relative aspect-square overflow-hidden rounded-2xl bg-secondary">
@@ -74,13 +81,4 @@ export function PictureTray({
       {error ? <p className="text-primary">{error}</p> : null}
     </div>
   );
-}
-
-function readDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not read that picture"));
-    reader.readAsDataURL(file);
-  });
 }

@@ -99,3 +99,7 @@ export function storyHref(story: Pick<Story, "slug" | "creator">, spotId = "") {
 export function itineraryHref(story: Pick<Story, "slug" | "creator">, itinerarySlug: string) {
   return `/stories/${story.creator.username}/${story.slug}/itineraries/${itinerarySlug}`;
 }
+
+export function blogHref(story: Pick<Story, "slug" | "creator">, blogSlug: string) {
+  return `/stories/${story.creator.username}/${story.slug}/blogs/${blogSlug}`;
+}

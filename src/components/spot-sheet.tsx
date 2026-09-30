@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { ExternalLink, Navigation } from "lucide-react";
 
 import { Loader } from "@/components/loader";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -51,7 +52,7 @@ export function SpotSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="max-h-[88dvh] gap-0 overflow-y-auto rounded-t-3xl p-0 data-[side=bottom]:left-1/2 data-[side=bottom]:w-full data-[side=bottom]:max-w-[430px] data-[side=bottom]:-translate-x-1/2 md:data-[side=bottom]:max-w-xl"
+        className="max-h-[92dvh] w-full max-w-none gap-0 overflow-y-auto rounded-t-3xl p-0"
       >
         {spot && meta ? (
           <>
@@ -94,16 +95,6 @@ export function SpotSheet({
                 {formatCost(spot.avgCostThb, spot.type)}
               </p>
               <p className="text-sm text-muted-foreground">{spot.address}</p>
-              {copy?.affiliate ? (
-                <a href={copy.affiliate} target="_blank" rel="noopener noreferrer" className="text-sm text-primary">
-                  Booking link
-                </a>
-              ) : null}
-              {copy?.reference ? (
-                <a href={copy.reference} target="_blank" rel="noopener noreferrer" className="text-sm text-primary">
-                  Reference
-                </a>
-              ) : null}
               {spot.tags.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
                   {spot.tags.map((tag) => (
@@ -121,6 +112,31 @@ export function SpotSheet({
                   <PinMap lng={spot.lng} lat={spot.lat} label={spot.title} />
                 ) : null}
               </div>
+              <div className="grid gap-2">
+                <a href={directionsHref(spot)} target="_blank" rel="noopener noreferrer" className={outlineButton}>
+                  <Navigation className="size-4" />
+                  Get directions
+                </a>
+                {copy?.affiliate ? (
+                  <a href={copy.affiliate} target="_blank" rel="noopener noreferrer" className={primaryButton}>
+                    {spot.type === "stay" ? "Reserve here" : "Book here"}
+                  </a>
+                ) : null}
+                {copy?.reference ? (
+                  <a href={copy.reference} target="_blank" rel="noopener noreferrer" className={outlineButton}>
+                    <ExternalLink className="size-4" />
+                    {siteLabel(copy.reference)}
+                  </a>
+                ) : null}
+                {extraLinks(copy?.summary ?? "", copy?.tips ?? "", [copy?.affiliate ?? "", copy?.reference ?? ""]).map(
+                  (url) => (
+                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className={outlineButton}>
+                      <ExternalLink className="size-4" />
+                      {siteLabel(url)}
+                    </a>
+                  ),
+                )}
+              </div>
             </div>
           </>
         ) : (
@@ -129,4 +145,28 @@ export function SpotSheet({
       </SheetContent>
     </Sheet>
   );
+}
+
+const primaryButton =
+  "flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground";
+const outlineButton =
+  "flex h-12 items-center justify-center gap-2 rounded-full bg-secondary px-4 text-sm font-medium";
+
+function directionsHref(spot: Spot) {
+  const destination = Number.isFinite(spot.lat) && Number.isFinite(spot.lng) ? `${spot.lat},${spot.lng}` : spot.address;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}
+
+function extraLinks(summary: string, tips: string, known: string[]) {
+  const skip = new Set(known.filter(Boolean));
+  const found = `${summary}\n${tips}`.match(/https:\/\/\S+/gi) ?? [];
+  return [...new Set(found.map((url) => url.replace(/[).,]+$/g, "")))].filter((url) => !skip.has(url));
+}
+
+function siteLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "Website";
+  }
 }

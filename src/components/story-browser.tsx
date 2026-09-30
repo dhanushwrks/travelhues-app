@@ -9,7 +9,7 @@ import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
 import { formatSpotMeta } from "@/lib/format";
 import { markState, type Library } from "@/lib/marks";
-import { itineraryHref, spotTypes, type Spot, type SpotType, type Story } from "@/lib/types";
+import { itineraryHref, blogHref, spotTypes, type Spot, type SpotType, type Story } from "@/lib/types";
 
 type StorySection = "spots" | "itinerary" | "blogs";
 
@@ -42,7 +42,7 @@ export function StoryBrowser({
       <div className="mt-5 flex border-b border-border">
         <SectionTab label="Spots" count={story.spots.length} pressed={tab === "spots"} onClick={() => setTab("spots")} />
         <SectionTab
-          label="Itinerary"
+          label="Plans"
           count={story.itineraries.length}
           pressed={tab === "itinerary"}
           onClick={() => setTab("itinerary")}
@@ -90,11 +90,8 @@ export function StoryBrowser({
           {story.itineraries.map((itinerary) => {
             const state = markState(library, "itinerary", story.slug, itinerary.slug);
             return (
-            <li key={itinerary.slug} className="grid gap-2">
-              <Link
-                href={itineraryHref(story, itinerary.slug)}
-                className="block overflow-hidden rounded-2xl bg-white ring-1 ring-border"
-              >
+            <li key={itinerary.slug} className="overflow-hidden rounded-2xl bg-white ring-1 ring-border">
+              <Link href={itineraryHref(story, itinerary.slug)} className="block">
                 <div className="relative aspect-[2/1]">
                   <Image
                     src={itinerary.coverUrl}
@@ -104,22 +101,24 @@ export function StoryBrowser({
                     sizes="430px"
                   />
                 </div>
-                <div className="space-y-1 px-4 py-3">
+                <div className="space-y-1 px-4 pt-3">
                   <p className="text-base font-medium">{itinerary.title}</p>
                   <p className="text-sm leading-5 text-muted-foreground">
                     {itinerary.days.length} {itinerary.days.length === 1 ? "day" : "days"}
                   </p>
                 </div>
               </Link>
-              <MarkControls
-                traveler={traveler}
-                storySlug={story.slug}
-                kind="itinerary"
-                itinerarySlug={itinerary.slug}
-                liked={state.liked}
-                saved={state.saved}
-                likes={state.likes}
-              />
+              <div className="px-4 pt-3 pb-3">
+                <MarkControls
+                  traveler={traveler}
+                  storySlug={story.slug}
+                  kind="itinerary"
+                  itinerarySlug={itinerary.slug}
+                  liked={state.liked}
+                  saved={state.saved}
+                  likes={state.likes}
+                />
+              </div>
             </li>
             );
           })}
@@ -134,7 +133,8 @@ export function StoryBrowser({
           ) : (
             <ul className="grid gap-4 md:grid-cols-2">
               {blogs.map((blog) => (
-                <li key={blog.slug} className="overflow-hidden rounded-2xl bg-white ring-1 ring-border">
+                <li key={blog.slug}>
+                  <Link href={blogHref(story, blog.slug)} className="block overflow-hidden rounded-2xl bg-white ring-1 ring-border">
                   <span className="relative block aspect-[4/3] bg-muted">
                     {blog.coverUrl?.includes("images.unsplash.com") ? (
                       <Image src={blog.coverUrl} alt="" fill className="object-cover" sizes="430px" />
@@ -147,6 +147,7 @@ export function StoryBrowser({
                     <p className="text-base font-medium">{blog.title}</p>
                     <p className="mt-1 line-clamp-3 text-sm leading-6 text-muted-foreground">{plainText(blog.body)}</p>
                   </span>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -205,6 +205,7 @@ export function StudioItem({
         kind="blogs"
         itemId={blog.id}
         archived={blog.archived ?? false}
+        editHref={`${home}/${story.id}/blogs/${blog.id}/edit`}
       />
       <div className="relative mx-5 mt-4 aspect-[4/3] overflow-hidden rounded-3xl bg-secondary">
         <Cover src={blog.coverUrl || "/blog-thumb.svg"} />

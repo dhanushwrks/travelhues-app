@@ -234,6 +234,21 @@ export async function addDeskBlog(storyId: string, blog: StoryBlog) {
   await pull(token);
 }
 
+export async function updateDeskBlog(storyId: string, blogId: string, blog: StoryBlog) {
+  const token = tokenOrThrow();
+  let coverUrl = blog.coverUrl ?? "";
+  if (coverUrl && !coverUrl.startsWith("http://") && !coverUrl.startsWith("https://")) {
+    coverUrl = await uploadImage(token, coverUrl);
+  }
+  await send(
+    token,
+    `/stories/${storyId}/blogs/${blogId}`,
+    { title: blog.title, body: blog.body, coverUrl },
+    "PUT",
+  );
+  await pull(token);
+}
+
 async function pull(token: string) {
   const catalog = await fetchSpotCatalog();
   kindLabels = new Set(catalog.flatMap((item) => item.kinds));
