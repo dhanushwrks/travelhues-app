@@ -101,12 +101,23 @@ export function GlimpsePlayer({
   async function share(glimpse: Glimpse) {
     const url = `${window.location.origin}/shorts?start=${glimpse.id}`;
     setNotice("");
-    if (navigator.share) {
+    const data: ShareData = { title: glimpse.displayName || "Travelhues", text: glimpse.caption, url };
+    const canTryShare =
+      typeof navigator.share === "function" &&
+      (typeof navigator.canShare !== "function" || navigator.canShare(data));
+    if (canTryShare) {
       try {
-        await navigator.share({ title: glimpse.displayName || "Travelhues", text: glimpse.caption, url });
+        await navigator.share(data);
         return;
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "name" in error &&
+          (error as { name: string }).name === "AbortError"
+        ) {
+          return;
+        }
       }
     }
     try {

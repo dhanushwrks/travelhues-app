@@ -39,12 +39,23 @@ export function PostView({ id, name }: { id: string; name: string }) {
   async function share() {
     const url = window.location.href;
     setNotice("");
-    if (navigator.share) {
+    const data: ShareData = { title: "Travelhues", text: post?.caption, url };
+    const canTryShare =
+      typeof navigator.share === "function" &&
+      (typeof navigator.canShare !== "function" || navigator.canShare(data));
+    if (canTryShare) {
       try {
-        await navigator.share({ title: "Travelhues", text: post?.caption, url });
+        await navigator.share(data);
         return;
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "name" in error &&
+          (error as { name: string }).name === "AbortError"
+        ) {
+          return;
+        }
       }
     }
     try {
