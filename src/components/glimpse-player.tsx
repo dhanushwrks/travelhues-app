@@ -154,7 +154,7 @@ export function GlimpsePlayer({
   const open = glimpses.find((glimpse) => glimpse.id === commentsFor) ?? null;
 
   return (
-    <div className="relative h-full bg-foreground text-background md:mx-auto md:max-w-[430px]">
+    <div className="relative h-full w-full bg-foreground text-background">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center px-4 pt-3">
         <Link href="/" aria-label="Travelhues" className="pointer-events-auto rounded-full bg-background/95 px-3 py-1.5">
           <Image src="/travelhues-logo.png" alt="" width={374} height={102} className="h-8 w-fit" />
@@ -187,21 +187,7 @@ export function GlimpsePlayer({
               preload={index === active ? "auto" : "metadata"}
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
-            <div className="absolute right-3 bottom-6 z-10 grid justify-items-center gap-4 text-center text-white">
-              <Link
-                href={`/u/${glimpse.username}`}
-                aria-label={glimpse.displayName || glimpse.username}
-                className="relative size-11 overflow-hidden rounded-full bg-white/20 ring-2 ring-white"
-              >
-                {glimpse.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={mediaUrl(glimpse.avatarUrl)} alt="" className="size-full object-cover" />
-                ) : (
-                  <span className="grid size-full place-items-center text-sm font-medium">
-                    {(glimpse.displayName || glimpse.username).slice(0, 1)}
-                  </span>
-                )}
-              </Link>
+            <div className="absolute right-3 bottom-24 z-10 grid justify-items-center gap-4 text-center text-white md:bottom-6">
               <RailButton
                 label={glimpse.liked ? "Unlike" : "Like"}
                 pressed={glimpse.liked}
@@ -228,15 +214,31 @@ export function GlimpsePlayer({
                 <Bookmark className={`size-7 ${saved.includes(glimpse.id) ? "fill-current" : ""}`} />
               </RailButton>
             </div>
-            <div className="pointer-events-none absolute inset-x-4 bottom-6 grid gap-2 pr-16">
-              <p className="text-sm font-medium">@{glimpse.username}</p>
-              <p className="text-sm leading-5">{glimpse.caption}</p>
-              {notice ? <p className="text-xs text-white/80">{notice}</p> : null}
-              {glimpse.link ? (
-                <Link href={linkHref(glimpse.link)} className="pointer-events-auto justify-self-start rounded-full bg-background/90 px-3 py-1 text-xs text-foreground">
-                  {glimpse.link.label}
-                </Link>
-              ) : null}
+            <div className="pointer-events-none absolute inset-x-4 bottom-24 flex items-end gap-3 pr-16 text-white md:bottom-6">
+              <Link
+                href={`/u/${glimpse.username}`}
+                aria-label={glimpse.displayName || glimpse.username}
+                className="pointer-events-auto relative size-11 shrink-0 overflow-hidden rounded-full bg-white/20 ring-2 ring-white"
+              >
+                {glimpse.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={mediaUrl(glimpse.avatarUrl)} alt="" className="size-full object-cover" />
+                ) : (
+                  <span className="grid size-full place-items-center text-sm font-medium">
+                    {(glimpse.displayName || glimpse.username).slice(0, 1)}
+                  </span>
+                )}
+              </Link>
+              <div className="grid min-w-0 gap-2">
+                <p className="text-sm font-medium">@{glimpse.username}</p>
+                <p className="text-sm leading-5">{glimpse.caption}</p>
+                {notice ? <p className="text-xs text-white/80">{notice}</p> : null}
+                {glimpse.link ? (
+                  <Link href={linkHref(glimpse.link)} className="pointer-events-auto justify-self-start rounded-full bg-background/90 px-3 py-1 text-xs text-foreground">
+                    {glimpse.link.label}
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </article>
         ))}

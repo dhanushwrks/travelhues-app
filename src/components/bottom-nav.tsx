@@ -109,9 +109,19 @@ export function AppNav({
   const featured = items.some((item) => item.featured);
 
   return (
-    <nav className={`relative z-20 md:hidden ${featured ? "px-3 pt-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]" : "border-t border-border bg-card pb-[env(safe-area-inset-bottom)]"}`}>
+    <nav
+      className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-transparent md:hidden ${
+        featured
+          ? "px-3 pt-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          : "pb-[env(safe-area-inset-bottom)]"
+      }`}
+    >
       <ul
-        className={`grid ${featured ? "relative items-end rounded-[1.75rem] bg-card px-1 pt-2 pb-1.5 shadow-[0_8px_30px_rgba(18,35,42,0.08)] ring-1 ring-border" : ""} ${
+        className={`pointer-events-auto grid ${
+          featured
+            ? "relative items-end rounded-[1.75rem] bg-card px-1 pt-2 pb-1.5 shadow-[0_8px_30px_rgba(18,35,42,0.08)] ring-1 ring-border"
+            : ""
+        } ${
           items.length >= 5 ? "grid-cols-5" : items.length >= 4 ? "grid-cols-4" : items.length > 2 ? "grid-cols-3" : "grid-cols-2"
         }`}
       >
