@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { StoryBrowser } from "@/components/story-browser";
 import { StoryHero } from "@/components/story-hero";
 import { emptyLibrary } from "@/lib/marks";
-import { loadGlimpses, loadLibrary, loadStory } from "@/lib/remote";
+import { loadGlimpses, loadLibrary, loadProfile, loadStory } from "@/lib/remote";
 import { requireSession } from "@/lib/session";
 import { storyHref } from "@/lib/types";
 
@@ -30,10 +30,11 @@ export default async function StoryPage({
   const { creator, slug } = await params;
   const { spot = "", tab = "" } = await searchParams;
   const session = await requireSession();
-  const [story, library, glimpses] = await Promise.all([
+  const [story, library, glimpses, profile] = await Promise.all([
     loadStory(session.token, slug),
     loadLibrary(session.token),
     loadGlimpses(session.token),
+    loadProfile(session.token, creator),
   ]);
   if (!story) notFound();
   if (story.creator.username !== creator) {
@@ -43,6 +44,10 @@ export default async function StoryPage({
     redirect(`${storyHref(story)}${extra.size ? `?${extra.toString()}` : ""}`);
   }
 
+  // Story.creator.avatarUrl is denormalized and can still hold seed Unsplash faces;
+  // prefer the live profile photo when present.
+  const portrait = profile?.avatarUrl ?? story.creator.avatarUrl;
+
   const highlight =
     (glimpses ?? []).find((item) => item.link?.storySlug === story.slug && item.videoUrl)?.videoUrl ?? "";
 
@@ -51,7 +56,7 @@ export default async function StoryPage({
       <StoryHero
         cover={story.coverUrl}
         videoUrl={highlight}
-        portrait={story.creator.avatarUrl}
+        portrait={portrait}
         name={story.creator.displayName}
         username={story.creator.username}
       />

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ChevronLeft, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 
+import { mediaUrl } from "@/lib/api";
+
 export function StoryHero({
   cover,
   videoUrl,
@@ -19,6 +21,7 @@ export function StoryHero({
   username: string;
 }) {
   const [sound, setSound] = useState(false);
+  const avatar = mediaUrl(portrait);
 
   return (
     <div className="relative mx-4 mt-4 pb-14">
@@ -64,8 +67,8 @@ export function StoryHero({
       </div>
       <div className="absolute bottom-0 left-4 z-10 flex items-end gap-3">
         <span className="relative block size-28 shrink-0 overflow-hidden rounded-full border-[5px] border-card bg-secondary">
-          {portrait ? (
-            <Image src={portrait} alt="" fill className="object-cover" sizes="112px" />
+          {avatar ? (
+            <Portrait src={avatar} />
           ) : (
             <span className="grid size-full place-items-center font-display text-3xl">{name.slice(0, 1)}</span>
           )}
@@ -75,5 +78,15 @@ export function StoryHero({
         </Link>
       </div>
     </div>
+  );
+}
+
+function Portrait({ src }: { src: string }) {
+  if (src.includes("images.unsplash.com")) {
+    return <Image src={src} alt="" fill className="object-cover" sizes="112px" />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" className="absolute inset-0 size-full object-cover" />
   );
 }
