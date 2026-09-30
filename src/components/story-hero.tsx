@@ -10,11 +10,13 @@ export function StoryHero({
   videoUrl,
   portrait,
   name,
+  username,
 }: {
   cover: string;
   videoUrl: string;
   portrait: string;
   name: string;
+  username: string;
 }) {
   const [sound, setSound] = useState(false);
 
@@ -60,14 +62,17 @@ export function StoryHero({
           </button>
         ) : null}
       </div>
-      <div className="absolute bottom-0 left-4 z-10 size-28">
-        <span className="relative block size-full overflow-hidden rounded-full border-[5px] border-card bg-secondary">
+      <div className="absolute bottom-0 left-4 z-10 flex items-end gap-3">
+        <span className="relative block size-28 shrink-0 overflow-hidden rounded-full border-[5px] border-card bg-secondary">
           {portrait ? (
             <Image src={portrait} alt="" fill className="object-cover" sizes="112px" />
           ) : (
             <span className="grid size-full place-items-center font-display text-3xl">{name.slice(0, 1)}</span>
           )}
         </span>
+        <Link href={`/u/${username}`} className="mb-2 inline-flex text-sm font-medium">
+          {name}
+        </Link>
       </div>
     </div>
   );

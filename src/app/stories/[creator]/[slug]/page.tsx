@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { StoryBrowser } from "@/components/story-browser";
@@ -54,13 +53,11 @@ export default async function StoryPage({
         videoUrl={highlight}
         portrait={story.creator.avatarUrl}
         name={story.creator.displayName}
+        username={story.creator.username}
       />
       <div className="space-y-3 px-5 pt-2">
         <h1 className="font-display text-4xl md:text-5xl">{story.title}</h1>
         <p className="text-[15px] leading-6">{story.summary}</p>
-        <Link href={`/u/${story.creator.username}`} className="inline-flex text-sm font-medium">
-          {story.creator.displayName}
-        </Link>
       </div>
       <StoryBrowser
         story={story}

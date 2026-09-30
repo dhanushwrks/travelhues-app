@@ -2,10 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Bookmark, Heart } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
 import { mediaUrl } from "@/lib/api";
-import { postsServerSnapshot, postsSnapshot, storefrontBio, subscribeStudio } from "@/lib/mock/studio";
+import {
+  postBoard,
+  postsServerSnapshot,
+  postsSnapshot,
+  storefrontBio,
+  subscribeStudio,
+} from "@/lib/mock/studio";
 import { useDesk } from "@/lib/studio-desk";
 
 export function CreatorStorefront({
@@ -68,31 +75,52 @@ export function CreatorStorefront({
         </p>
       ) : (
         <ul className="grid grid-cols-3 gap-px bg-border md:grid-cols-4 lg:grid-cols-6">
-          {grid.map((post) => (
-            <li key={post.id} className="bg-card">
-              <Link href={`/storefront/posts/${post.id}`} className="block">
-                <figure className="relative aspect-square">
-                  {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={post.imageUrl} alt="" className="size-full object-cover" />
-                  ) : post.imageUrl ? (
-                    <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
-                  ) : (
-                    <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
-                  )}
-                  {post.media && post.media.length > 1 ? (
-                    <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                      {post.media.length}
-                    </figcaption>
-                  ) : post.kind !== "photo" ? (
-                    <figcaption className="absolute right-1.5 bottom-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                      {post.kind === "glimpse" ? "Short" : "Video"}
-                    </figcaption>
-                  ) : null}
-                </figure>
-              </Link>
-            </li>
-          ))}
+          {grid.map((post) => {
+            const likes = postBoard(post.id).likes;
+            const saves = 0;
+            return (
+              <li key={post.id} className="bg-card">
+                <Link
+                  href={`/storefront/posts/${post.id}`}
+                  className="group block focus-visible:outline-none"
+                  aria-label={`${likes} likes, ${saves} saves`}
+                >
+                  <figure className="relative aspect-square">
+                    {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={post.imageUrl} alt="" className="size-full object-cover" />
+                    ) : post.imageUrl ? (
+                      <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
+                    ) : (
+                      <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
+                    )}
+                    <span
+                      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                      aria-hidden
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        <Heart className="size-4 fill-current" />
+                        {likes}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Bookmark className="size-4 fill-current" />
+                        {saves}
+                      </span>
+                    </span>
+                    {post.media && post.media.length > 1 ? (
+                      <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                        {post.media.length}
+                      </figcaption>
+                    ) : post.kind !== "photo" ? (
+                      <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                        {post.kind === "glimpse" ? "Short" : "Video"}
+                      </figcaption>
+                    ) : null}
+                  </figure>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

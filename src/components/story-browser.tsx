@@ -51,34 +51,35 @@ export function StoryBrowser({
       </div>
       {tab === "spots" ? (
         <>
-      <div className="flex gap-2 overflow-x-auto px-5 py-4">
-        <FilterChip
-          label="All"
-          pressed={filter === "all"}
-          onClick={() => setFilter("all")}
-        />
-        {spotTypes.map((type) => (
-          <FilterChip
-            key={type}
-            label={spotTypeMeta[type].label}
-            pressed={filter === type}
-            tone={spotTypeMeta[type].chip}
-            onClick={() => setFilter(type)}
-          />
-        ))}
-      </div>
-      <ul className="divide-y divide-border px-5">
-        {spots.map((spot) => (
-          <li key={spot.id}>
-            <SpotRow spot={spot} onOpen={() => setOpenId(spot.id)} />
-          </li>
-        ))}
-      </ul>
-      {spots.length === 0 ? (
-        <p className="px-5 py-8 text-sm text-muted-foreground">
-          No spots in this category.
-        </p>
-      ) : null}
+          <div className="flex gap-2 overflow-x-auto px-5 py-4">
+            <FilterChip
+              label="All"
+              pressed={filter === "all"}
+              onClick={() => setFilter("all")}
+            />
+            {spotTypes.map((type) => (
+              <FilterChip
+                key={type}
+                label={spotTypeMeta[type].label}
+                pressed={filter === type}
+                tone={spotTypeMeta[type].chip}
+                onClick={() => setFilter(type)}
+              />
+            ))}
+          </div>
+          {spots.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-muted-foreground">
+              No spots in this category.
+            </p>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3 px-5 pb-10 lg:grid-cols-3">
+              {spots.map((spot) => (
+                <li key={spot.id}>
+                  <SpotCard spot={spot} onOpen={() => setOpenId(spot.id)} />
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       ) : null}
       {tab === "itinerary" ? (
@@ -86,29 +87,29 @@ export function StoryBrowser({
         {story.itineraries.length === 0 ? (
           <p className="text-sm text-muted-foreground">No itineraries in this story yet.</p>
         ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {story.itineraries.map((itinerary) => {
             const state = markState(library, "itinerary", story.slug, itinerary.slug);
             return (
             <li key={itinerary.slug} className="overflow-hidden rounded-2xl bg-white ring-1 ring-border">
               <Link href={itineraryHref(story, itinerary.slug)} className="block">
-                <div className="relative aspect-[2/1]">
+                <div className="relative aspect-[4/3]">
                   <Image
                     src={itinerary.coverUrl}
                     alt=""
                     fill
                     className="object-cover"
-                    sizes="430px"
+                    sizes="(max-width: 1024px) 50vw, 33vw"
                   />
                 </div>
-                <div className="space-y-1 px-4 pt-3">
-                  <p className="text-base font-medium">{itinerary.title}</p>
-                  <p className="text-sm leading-5 text-muted-foreground">
+                <div className="space-y-1 px-3 pt-3">
+                  <p className="line-clamp-2 text-sm font-medium">{itinerary.title}</p>
+                  <p className="text-xs leading-5 text-muted-foreground">
                     {itinerary.days.length} {itinerary.days.length === 1 ? "day" : "days"}
                   </p>
                 </div>
               </Link>
-              <div className="px-4 pt-3 pb-3">
+              <div className="px-3 pt-2 pb-3">
                 <MarkControls
                   traveler={traveler}
                   storySlug={story.slug}
@@ -131,21 +132,21 @@ export function StoryBrowser({
           {blogs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No blogs in this story yet.</p>
           ) : (
-            <ul className="grid gap-4 md:grid-cols-2">
+            <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               {blogs.map((blog) => (
                 <li key={blog.slug}>
                   <Link href={blogHref(story, blog.slug)} className="block overflow-hidden rounded-2xl bg-white ring-1 ring-border">
                   <span className="relative block aspect-[4/3] bg-muted">
                     {blog.coverUrl?.includes("images.unsplash.com") ? (
-                      <Image src={blog.coverUrl} alt="" fill className="object-cover" sizes="430px" />
+                      <Image src={blog.coverUrl} alt="" fill className="object-cover" sizes="(max-width: 1024px) 50vw, 33vw" />
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={blog.coverUrl || "/blog-thumb.svg"} alt="" className="size-full object-cover" />
                     )}
                   </span>
-                  <span className="block px-4 py-3">
-                    <p className="text-base font-medium">{blog.title}</p>
-                    <p className="mt-1 line-clamp-3 text-sm leading-6 text-muted-foreground">{plainText(blog.body)}</p>
+                  <span className="block px-3 py-3">
+                    <p className="line-clamp-2 text-sm font-medium">{blog.title}</p>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{plainText(blog.body)}</p>
                   </span>
                   </Link>
                 </li>
@@ -230,7 +231,7 @@ function FilterChip({
   );
 }
 
-function SpotRow({ spot, onOpen }: { spot: Spot; onOpen: () => void }) {
+function SpotCard({ spot, onOpen }: { spot: Spot; onOpen: () => void }) {
   const meta = spotTypeMeta[spot.type];
   const Icon = meta.icon;
 
@@ -238,18 +239,24 @@ function SpotRow({ spot, onOpen }: { spot: Spot; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex w-full gap-3 py-3 text-left"
+      className="w-full overflow-hidden rounded-2xl bg-white text-left ring-1 ring-border"
     >
-      <span className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
-        <Image src={spot.images[0]} alt="" fill className="object-cover" sizes="64px" />
+      <span className="relative block aspect-[4/3] bg-muted">
+        <Image
+          src={spot.images[0]}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="(max-width: 1024px) 50vw, 33vw"
+        />
       </span>
-      <span className="min-w-0">
-        <span className={`flex items-center gap-1.5 text-sm font-medium ${meta.ink}`}>
-          <Icon className="size-4" />
-          {meta.label}
+      <span className="block space-y-1 px-3 py-3">
+        <span className={`flex items-center gap-1 text-xs font-medium ${meta.ink}`}>
+          <Icon className="size-3.5 shrink-0" />
+          <span className="truncate">{meta.label}</span>
         </span>
-        <span className="mt-0.5 block text-base font-medium">{spot.title}</span>
-        <span className="mt-0.5 block text-sm text-muted-foreground">
+        <span className="line-clamp-2 block text-sm font-medium">{spot.title}</span>
+        <span className="line-clamp-2 block text-xs leading-5 text-muted-foreground">
           {formatSpotMeta(spot)}
         </span>
       </span>

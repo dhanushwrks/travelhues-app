@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Bookmark, Heart, MapPin, Route, Share2, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { BackLink } from "@/components/back-link";
 import { ProfileMast } from "@/components/profile-mast";
@@ -12,6 +12,13 @@ import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Glimpse } from "@/lib/glimpse";
 import { storyLikeCount, type Library } from "@/lib/marks";
+import {
+  postBoard,
+  postsServerSnapshot,
+  postsSnapshot,
+  subscribeStudio,
+  type MediaPost,
+} from "@/lib/mock/studio";
 import type { Person } from "@/lib/profile";
 import { storyHref, type Story } from "@/lib/types";
 
@@ -29,6 +36,8 @@ export function Storefront({
   library: Library;
 }) {
   const [shelf, setShelf] = useState<Shelf>("stories");
+  const allPosts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
+  const posts = allPosts.filter((post) => post.kind !== "glimpse");
   const traveled = [...new Set(person.countriesTraveled.map((code) => code.toUpperCase()))].filter((code) =>
     /^[A-Z]{2}$/.test(code),
   );
@@ -73,7 +82,12 @@ export function Storefront({
         <SocialLinks links={person.socials} />
       </div>
       <div className="mt-8 flex border-b border-border px-5">
-        <ShelfTab label="Posts" count={0} pressed={shelf === "posts"} onClick={() => setShelf("posts")} />
+        <ShelfTab
+          label="Posts"
+          count={posts.length}
+          pressed={shelf === "posts"}
+          onClick={() => setShelf("posts")}
+        />
         <ShelfTab label="Shorts" count={shorts.length} pressed={shelf === "shorts"} onClick={() => setShelf("shorts")} />
         <ShelfTab
           label="Stories"
@@ -82,12 +96,67 @@ export function Storefront({
           onClick={() => setShelf("stories")}
         />
       </div>
-      {shelf === "posts" ? (
-        <p className="px-5 pt-8 text-sm text-muted-foreground">No posts yet.</p>
-      ) : null}
+      {shelf === "posts" ? <PostsGrid posts={posts} /> : null}
       {shelf === "shorts" ? <ShortsGrid shorts={shorts} /> : null}
       {shelf === "stories" ? <StoryShelf stories={person.stories} library={library} /> : null}
     </div>
+  );
+}
+
+function PostsGrid({ posts }: { posts: MediaPost[] }) {
+  if (posts.length === 0) {
+    return <p className="px-5 pt-8 text-sm text-muted-foreground">No posts yet.</p>;
+  }
+
+  return (
+    <ul className="grid grid-cols-3 gap-px bg-border md:grid-cols-4 lg:grid-cols-6">
+      {posts.map((post) => {
+        const likes = postBoard(post.id).likes;
+        const saves = 0;
+        return (
+          <li key={post.id} className="bg-card">
+            <Link
+              href={`/storefront/posts/${post.id}`}
+              className="group block focus-visible:outline-none"
+              aria-label={`${likes} likes, ${saves} saves`}
+            >
+              <figure className="relative aspect-square">
+                {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={post.imageUrl} alt="" className="size-full object-cover" />
+                ) : post.imageUrl ? (
+                  <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
+                ) : (
+                  <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
+                )}
+                <span
+                  className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                  aria-hidden
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Heart className="size-4 fill-current" />
+                    {likes}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Bookmark className="size-4 fill-current" />
+                    {saves}
+                  </span>
+                </span>
+                {post.media && post.media.length > 1 ? (
+                  <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                    {post.media.length}
+                  </figcaption>
+                ) : post.kind !== "photo" ? (
+                  <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                    Video
+                  </figcaption>
+                ) : null}
+              </figure>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
