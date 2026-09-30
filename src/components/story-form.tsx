@@ -2,24 +2,45 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
-import { Loader } from "@/components/loader";
+import { Loader, PageLoader } from "@/components/loader";
 import { countryFlag } from "@/lib/countries";
-import { createDeskStory, useDeskHome } from "@/lib/studio-desk";
+import { createDeskStory, updateDeskStory, useDesk, useDeskHome } from "@/lib/studio-desk";
 
-export function StoryForm({ countries }: { countries: { code: string; name: string }[] }) {
+export function StoryForm({
+  countries,
+  storyId,
+}: {
+  countries: { code: string; name: string }[];
+  storyId?: string;
+}) {
   const router = useRouter();
   const home = useDeskHome();
   const trip = home === "/trips";
+  const editing = Boolean(storyId);
+  const { stories, status, problem } = useDesk();
+  const existing = storyId ? stories.find((item) => item.id === storyId) : undefined;
+
   const [country, setCountry] = useState(countries[0]?.code ?? "");
   const [title, setTitle] = useState("");
   const [about, setAbout] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [hydrated, setHydrated] = useState(!editing);
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editing || !existing || hydrated) return;
+    setCountry(existing.country);
+    setTitle(existing.title);
+    setAbout(existing.about);
+    setCoverUrl(existing.coverUrl);
+    setVideoUrl(existing.videoUrl);
+    setHydrated(true);
+  }, [editing, existing, hydrated]);
 
   async function onCover(file: File | undefined) {
     if (!file) return;
@@ -53,7 +74,7 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
     setVideoUrl(URL.createObjectURL(file));
   }
 
-  async function create(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
     if (!country) {
       setError("Choose a country");
@@ -74,41 +95,92 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
     setError("");
     setSaving(true);
     try {
-      const id = await createDeskStory({
+      const payload = {
         country,
         title: title.trim(),
         about: about.trim(),
         coverUrl,
-      });
-      router.push(`${home}/${id}`);
+      };
+      if (storyId) {
+        await updateDeskStory(storyId, payload);
+        router.push(`${home}/${storyId}`);
+      } else {
+        const id = await createDeskStory(payload);
+        router.push(`${home}/${id}`);
+      }
       router.refresh();
     } catch (caught) {
       setSaving(false);
-      setError(caught instanceof Error ? caught.message : trip ? "Could not save the trip" : "Could not save the story");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : trip
+            ? "Could not save the trip"
+            : "Could not save the story",
+      );
     }
   }
 
-  return (
-    <form onSubmit={create} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
-      <div className="flex items-center gap-3">
-        <Link href={home} className="text-sm font-medium" aria-label={trip ? "My trips" : "Studio"}>
+  if (editing && !existing && status !== "ready") {
+    return (
+      <div className="px-5 pt-6">
+        <Link href={home} className="text-sm font-medium">
           ←
         </Link>
-        <h1 className="text-lg font-medium">{trip ? "New trip" : "New story"}</h1>
-      </div>
-      <p className="text-sm leading-6">
-        {trip ? (
-          <>
-            <span className="font-medium">What is a trip?</span> A trip is one place you are planning. You add the
-            spots yourself, then build an itinerary from those spots.
-          </>
+        {status === "error" ? (
+          <p className="pt-6 text-sm text-primary">{problem}</p>
         ) : (
-          <>
-            <span className="font-medium">What is a story?</span> A story is one country you know well enough to share:
-            the places worth stopping, a plan for the days, and the notes you would send a friend.
-          </>
+          <PageLoader label={trip ? "Loading the trip" : "Loading the story"} />
         )}
-      </p>
+      </div>
+    );
+  }
+
+  if (editing && !existing) {
+    return (
+      <div className="px-5 pt-6">
+        <Link href={home} className="text-sm font-medium">
+          ←
+        </Link>
+        <p className="pt-6 text-sm text-muted-foreground">
+          {trip ? "That trip is not in your list." : "That story is not on this desk."}
+        </p>
+      </div>
+    );
+  }
+
+  const back = storyId ? `${home}/${storyId}` : home;
+  const heading = editing
+    ? trip
+      ? "Edit trip"
+      : "Edit story"
+    : trip
+      ? "New trip"
+      : "New story";
+
+  return (
+    <form onSubmit={save} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
+      <div className="flex items-center gap-3">
+        <Link href={back} className="text-sm font-medium" aria-label={trip ? "My trips" : "Studio"}>
+          ←
+        </Link>
+        <h1 className="text-lg font-medium">{heading}</h1>
+      </div>
+      {editing ? null : (
+        <p className="text-sm leading-6">
+          {trip ? (
+            <>
+              <span className="font-medium">What is a trip?</span> A trip is one place you are planning. You add the
+              spots yourself, then build an itinerary from those spots.
+            </>
+          ) : (
+            <>
+              <span className="font-medium">What is a story?</span> A story is one country you know well enough to share:
+              the places worth stopping, a plan for the days, and the notes you would send a friend.
+            </>
+          )}
+        </p>
+      )}
       <label className="grid gap-1 text-sm">
         <span className="font-medium">Country</span>
         <select
@@ -163,22 +235,32 @@ export function StoryForm({ countries }: { countries: { code: string; name: stri
       )}
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <div className="grid grid-cols-2 gap-3">
-        <Link href={home} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
+        <Link href={back} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
           Cancel
         </Link>
         <button
           type="submit"
-          disabled={reading || saving}
+          disabled={reading || saving || (editing && !hydrated)}
           className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving || reading ? <Loader label={reading ? "Reading photo" : "Saving"} /> : trip ? "Create trip" : "Create story"}
+          {saving || reading ? (
+            <Loader label={reading ? "Reading photo" : "Saving"} />
+          ) : editing ? (
+            "Save"
+          ) : trip ? (
+            "Create trip"
+          ) : (
+            "Create story"
+          )}
         </button>
       </div>
-      <p className="text-sm leading-6 text-muted-foreground">
-        {trip
-          ? "After this, add spots, then build an itinerary from those spots."
-          : "After this, you can add spots, a plan, and blogs inside the story."}
-      </p>
+      {editing ? null : (
+        <p className="text-sm leading-6 text-muted-foreground">
+          {trip
+            ? "After this, add spots, then build an itinerary from those spots."
+            : "After this, you can add spots, a plan, and blogs inside the story."}
+        </p>
+      )}
     </form>
   );
 }

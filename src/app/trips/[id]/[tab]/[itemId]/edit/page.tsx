@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { PlanForm } from "@/components/plan-form";
+import { SpotEdit } from "@/components/spot-edit";
 import { requireSession } from "@/lib/session";
 import { DeskScope } from "@/lib/studio-desk";
 
@@ -14,8 +15,15 @@ export default async function EditTripItineraryPage({
   const session = await requireSession();
   if (session.role !== "traveler") redirect("/");
   const { id, tab, itemId } = await params;
-  if (tab !== "plans") notFound();
   const { resume } = await searchParams;
+  if (tab === "spots") {
+    return (
+      <DeskScope home="/trips">
+        <SpotEdit storyId={id} spotId={itemId} />
+      </DeskScope>
+    );
+  }
+  if (tab !== "plans") notFound();
   return (
     <DeskScope home="/trips">
       <PlanForm storyId={id} planId={itemId} resume={resume === "1"} />

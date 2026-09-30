@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { BlogForm } from "@/components/blog-form";
 import { PlanForm } from "@/components/plan-form";
+import { SpotEdit } from "@/components/spot-edit";
 import { requireSession } from "@/lib/session";
 
 export default async function EditPlanPage({
@@ -15,6 +16,7 @@ export default async function EditPlanPage({
   if (session.role !== "tcc") redirect("/");
   const { id, tab, itemId } = await params;
   const { resume } = await searchParams;
+  if (tab === "spots") return <SpotEdit storyId={id} spotId={itemId} />;
   if (tab === "plans") return <PlanForm storyId={id} planId={itemId} resume={resume === "1"} />;
   if (tab === "blogs") return <BlogForm storyId={id} blogId={itemId} />;
   notFound();

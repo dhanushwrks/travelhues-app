@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { ArchiveAction } from "@/components/archive-action";
 import { BlogEditor } from "@/components/blog-editor";
 import { compressImage } from "@/components/profile-fields";
 import { Loader, PageLoader } from "@/components/loader";
@@ -128,6 +129,14 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
         <BlogEditor key={loaded} value={body} onChange={setBody} />
       </div>
       {error ? <p className="text-sm text-primary">{error}</p> : null}
+      {blogId && existing ? (
+        <ArchiveAction
+          storyId={storyId}
+          kind="blogs"
+          itemId={blogId}
+          archived={existing.archived ?? false}
+        />
+      ) : null}
       <button
         type="submit"
         disabled={pending}

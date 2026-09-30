@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 
+import { ArchiveAction } from "@/components/archive-action";
 import { Loader, PageLoader } from "@/components/loader";
 import { formatInr } from "@/lib/format";
 import { PictureTray } from "@/components/picture-tray";
@@ -356,6 +357,14 @@ export function PlanForm({
         />
       </div>
       {error ? <p className="text-sm text-primary">{error}</p> : null}
+      {planId && existing ? (
+        <ArchiveAction
+          storyId={storyId}
+          kind="plans"
+          itemId={planId}
+          archived={existing.archived ?? false}
+        />
+      ) : null}
       <div className="grid grid-cols-2 gap-3">
         <Link href={back} className="rounded-full border border-border px-4 py-3 text-center text-sm font-medium">
           Cancel

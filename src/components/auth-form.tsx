@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 import { GoogleSignInButton } from "@/components/google-sign-in";
@@ -139,16 +140,32 @@ export function AuthForm({
 }
 
 function Input({ name, label, type = "text" }: { name: string; label: string; type?: string }) {
+  const [visible, setVisible] = useState(false);
+  const password = type === "password";
+
   return (
     <label className="grid gap-1 text-left text-sm">
       <span>{label}</span>
-      <input
-        name={name}
-        type={type}
-        required
-        autoComplete={type === "password" ? "current-password" : "on"}
-        className="rounded-2xl border border-border bg-background px-4 py-3"
-      />
+      <span className="relative block">
+        <input
+          name={name}
+          type={password && visible ? "text" : type}
+          required
+          autoComplete={password ? "current-password" : "on"}
+          className={`w-full rounded-2xl border border-border bg-background px-4 py-3 ${password ? "pr-12" : ""}`}
+        />
+        {password ? (
+          <button
+            type="button"
+            aria-label={visible ? "Hide password" : "Show password"}
+            aria-pressed={visible}
+            onClick={() => setVisible((value) => !value)}
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground"
+          >
+            {visible ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+          </button>
+        ) : null}
+      </span>
     </label>
   );
 }

@@ -140,6 +140,37 @@ export async function createDeskStory(input: {
   return story.slug;
 }
 
+export async function updateDeskStory(
+  storyId: string,
+  input: {
+    country: string;
+    title: string;
+    about: string;
+    coverUrl: string;
+  },
+) {
+  const token = tokenOrThrow();
+  const coverUrl = await uploadImage(token, input.coverUrl);
+  const place = centers[input.country] ?? { lat: 13.75, lng: 100.5 };
+  await send(
+    token,
+    `/stories/${storyId}`,
+    {
+      title: input.title,
+      summary: input.about,
+      coverUrl,
+      destination: {
+        name: countryName(input.country),
+        country: input.country,
+        lat: place.lat,
+        lng: place.lng,
+      },
+    },
+    "PUT",
+  );
+  await pull(token);
+}
+
 export async function createDeskSpot(
   storyId: string,
   spot: Omit<StorySpot, "id"> & { lat: number; lng: number },

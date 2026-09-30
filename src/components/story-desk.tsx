@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { PageLoader } from "@/components/loader";
@@ -65,7 +66,15 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
           <Link href={home} className="text-sm font-medium" aria-label="Studio">
             ←
           </Link>
-          <h1 className="truncate text-lg font-medium">{story.title}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-lg font-medium">{story.title}</h1>
+          <Link
+            href={`${home}/${story.id}/edit`}
+            aria-label="Edit story"
+            title="Edit story"
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground"
+          >
+            <Pencil className="size-4" />
+          </Link>
         </div>
       )}
       <div className="relative mx-5 mt-4 aspect-[16/9] overflow-hidden rounded-3xl bg-secondary">
@@ -173,9 +182,8 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
                   <Card
                     imageUrl={blog.coverUrl || blogThumb}
                     title={blog.title}
-                    detail={blogExcerpt(blog.body, 100)}
+                    detail={blogExcerpt(blog.body, 18)}
                     archived={blog.archived}
-                    clamp={false}
                   />
                 </Link>
               </li>
@@ -254,7 +262,7 @@ function Card({
       </span>
       <span className="block flex-1 px-3 py-3">
         <span className="block text-sm font-medium">{title}</span>
-        <span className={`mt-1 block text-xs leading-5 text-muted-foreground ${clamp ? "line-clamp-2" : ""}`}>{detail}</span>
+        <span className={`mt-1 text-xs leading-5 text-muted-foreground ${clamp ? "line-clamp-2" : "block"}`}>{detail}</span>
       </span>
     </article>
   );
