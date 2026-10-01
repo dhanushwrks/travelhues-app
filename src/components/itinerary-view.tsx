@@ -11,15 +11,18 @@ import {
   CarTaxiFront,
   ExternalLink,
   Footprints,
+  Lock,
   Plane,
   Ticket,
   ChevronLeft,
   List,
   Map,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 
 import { Loader } from "@/components/loader";
+import { PurchaseLockBadge, PurchaseSheet } from "@/components/purchase-sheet";
 import { SpotSheet } from "@/components/spot-sheet";
 import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
@@ -93,13 +96,16 @@ export function ItineraryView({
   backHref?: string;
   backLabel?: string;
 }) {
+  const router = useRouter();
   const [day, setDay] = useState<number | "overview">("overview");
   const [mode, setMode] = useState<"list" | "map">("list");
   const [openId, setOpenId] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const hideIntro = scrolled || mode === "map";
   const allReservations = itinerary.reservations ?? [];
+  const locked = Boolean(itinerary.locked);
 
   const visibleDays = useMemo(
     () =>
@@ -137,6 +143,11 @@ export function ItineraryView({
   }, [budget, day, story, visibleDays, allReservations]);
   const openSpot = story.spots.find((spot) => spot.id === openId) ?? null;
 
+  function askPurchase() {
+    if (!locked) return;
+    setPurchaseOpen(true);
+  }
+
   return (
     <div className="flex h-full flex-col">
       <header className="shrink-0 bg-card">
@@ -155,6 +166,15 @@ export function ItineraryView({
                 <Link href={editHref} className="mt-1 shrink-0 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium">
                   Edit
                 </Link>
+              ) : locked ? (
+                <button
+                  type="button"
+                  onClick={askPurchase}
+                  className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-white shadow-sm ring-1 ring-border"
+                  aria-label="Purchase to unlock"
+                >
+                  <Lock className="size-3.5" />
+                </button>
               ) : null}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -237,7 +257,46 @@ export function ItineraryView({
           onScroll={() => setScrolled((listRef.current?.scrollTop ?? 0) > 12)}
           className={`min-h-0 overflow-y-auto px-5 pt-2 pb-8 ${mode === "map" ? "hidden lg:block" : ""}`}
         >
-          {timeline.map((section) => (
+          {locked
+            ? visibleDays.map((section, index) => {
+                const dayNumber =
+                  day === "overview" ? index + 1 : typeof day === "number" ? day + 1 : index + 1;
+                return (
+                  <section key={`locked-${dayNumber}-${section.title}`} className="mb-8">
+                    <h3 className="text-base font-medium">
+                      Day {dayNumber}
+                      <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                        {section.title}
+                      </span>
+                    </h3>
+                    <ol className="relative mt-4">
+                      {[0, 1, 2].map((slot) => (
+                        <li key={slot} className="relative flex gap-3 pb-5">
+                          <span className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                            {slot + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={askPurchase}
+                            className="relative flex min-w-0 flex-1 overflow-hidden rounded-2xl bg-card p-2 text-left ring-1 ring-border"
+                          >
+                            <span className="pointer-events-none flex min-w-0 flex-1 gap-3 blur-[6px] select-none">
+                              <span className="size-16 shrink-0 rounded-xl bg-muted" />
+                              <span className="min-w-0 py-0.5">
+                                <span className="block h-4 w-32 rounded bg-muted" />
+                                <span className="mt-2 block h-3 w-24 rounded bg-muted" />
+                                <span className="mt-2 block h-3 w-40 rounded bg-muted" />
+                              </span>
+                            </span>
+                            <PurchaseLockBadge className="top-1/2 right-3 -translate-y-1/2" />
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                );
+              })
+            : timeline.map((section) => (
             <section key={section.key} className="mb-8">
               <h3 className="text-base font-medium">
                 Day {section.dayNumber}
@@ -364,18 +423,32 @@ export function ItineraryView({
             </section>
           ))}
         </div>
-        <div className={`h-full min-h-0 overflow-hidden lg:border-l lg:border-border ${mode === "list" ? "hidden lg:block" : ""}`}>
-          <RouteMap
-            key={`${day}-${points.map((point) => point.id).join("-")}`}
-            points={points}
-            connected={day !== "overview"}
-            onSelect={setOpenId}
-          />
+        <div className={`relative h-full min-h-0 overflow-hidden lg:border-l lg:border-border ${mode === "list" ? "hidden lg:block" : ""}`}>
+          {locked ? (
+            <button
+              type="button"
+              onClick={askPurchase}
+              className="absolute inset-0 z-10 grid place-items-center bg-background/20"
+              aria-label="Purchase to unlock map"
+            >
+              <span className="grid size-12 place-items-center rounded-full bg-white shadow-sm ring-1 ring-border">
+                <Lock className="size-5" />
+              </span>
+            </button>
+          ) : null}
+          <div className={locked ? "pointer-events-none h-full blur-[6px] select-none" : "h-full"}>
+            <RouteMap
+              key={`${day}-${points.map((point) => point.id).join("-")}-${locked ? "locked" : "open"}`}
+              points={locked ? [] : points}
+              connected={!locked && day !== "overview"}
+              onSelect={locked ? () => undefined : setOpenId}
+            />
+          </div>
         </div>
       </div>
       <SpotSheet
         spot={openSpot}
-        open={openSpot !== null}
+        open={openSpot !== null && !locked}
         storySlug={story.slug}
         traveler={traveler}
         liked={openSpot ? markState(library, "spot", story.slug, "", openSpot.id).liked : false}
@@ -384,6 +457,19 @@ export function ItineraryView({
         icons
         onOpenChange={(open) => {
           if (!open) setOpenId(null);
+        }}
+      />
+      <PurchaseSheet
+        open={purchaseOpen}
+        onOpenChange={setPurchaseOpen}
+        storySlug={story.slug}
+        kind="itinerary"
+        itemId={itinerary.slug}
+        title={itinerary.title}
+        priceInr={itinerary.priceInr ?? 99}
+        onPurchased={() => {
+          setPurchaseOpen(false);
+          router.refresh();
         }}
       />
     </div>

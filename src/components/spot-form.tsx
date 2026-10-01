@@ -9,6 +9,7 @@ import { BackLink } from "@/components/back-link";
 import { PlaceCard, PlacePicker, PlaceSearch, blankPlace, nearbyPlaces, type ChosenPlace } from "@/components/maps";
 import { Loader } from "@/components/loader";
 import { PictureTray } from "@/components/picture-tray";
+import { PurchaseAccessFields } from "@/components/purchase-access-fields";
 import { fetchSpotCatalog, seedSpotCatalog, type SpotCatalogItem } from "@/lib/spot-catalog";
 import { createDeskSpot, useDesk, useDeskHome } from "@/lib/studio-desk";
 
@@ -59,6 +60,8 @@ export function SpotForm({
   const [ageGroup, setAgeGroup] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [referenceUrl, setReferenceUrl] = useState("");
+  const [purchaseOnly, setPurchaseOnly] = useState(false);
+  const [priceInr, setPriceInr] = useState(99);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const chosen = catalog.find((item) => item.slug === category);
@@ -150,6 +153,8 @@ export function SpotForm({
         ageGroup,
         affiliateUrl: affiliateUrl.trim(),
         referenceUrl: referenceUrl.trim(),
+        purchaseOnly,
+        priceInr: purchaseOnly ? priceInr : 99,
       });
       router.push(back);
       router.refresh();
@@ -348,6 +353,12 @@ export function SpotForm({
           className={field}
         />
       </label>
+      <PurchaseAccessFields
+        purchaseOnly={purchaseOnly}
+        priceInr={priceInr}
+        onPurchaseOnlyChange={setPurchaseOnly}
+        onPriceChange={setPriceInr}
+      />
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       </div>
       <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-border bg-card px-5 py-3">

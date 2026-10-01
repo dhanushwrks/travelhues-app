@@ -22,6 +22,9 @@ export type Spot = {
   avgCostThb: number;
   tags: string[];
   archived?: boolean;
+  purchaseOnly?: boolean;
+  priceInr?: number;
+  locked?: boolean;
 };
 
 export const commuteModes = ["walk", "cycle", "cab", "public", "self_drive", "flight"] as const;
@@ -86,6 +89,9 @@ export type Itinerary = {
   days: Day[];
   reservations?: Reservation[];
   archived?: boolean;
+  purchaseOnly?: boolean;
+  priceInr?: number;
+  locked?: boolean;
 };
 
 export type Creator = {
@@ -108,6 +114,9 @@ export type StoryBlog = {
   body: string;
   coverUrl?: string;
   archived?: boolean;
+  purchaseOnly?: boolean;
+  priceInr?: number;
+  locked?: boolean;
 };
 
 export type Story = {

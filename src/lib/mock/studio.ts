@@ -75,6 +75,8 @@ export type StorySpot = {
   referenceUrl: string;
   tips: string;
   archived?: boolean;
+  purchaseOnly?: boolean;
+  priceInr?: number;
 };
 
 export type PlanNote = {
@@ -172,6 +174,8 @@ export type StoryPlan = {
   days: PlanDay[];
   reservations: PlanReservation[];
   archived?: boolean;
+  purchaseOnly?: boolean;
+  priceInr?: number;
 };
 
 export type StoryBlog = {
@@ -180,6 +184,8 @@ export type StoryBlog = {
   body: string;
   coverUrl?: string;
   archived?: boolean;
+  purchaseOnly?: boolean;
+  priceInr?: number;
 };
 
 const blogTags = /^(p|h2|strong|em|u|ul|ol|li|blockquote|a|br)$/i;

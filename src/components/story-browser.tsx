@@ -2,17 +2,28 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { LoginPrompt } from "@/components/login-prompt";
+import { PurchaseLockBadge, PurchaseSheet } from "@/components/purchase-sheet";
 import { SpotSheet } from "@/components/spot-sheet";
 import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
 import { formatSpotMeta } from "@/lib/format";
 import { markState, type Library } from "@/lib/marks";
+import type { PurchaseKind } from "@/lib/remote";
 import { itineraryHref, blogHref, spotTypes, type Spot, type SpotType, type Story } from "@/lib/types";
 
 type StorySection = "spots" | "itinerary" | "blogs";
+
+type PurchaseTarget = {
+  kind: PurchaseKind;
+  itemId: string;
+  title: string;
+  priceInr: number;
+  href?: string;
+};
 
 export function StoryBrowser({
   story,
@@ -29,10 +40,12 @@ export function StoryBrowser({
   initialTab?: StorySection;
   guest?: boolean;
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState<StorySection>(initialSpot && !guest ? "spots" : initialTab);
   const [filter, setFilter] = useState<SpotType | "all">("all");
   const [openId, setOpenId] = useState<string | null>(guest ? null : initialSpot || null);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [purchase, setPurchase] = useState<PurchaseTarget | null>(null);
   const finds =
     filter === "all"
       ? story.spots
@@ -42,6 +55,14 @@ export function StoryBrowser({
 
   function askLogin() {
     setLoginOpen(true);
+  }
+
+  function openPurchase(target: PurchaseTarget) {
+    if (guest) {
+      askLogin();
+      return;
+    }
+    setPurchase(target);
   }
 
   return (
@@ -80,7 +101,14 @@ export function StoryBrowser({
                     spot={spot}
                     onOpen={() => {
                       if (guest) askLogin();
-                      else setOpenId(spot.id);
+                      else if (spot.locked) {
+                        openPurchase({
+                          kind: "spot",
+                          itemId: spot.id,
+                          title: spot.title,
+                          priceInr: spot.priceInr ?? 99,
+                        });
+                      } else setOpenId(spot.id);
                     }}
                   />
                 </li>
@@ -107,6 +135,7 @@ export function StoryBrowser({
                         className="object-cover"
                         sizes="(max-width: 1024px) 50vw, 33vw"
                       />
+                      {itinerary.locked ? <PurchaseLockBadge /> : null}
                     </div>
                     <div className="space-y-1 px-3 pt-3">
                       <p className="line-clamp-2 text-sm font-medium">{itinerary.title}</p>
@@ -120,6 +149,22 @@ export function StoryBrowser({
                   <li key={itinerary.slug} className="overflow-hidden rounded-2xl bg-white ring-1 ring-border">
                     {guest ? (
                       <button type="button" className="block w-full text-left" onClick={askLogin}>
+                        {card}
+                      </button>
+                    ) : itinerary.locked ? (
+                      <button
+                        type="button"
+                        className="block w-full text-left"
+                        onClick={() =>
+                          openPurchase({
+                            kind: "itinerary",
+                            itemId: itinerary.slug,
+                            title: itinerary.title,
+                            priceInr: itinerary.priceInr ?? 99,
+                            href: itineraryHref(story, itinerary.slug),
+                          })
+                        }
+                      >
                         {card}
                       </button>
                     ) : (
@@ -169,6 +214,7 @@ export function StoryBrowser({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={blog.coverUrl || "/blog-thumb.svg"} alt="" className="size-full object-cover" />
                       )}
+                      {blog.locked ? <PurchaseLockBadge /> : null}
                     </span>
                     <span className="block px-3 py-3">
                       <p className="line-clamp-2 text-sm font-medium">{blog.title}</p>
@@ -185,6 +231,22 @@ export function StoryBrowser({
                         type="button"
                         className="block w-full overflow-hidden rounded-2xl bg-white text-left ring-1 ring-border"
                         onClick={askLogin}
+                      >
+                        {card}
+                      </button>
+                    ) : blog.locked ? (
+                      <button
+                        type="button"
+                        className="block w-full overflow-hidden rounded-2xl bg-white text-left ring-1 ring-border"
+                        onClick={() =>
+                          openPurchase({
+                            kind: "blog",
+                            itemId: blog.slug,
+                            title: blog.title,
+                            priceInr: blog.priceInr ?? 99,
+                            href: blogHref(story, blog.slug),
+                          })
+                        }
                       >
                         {card}
                       </button>
@@ -220,6 +282,23 @@ export function StoryBrowser({
         onClose={() => setLoginOpen(false)}
         title="Sign in to open this"
         body="Sign in to open finds, plans, and blogs inside a story."
+      />
+      <PurchaseSheet
+        open={purchase !== null}
+        onOpenChange={(open) => {
+          if (!open) setPurchase(null);
+        }}
+        storySlug={story.slug}
+        kind={purchase?.kind ?? "spot"}
+        itemId={purchase?.itemId ?? ""}
+        title={purchase?.title ?? ""}
+        priceInr={purchase?.priceInr ?? 99}
+        onPurchased={() => {
+          const href = purchase?.href;
+          setPurchase(null);
+          if (href) router.push(href);
+          else router.refresh();
+        }}
       />
     </>
   );
@@ -303,6 +382,7 @@ function SpotCard({ spot, onOpen }: { spot: Spot; onOpen: () => void }) {
           className="object-cover"
           sizes="(max-width: 1024px) 50vw, 33vw"
         />
+        {spot.locked ? <PurchaseLockBadge /> : null}
       </span>
       <span className="block space-y-1 px-3 py-3">
         <span className={`flex items-center gap-1 text-xs font-medium ${meta.ink}`}>

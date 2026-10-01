@@ -119,6 +119,27 @@ export function loadLibrary(token?: string) {
   return load<Library>("/marks", token);
 }
 
+export type PurchaseKind = "spot" | "itinerary" | "blog";
+
+export async function purchaseContent(
+  token: string,
+  input: { storySlug: string; kind: PurchaseKind; itemId: string },
+) {
+  const response = await fetch(`${base}/purchases`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(message || "Could not complete purchase");
+  }
+  return response.json() as Promise<{ ok: boolean; alreadyOwned?: boolean }>;
+}
+
 export function loadCreator(token: string | undefined, username: string) {
   return load<{ creator: Story["creator"]; stories: Story[] }>(
     `/creators/${username}`,

@@ -191,7 +191,36 @@ export async function createDeskSpot(
     avgMinutes: toMinutes(spot.duration),
     avgCostThb: toCost(spot.cost),
     tags: [spot.subcategory, spot.difficulty, spot.season, spot.ageGroup].filter(Boolean),
+    purchaseOnly: spot.purchaseOnly ?? false,
+    priceInr: spot.priceInr ?? 99,
   });
+  await pull(token);
+}
+
+export async function updateDeskSpot(storyId: string, spotId: string, spot: StorySpot) {
+  const token = tokenOrThrow();
+  if (spot.lat == null || spot.lng == null) throw new Error("Drop a pin on the map");
+  const images = [];
+  for (const image of spot.images) images.push(await uploadImage(token, image));
+  await send(
+    token,
+    `/stories/${storyId}/spots/${spotId}`,
+    {
+      type: spot.category,
+      title: spot.title,
+      description: packDescription(spot.summary, spot.tips, spot.affiliateUrl, spot.referenceUrl),
+      images,
+      lat: spot.lat,
+      lng: spot.lng,
+      address: spot.placeName,
+      avgMinutes: toMinutes(spot.duration),
+      avgCostThb: toCost(spot.cost),
+      tags: [spot.subcategory, spot.difficulty, spot.season, spot.ageGroup].filter(Boolean),
+      purchaseOnly: spot.purchaseOnly ?? false,
+      priceInr: spot.priceInr ?? 99,
+    },
+    "PUT",
+  );
   await pull(token);
 }
 
@@ -214,6 +243,8 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
       blocks: day.blocks.map((block) => toBlock(block, story?.spots ?? [])),
     })),
     reservations: plan.reservations.map(toPublicReservation),
+    purchaseOnly: plan.purchaseOnly ?? false,
+    priceInr: plan.priceInr ?? 99,
   });
   await pull(token);
   return id;
@@ -239,6 +270,8 @@ export async function updateDeskPlan(storyId: string, planId: string, plan: Omit
         blocks: day.blocks.map((block) => toBlock(block, story?.spots ?? [])),
       })),
       reservations: plan.reservations.map(toPublicReservation),
+      purchaseOnly: plan.purchaseOnly ?? false,
+      priceInr: plan.priceInr ?? 99,
     },
     "PUT",
   );
@@ -272,6 +305,8 @@ export async function addDeskBlog(storyId: string, blog: StoryBlog) {
     title: blog.title,
     body: blog.body,
     coverUrl,
+    purchaseOnly: blog.purchaseOnly ?? false,
+    priceInr: blog.priceInr ?? 99,
   });
   await pull(token);
 }
@@ -285,7 +320,13 @@ export async function updateDeskBlog(storyId: string, blogId: string, blog: Stor
   await send(
     token,
     `/stories/${storyId}/blogs/${blogId}`,
-    { title: blog.title, body: blog.body, coverUrl },
+    {
+      title: blog.title,
+      body: blog.body,
+      coverUrl,
+      purchaseOnly: blog.purchaseOnly ?? false,
+      priceInr: blog.priceInr ?? 99,
+    },
     "PUT",
   );
   await pull(token);
@@ -369,6 +410,8 @@ function toDesk(story: Story): CreatorStory {
       body: blog.body,
       coverUrl: blog.coverUrl ? mediaUrl(blog.coverUrl) : "",
       archived: blog.archived ?? false,
+      purchaseOnly: blog.purchaseOnly ?? false,
+      priceInr: blog.priceInr ?? 99,
     })),
   };
 }
@@ -404,6 +447,8 @@ function toSpot(spot: Spot): StorySpot {
     referenceUrl: notes.reference,
     tips: notes.tips,
     archived: spot.archived ?? false,
+    purchaseOnly: spot.purchaseOnly ?? false,
+    priceInr: spot.priceInr ?? 99,
   };
 }
 
@@ -417,6 +462,8 @@ function toPlan(plan: Story["itineraries"][number]): StoryPlan {
     days: plan.days.map((day, index) => toDay(day, index)),
     reservations: mergedReservations(plan.reservations, migrated),
     archived: plan.archived ?? false,
+    purchaseOnly: plan.purchaseOnly ?? false,
+    priceInr: plan.priceInr ?? 99,
   };
 }
 
@@ -634,6 +681,9 @@ export function deskPlanAsPublic(plan: StoryPlan): Itinerary {
     })),
     reservations: plan.reservations.map(toPublicReservation),
     archived: plan.archived ?? false,
+    purchaseOnly: plan.purchaseOnly ?? false,
+    priceInr: plan.priceInr ?? 99,
+    locked: false,
   };
 }
 
@@ -652,5 +702,8 @@ function deskSpotAsPublic(spot: StorySpot): Spot {
     avgCostThb: toCost(spot.cost),
     tags: [spot.subcategory, spot.difficulty, spot.season, spot.ageGroup].filter(Boolean),
     archived: spot.archived ?? false,
+    purchaseOnly: spot.purchaseOnly ?? false,
+    priceInr: spot.priceInr ?? 99,
+    locked: false,
   };
 }

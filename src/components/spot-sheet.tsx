@@ -2,12 +2,15 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { ExternalLink, Navigation } from "lucide-react";
+import { ExternalLink, Lock, Navigation } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Loader } from "@/components/loader";
+import { PurchaseSheet } from "@/components/purchase-sheet";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { spotTypeMeta } from "@/components/spot-type";
-import { formatCost, formatDuration } from "@/lib/format";
+import { formatCost, formatDuration, formatInr } from "@/lib/format";
 import { unpackDescription } from "@/lib/spot-copy";
 import type { Spot } from "@/lib/types";
 import { MarkControls } from "@/components/mark-controls";
@@ -45,105 +48,150 @@ export function SpotSheet({
   likes?: number;
   icons?: boolean;
 }) {
+  const router = useRouter();
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const meta = spot ? spotTypeMeta[spot.type] : null;
   const copy = spot ? unpackDescription(spot.description) : null;
+  const locked = Boolean(spot?.locked);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="max-h-[92dvh] w-full max-w-none gap-0 overflow-y-auto rounded-t-3xl p-0"
-      >
-        {spot && meta ? (
-          <>
-            <div className="relative aspect-[4/3] bg-muted">
-              <Image
-                src={spot.images[0]}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="430px"
-              />
-            </div>
-            <div className="space-y-4 px-5 pt-4 pb-8">
-              <p className={`text-sm font-medium ${meta.ink}`}>{meta.label}</p>
-              <SheetTitle className="font-display text-3xl leading-tight font-medium">
-                {spot.title}
-              </SheetTitle>
-              {storySlug ? (
-                <MarkControls
-                  key={spot.id}
-                  traveler={traveler}
-                  storySlug={storySlug}
-                  kind="spot"
-                  spotId={spot.id}
-                  liked={liked}
-                  saved={saved}
-                  likes={likes}
-                  icons={icons}
-                />
-              ) : null}
-              <p className="text-[15px] leading-6 whitespace-pre-wrap">{copy?.summary}</p>
-              {copy?.tips ? (
-                <div className="rounded-2xl bg-secondary px-4 py-3">
-                  <p className="text-sm font-medium">Tips</p>
-                  <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{copy.tips}</p>
-                </div>
-              ) : null}
-              <p className="text-sm text-muted-foreground">
-                {formatDuration(spot.avgMinutes, spot.type)},{" "}
-                {formatCost(spot.avgCostThb, spot.type)}
-              </p>
-              <p className="text-sm text-muted-foreground">{spot.address}</p>
-              {spot.tags.length > 0 ? (
-                <ul className="flex flex-wrap gap-2">
-                  {spot.tags.map((tag) => (
-                    <li
-                      key={tag}
-                      className="rounded-full bg-secondary px-3 py-1 text-sm"
-                    >
-                      {tag}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <div className="overflow-hidden rounded-2xl">
-                {open ? (
-                  <PinMap lng={spot.lng} lat={spot.lat} label={spot.title} />
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          className="max-h-[92dvh] w-full max-w-none gap-0 overflow-y-auto rounded-t-3xl p-0"
+        >
+          {spot && meta ? (
+            <>
+              <div className="relative aspect-[4/3] bg-muted">
+                {spot.images[0] ? (
+                  <Image
+                    src={spot.images[0]}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="430px"
+                  />
+                ) : null}
+                {locked ? (
+                  <span className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-white shadow-sm">
+                    <Lock className="size-3.5" />
+                  </span>
                 ) : null}
               </div>
-              <div className="grid gap-2">
-                <a href={directionsHref(spot)} target="_blank" rel="noopener noreferrer" className={outlineButton}>
-                  <Navigation className="size-4" />
-                  Get directions
-                </a>
-                {copy?.affiliate ? (
-                  <a href={copy.affiliate} target="_blank" rel="noopener noreferrer" className={primaryButton}>
-                    {spot.type === "stay" ? "Reserve here" : "Book here"}
-                  </a>
-                ) : null}
-                {copy?.reference ? (
-                  <a href={copy.reference} target="_blank" rel="noopener noreferrer" className={outlineButton}>
-                    <ExternalLink className="size-4" />
-                    {siteLabel(copy.reference)}
-                  </a>
-                ) : null}
-                {extraLinks(copy?.summary ?? "", copy?.tips ?? "", [copy?.affiliate ?? "", copy?.reference ?? ""]).map(
-                  (url) => (
-                    <a key={url} href={url} target="_blank" rel="noopener noreferrer" className={outlineButton}>
-                      <ExternalLink className="size-4" />
-                      {siteLabel(url)}
-                    </a>
-                  ),
+              <div className="space-y-4 px-5 pt-4 pb-8">
+                <p className={`text-sm font-medium ${meta.ink}`}>{meta.label}</p>
+                <SheetTitle className="font-display text-3xl leading-tight font-medium">
+                  {spot.title}
+                </SheetTitle>
+                {locked ? (
+                  <div className="grid gap-3 rounded-2xl bg-secondary p-4">
+                    <p className="text-sm leading-6">
+                      This content is purchase only. Please purchase at {formatInr(spot.priceInr ?? 99)}.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPurchaseOpen(true)}
+                      className={primaryButton}
+                    >
+                      Purchase · {formatInr(spot.priceInr ?? 99)}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {storySlug ? (
+                      <MarkControls
+                        key={spot.id}
+                        traveler={traveler}
+                        storySlug={storySlug}
+                        kind="spot"
+                        spotId={spot.id}
+                        liked={liked}
+                        saved={saved}
+                        likes={likes}
+                        icons={icons}
+                      />
+                    ) : null}
+                    <p className="text-[15px] leading-6 whitespace-pre-wrap">{copy?.summary}</p>
+                    {copy?.tips ? (
+                      <div className="rounded-2xl bg-secondary px-4 py-3">
+                        <p className="text-sm font-medium">Tips</p>
+                        <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{copy.tips}</p>
+                      </div>
+                    ) : null}
+                    <p className="text-sm text-muted-foreground">
+                      {formatDuration(spot.avgMinutes, spot.type)},{" "}
+                      {formatCost(spot.avgCostThb, spot.type)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{spot.address}</p>
+                    {spot.tags.length > 0 ? (
+                      <ul className="flex flex-wrap gap-2">
+                        {spot.tags.map((tag) => (
+                          <li
+                            key={tag}
+                            className="rounded-full bg-secondary px-3 py-1 text-sm"
+                          >
+                            {tag}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <div className="overflow-hidden rounded-2xl">
+                      {open ? (
+                        <PinMap lng={spot.lng} lat={spot.lat} label={spot.title} />
+                      ) : null}
+                    </div>
+                    <div className="grid gap-2">
+                      <a href={directionsHref(spot)} target="_blank" rel="noopener noreferrer" className={outlineButton}>
+                        <Navigation className="size-4" />
+                        Get directions
+                      </a>
+                      {copy?.affiliate ? (
+                        <a href={copy.affiliate} target="_blank" rel="noopener noreferrer" className={primaryButton}>
+                          {spot.type === "stay" ? "Reserve here" : "Book here"}
+                        </a>
+                      ) : null}
+                      {copy?.reference ? (
+                        <a href={copy.reference} target="_blank" rel="noopener noreferrer" className={outlineButton}>
+                          <ExternalLink className="size-4" />
+                          {siteLabel(copy.reference)}
+                        </a>
+                      ) : null}
+                      {extraLinks(copy?.summary ?? "", copy?.tips ?? "", [copy?.affiliate ?? "", copy?.reference ?? ""]).map(
+                        (url) => (
+                          <a key={url} href={url} target="_blank" rel="noopener noreferrer" className={outlineButton}>
+                            <ExternalLink className="size-4" />
+                            {siteLabel(url)}
+                          </a>
+                        ),
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
-            </div>
-          </>
-        ) : (
-          <SheetTitle className="sr-only">Spot</SheetTitle>
-        )}
-      </SheetContent>
-    </Sheet>
+            </>
+          ) : (
+            <SheetTitle className="sr-only">Spot</SheetTitle>
+          )}
+        </SheetContent>
+      </Sheet>
+      {spot && storySlug ? (
+        <PurchaseSheet
+          open={purchaseOpen}
+          onOpenChange={setPurchaseOpen}
+          storySlug={storySlug}
+          kind="spot"
+          itemId={spot.id}
+          title={spot.title}
+          priceInr={spot.priceInr ?? 99}
+          onPurchased={() => {
+            setPurchaseOpen(false);
+            onOpenChange(false);
+            router.refresh();
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 

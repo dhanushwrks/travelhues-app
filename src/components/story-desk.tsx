@@ -153,7 +153,13 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
               .map((find) => (
               <li key={find.id} className="flex">
                 <Link href={`${home}/${story.id}/spots/${find.id}`} className="flex h-full w-full">
-                  <Card imageUrl={find.images[0] ?? ""} title={find.title} detail={find.summary} archived={find.archived} />
+                  <Card
+                    imageUrl={find.images[0] ?? ""}
+                    title={find.title}
+                    detail={find.summary}
+                    archived={find.archived}
+                    purchaseOnly={find.purchaseOnly}
+                  />
                 </Link>
               </li>
             ))
@@ -167,6 +173,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
                     title={plan.title}
                     detail={`${plan.days.length} ${plan.days.length === 1 ? "day" : "days"}`}
                     archived={plan.archived}
+                    purchaseOnly={plan.purchaseOnly}
                   />
                 </Link>
               </li>
@@ -181,6 +188,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
                     title={blog.title}
                     detail={blogExcerpt(blog.body, 18)}
                     archived={blog.archived}
+                    purchaseOnly={blog.purchaseOnly}
                   />
                 </Link>
               </li>
@@ -239,12 +247,14 @@ function Card({
   title,
   detail,
   archived = false,
+  purchaseOnly = false,
   clamp = true,
 }: {
   imageUrl: string;
   title: string;
   detail: string;
   archived?: boolean;
+  purchaseOnly?: boolean;
   clamp?: boolean;
 }) {
   return (
@@ -254,6 +264,14 @@ function Card({
         {archived ? (
           <span className="absolute top-2 left-2 rounded-full bg-foreground px-2 py-1 text-[11px] font-medium text-background">
             Archived
+          </span>
+        ) : null}
+        {purchaseOnly ? (
+          <span className="absolute top-2 right-2 grid size-8 place-items-center rounded-full bg-white shadow-sm">
+            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.25">
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
           </span>
         ) : null}
       </span>

@@ -8,6 +8,7 @@ import { BackLink } from "@/components/back-link";
 import { BlogEditor } from "@/components/blog-editor";
 import { compressImage } from "@/components/profile-fields";
 import { Loader, PageLoader } from "@/components/loader";
+import { PurchaseAccessFields } from "@/components/purchase-access-fields";
 import { blogExcerpt } from "@/lib/mock/studio";
 import { addDeskBlog, updateDeskBlog, useDesk, useDeskHome } from "@/lib/studio-desk";
 
@@ -20,6 +21,8 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
+  const [purchaseOnly, setPurchaseOnly] = useState(false);
+  const [priceInr, setPriceInr] = useState(99);
   const [loaded, setLoaded] = useState(blogId ? "" : "new");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -29,6 +32,8 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
     setTitle(existing.title);
     setBody(existing.body);
     setCoverUrl(existing.coverUrl ?? "");
+    setPurchaseOnly(existing.purchaseOnly ?? false);
+    setPriceInr(existing.priceInr ?? 99);
   }
 
   if (blogId && !story && status !== "ready") {
@@ -70,7 +75,14 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
     }
     setPending(true);
     try {
-      const blog = { id: blogId ?? `blog-${Date.now()}`, title: title.trim(), body, coverUrl };
+      const blog = {
+        id: blogId ?? `blog-${Date.now()}`,
+        title: title.trim(),
+        body,
+        coverUrl,
+        purchaseOnly,
+        priceInr: purchaseOnly ? priceInr : 99,
+      };
       if (blogId) await updateDeskBlog(storyId, blogId, blog);
       else await addDeskBlog(storyId, blog);
     } catch (caught) {
@@ -125,6 +137,12 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
         <BlogEditor key={loaded} value={body} onChange={setBody} />
       </div>
       {error ? <p className="text-sm text-primary">{error}</p> : null}
+      <PurchaseAccessFields
+        purchaseOnly={purchaseOnly}
+        priceInr={priceInr}
+        onPurchaseOnlyChange={setPurchaseOnly}
+        onPriceChange={setPriceInr}
+      />
       {blogId && existing ? (
         <ArchiveAction
           storyId={storyId}

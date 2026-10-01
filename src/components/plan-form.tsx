@@ -27,6 +27,7 @@ import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
 import { estimateCommuteLeg } from "@/components/maps";
 import { PictureTray } from "@/components/picture-tray";
+import { PurchaseAccessFields } from "@/components/purchase-access-fields";
 import {
   AddItemHereMenu,
   CommuteBridge,
@@ -150,6 +151,8 @@ export function PlanForm({
   const [images, setImages] = useState<string[]>([]);
   const [days, setDays] = useState<PlanDay[]>([{ id: "day-1", title: "", brief: "", blocks: [] }]);
   const [reservations, setReservations] = useState<PlanReservation[]>([]);
+  const [purchaseOnly, setPurchaseOnly] = useState(false);
+  const [priceInr, setPriceInr] = useState(99);
   const [active, setActive] = useState(0);
   const [addingReservation, setAddingReservation] = useState(false);
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null);
@@ -198,6 +201,8 @@ export function PlanForm({
         : [{ id: "day-1", title: "", brief: "", blocks: [] }],
     );
     setReservations(existing.reservations ?? []);
+    setPurchaseOnly(existing.purchaseOnly ?? false);
+    setPriceInr(existing.priceInr ?? 99);
     setActive(0);
   }
   const [note, setNote] = useState("");
@@ -418,6 +423,8 @@ export function PlanForm({
           fromDay: Math.min(item.fromDay, days.length - 1),
           toDay: Math.min(Math.max(item.toDay, item.fromDay), days.length - 1),
         })),
+        purchaseOnly,
+        priceInr: purchaseOnly ? priceInr : 99,
       };
       let savedId = planId;
       if (planId) await updateDeskPlan(storyId, planId, saved);
@@ -470,6 +477,12 @@ export function PlanForm({
         Suggest stays, rentals, and flights for the trip, then line up each day’s finds and how to move between them.
       </p>
       <PictureTray images={images} onChange={setImages} />
+      <PurchaseAccessFields
+        purchaseOnly={purchaseOnly}
+        priceInr={priceInr}
+        onPurchaseOnlyChange={setPurchaseOnly}
+        onPriceChange={setPriceInr}
+      />
       <label className="grid gap-1 text-sm">
         <span className="font-medium">Name</span>
         <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Name of the route" className={field} />
