@@ -9,7 +9,7 @@ import { useDesk, useDeskHome } from "@/lib/studio-desk";
 
 export function StudioHome({
   title = "Stories",
-  lead = "A story is one place. Spots, plans, and blogs live inside it.",
+  lead = "A story is one place. Finds, plans, and blogs live inside it.",
   action = "New story",
   empty = "No stories yet. Start with the place you know best.",
   loading = "Loading your stories",
@@ -25,7 +25,7 @@ export function StudioHome({
 
   return (
     <div className="h-full overflow-y-auto px-5 pt-6 pb-10">
-      {home === "/trips" ? (
+      {home === "/plans" ? (
         <div className="mb-5 flex justify-center">
           <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
         </div>

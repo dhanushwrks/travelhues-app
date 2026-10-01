@@ -55,7 +55,7 @@ export function GlimpseForm({
       setError(await apiMessage(response));
       return;
     }
-    router.push("/shorts");
+    router.push("/hues");
     router.refresh();
   }
 
@@ -63,7 +63,7 @@ export function GlimpseForm({
     <form onSubmit={onSubmit} className="grid gap-4 px-5 pt-8 pb-12">
       <h1 className="font-display text-3xl">Add a short</h1>
       <p className="text-sm leading-6 text-muted-foreground">
-        A short video. You can point it at a story, a day plan, or a spot.
+        A short video. You can point it at a story, a day plan, or a find.
       </p>
       <Field label="Caption" hint="Up to 140 characters">
         <textarea name="caption" required maxLength={140} className={`${controlClass} min-h-24`} />
@@ -109,7 +109,7 @@ export function GlimpseForm({
           >
             <option value="story">The story</option>
             <option value="itinerary">An itinerary</option>
-            <option value="spot">A spot</option>
+            <option value="spot">A find</option>
           </select>
         </Field>
       ) : null}
@@ -128,7 +128,7 @@ export function GlimpseForm({
         </Field>
       ) : null}
       {story && attachment === "spot" ? (
-        <Field label="Spot">
+        <Field label="Find">
           <select name="spotId" required className={controlClass} defaultValue="">
             <option value="" disabled>
               Choose
@@ -147,7 +147,7 @@ export function GlimpseForm({
         disabled={pending || open.length === 0}
         className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {pending ? <Loader label="Posting" /> : "Post short"}
+        {pending ? <Loader label="Posting" /> : "Post hue"}
       </button>
     </form>
   );

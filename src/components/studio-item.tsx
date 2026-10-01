@@ -33,7 +33,7 @@ export function StudioItem({
   itemId: string;
 }) {
   const home = useDeskHome();
-  const trip = home === "/trips";
+  const trip = home === "/plans";
   const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const back = `${home}/${storyId}?tab=${tab}`;
@@ -50,42 +50,42 @@ export function StudioItem({
   if (!story) return <Missing href={home} label={trip ? "trip" : "story"} />;
 
   if (tab === "spots") {
-    const spot = story.spots.find((item) => item.id === itemId);
-    if (!spot) return <Missing href={back} label="spot" />;
+    const find = story.spots.find((item) => item.id === itemId);
+    if (!find) return <Missing href={back} label="find" />;
     const details = [
-      spot.duration ? ["Duration", spot.duration] : null,
-      spot.cost ? ["Cost", formatInr(Number(spot.cost))] : null,
-      spot.difficulty ? ["Difficulty", spot.difficulty] : null,
-      spot.season ? ["Season", spot.season] : null,
-      spot.ageGroup ? ["Age group", spot.ageGroup] : null,
+      find.duration ? ["Duration", find.duration] : null,
+      find.cost ? ["Cost", formatInr(Number(find.cost))] : null,
+      find.difficulty ? ["Difficulty", find.difficulty] : null,
+      find.season ? ["Season", find.season] : null,
+      find.ageGroup ? ["Age group", find.ageGroup] : null,
     ].filter((item): item is [string, string] => item !== null);
     return (
       <article className="h-full overflow-y-auto pb-10">
-        <ViewHeader href={back} editHref={`${home}/${story.id}/spots/${spot.id}/edit`} />
-        <Gallery images={spot.images} />
+        <ViewHeader href={back} editHref={`${home}/${story.id}/spots/${find.id}/edit`} />
+        <Gallery images={find.images} />
         <div className="grid gap-3 px-5 pt-4">
           <p className="text-sm text-muted-foreground">
-            {categoryName(spot.category)}
-            {spot.subcategory ? ` · ${spot.subcategory}` : ""}
+            {categoryName(find.category)}
+            {find.subcategory ? ` · ${find.subcategory}` : ""}
           </p>
-          <h2 className="font-display text-3xl">{spot.title}</h2>
-          <p className="text-[15px] leading-6">{spot.summary}</p>
-          {spot.tips ? (
+          <h2 className="font-display text-3xl">{find.title}</h2>
+          <p className="text-[15px] leading-6">{find.summary}</p>
+          {find.tips ? (
             <div className="rounded-2xl bg-secondary px-4 py-3">
               <p className="text-sm font-medium">Tips</p>
-              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{spot.tips}</p>
+              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{find.tips}</p>
             </div>
           ) : null}
-          {spot.placeName ? (
+          {find.placeName ? (
             <p className="flex items-center gap-2 text-sm">
               <MapPin className="size-4 text-primary" />
-              {spot.placeName}
+              {find.placeName}
             </p>
           ) : null}
         </div>
-        {spot.lat != null && spot.lng != null ? (
+        {find.lat != null && find.lng != null ? (
           <div className="mx-5 mt-4 overflow-hidden rounded-3xl">
-            <PinMap lat={spot.lat} lng={spot.lng} label={spot.title} />
+            <PinMap lat={find.lat} lng={find.lng} label={find.title} />
           </div>
         ) : null}
         {details.length > 0 ? (
@@ -98,15 +98,15 @@ export function StudioItem({
             ))}
           </dl>
         ) : null}
-        {spot.affiliateUrl || spot.referenceUrl ? (
+        {find.affiliateUrl || find.referenceUrl ? (
           <div className="grid gap-2 px-5 pt-5 text-sm">
-            {spot.affiliateUrl ? (
-              <a href={spot.affiliateUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
+            {find.affiliateUrl ? (
+              <a href={find.affiliateUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
                 Booking link
               </a>
             ) : null}
-            {spot.referenceUrl ? (
-              <a href={spot.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
+            {find.referenceUrl ? (
+              <a href={find.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
                 Reference
               </a>
             ) : null}

@@ -121,7 +121,7 @@ export function GlimpsePlayer({
   }
 
   async function share(glimpse: Glimpse) {
-    const url = `${window.location.origin}/shorts?start=${glimpse.id}`;
+    const url = `${window.location.origin}/hues?start=${glimpse.id}`;
     setNotice("");
     const data: ShareData = { title: glimpse.displayName || "Travelhues", text: glimpse.caption, url };
     const canTryShare =
@@ -179,7 +179,7 @@ export function GlimpsePlayer({
     return (
       <div className="grid h-full place-items-center px-6 text-center">
         <div className="grid gap-3">
-          <p>No shorts yet.</p>
+          <p>No hues yet.</p>
           <Link href="/" className="text-sm text-primary">
             Back to explore
           </Link>
@@ -297,7 +297,7 @@ export function GlimpsePlayer({
             <div className="grid max-w-sm gap-4">
               <p className="font-display text-3xl">That’s the preview</p>
               <p className="text-sm text-background/80">
-                Sign in to load fresh shorts and keep scrolling.
+                Sign in to load fresh hues and keep scrolling.
               </p>
               <button
                 type="button"
@@ -316,8 +316,8 @@ export function GlimpsePlayer({
       <LoginPrompt
         open={loginOpen}
         onClose={() => setLoginOpen(false)}
-        title="Sign in to watch more shorts"
-        body="You’ve seen a preview. Sign in to load fresh shorts and keep scrolling."
+        title="Sign in to watch more hues"
+        body="You’ve seen a preview. Sign in to load fresh hues and keep scrolling."
       />
       {open ? (
         <section className="absolute inset-x-0 bottom-0 z-20 grid max-h-[55%] gap-3 overflow-y-auto bg-card px-4 pt-4 pb-6 text-foreground">

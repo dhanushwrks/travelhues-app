@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     default: "Travelhues",
     template: "%s · Travelhues",
   },
-  description: "Stories, spots, and day-by-day itineraries.",
+  description: "Stories, finds, and day-by-day itineraries.",
   applicationName: "Travelhues",
   appleWebApp: {
     capable: true,

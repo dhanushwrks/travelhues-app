@@ -17,7 +17,7 @@ export default async function TripItemPage({
   const { id, tab, itemId } = await params;
   if (!tabs.includes(tab as StoryTab)) notFound();
   return (
-    <DeskScope home="/trips">
+    <DeskScope home="/plans">
       <StudioItem storyId={id} tab={tab as StoryTab} itemId={itemId} />
     </DeskScope>
   );

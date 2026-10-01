@@ -18,7 +18,7 @@ export function StoryForm({
 }) {
   const router = useRouter();
   const home = useDeskHome();
-  const trip = home === "/trips";
+  const trip = home === "/plans";
   const editing = Boolean(storyId);
   const { stories, status, problem } = useDesk();
   const existing = storyId ? stories.find((item) => item.id === storyId) : undefined;
@@ -158,15 +158,15 @@ export function StoryForm({
   return (
     <form onSubmit={save} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
       <div className="flex items-center gap-3">
-        <BackLink href={back} label={trip ? "My trips" : "Studio"} />
+        <BackLink href={back} label={trip ? "My plans" : "Studio"} />
         <h1 className="text-lg font-medium">{heading}</h1>
       </div>
       {editing ? null : (
         <p className="text-sm leading-6">
           {trip ? (
             <>
-              <span className="font-medium">What is a trip?</span> A trip is one place you are planning. You add the
-              spots yourself, then build an itinerary from those spots.
+              <span className="font-medium">What is a trip?</span> A plan is one place you are planning. You add the
+              finds yourself, then build an itinerary from those finds.
             </>
           ) : (
             <>
@@ -252,8 +252,8 @@ export function StoryForm({
       {editing ? null : (
         <p className="text-sm leading-6 text-muted-foreground">
           {trip
-            ? "After this, add spots, then build an itinerary from those spots."
-            : "After this, you can add spots, a plan, and blogs inside the story."}
+            ? "After this, add finds, then build an itinerary from those finds."
+            : "After this, you can add finds, a plan, and blogs inside the story."}
         </p>
       )}
     </form>

@@ -6,7 +6,9 @@ import { GUEST_SHORTS_COOKIE } from "@/lib/guest";
 const openExact = new Set([
   "/",
   "/search",
+  "/hues",
   "/shorts",
+  "/plans",
   "/trips",
   "/login",
   "/login/user",
@@ -46,7 +48,7 @@ export function proxy(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-  if (pathname === "/shorts") {
+  if (pathname === "/hues") {
     response.cookies.set(GUEST_SHORTS_COOKIE, "1", {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,

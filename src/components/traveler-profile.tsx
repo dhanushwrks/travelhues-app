@@ -55,7 +55,7 @@ export function TravelerProfile({ person, library }: { person: Person; library: 
           <span>
             <span className="block font-medium">Saved</span>
             <span className="mt-0.5 block text-sm text-muted-foreground">
-              {spots} {spots === 1 ? "spot" : "spots"} · {itineraries}{" "}
+              {spots} {spots === 1 ? "find" : "finds"} · {itineraries}{" "}
               {itineraries === 1 ? "itinerary" : "itineraries"}
             </span>
           </span>

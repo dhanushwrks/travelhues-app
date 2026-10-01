@@ -53,16 +53,13 @@ export function SpotPicker({
   }
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
         className="h-[88dvh] max-h-[88dvh] gap-0 overflow-hidden rounded-t-3xl p-0 data-[side=bottom]:left-1/2 data-[side=bottom]:w-full data-[side=bottom]:max-w-[430px] data-[side=bottom]:-translate-x-1/2 md:data-[side=bottom]:max-w-xl"
       >
         <div className="flex items-center justify-between px-5 pt-5 pr-12">
-          <SheetTitle className="text-lg font-medium">Add a spot</SheetTitle>
+          <SheetTitle className="text-lg font-medium">Add a find</SheetTitle>
         </div>
         <div className="grid gap-3 px-5 pt-4">
           <label className="relative">
@@ -73,24 +70,24 @@ export function SpotPicker({
                 setQuery(event.target.value);
                 setShown(pageSize);
               }}
-              placeholder="Search spots"
-              aria-label="Search spots"
+              placeholder="Search finds"
+              aria-label="Search finds"
               className="w-full rounded-2xl border border-border bg-background py-3 pr-4 pl-10"
             />
           </label>
           <div className="flex items-center justify-between text-sm">
             <button type="button" onClick={onCreate} className="font-medium text-primary">
-              + New spot
+              + New find
             </button>
             <span className="text-muted-foreground">
-              {matches.length} {matches.length === 1 ? "spot" : "spots"}
+              {matches.length} {matches.length === 1 ? "find" : "finds"}
             </span>
           </div>
         </div>
         <ul className="grid min-h-0 flex-1 gap-2 overflow-y-auto px-5 py-3">
           {visible.length === 0 ? (
             <li className="py-6 text-sm text-muted-foreground">
-              {spots.length === 0 ? "This story has no spots yet." : "Nothing matches that search."}
+              {spots.length === 0 ? "This story has no finds yet." : "Nothing matches that search."}
             </li>
           ) : (
             visible.map((spot) => (
@@ -143,7 +140,7 @@ export function SpotPicker({
             }}
             className="rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
-            Add spot
+            Add find
           </button>
         </div>
       </SheetContent>

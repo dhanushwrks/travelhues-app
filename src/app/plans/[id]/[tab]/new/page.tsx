@@ -20,7 +20,7 @@ export default async function NewTripPiecePage({
   const { from, plan } = await searchParams;
   if (!tabs.includes(tab as StoryTab)) notFound();
   return (
-    <DeskScope home="/trips">
+    <DeskScope home="/plans">
       <StoryPieceForm storyId={id} tab={tab as StoryTab} fromPlan={from === "plan"} planId={plan ?? ""} />
     </DeskScope>
   );

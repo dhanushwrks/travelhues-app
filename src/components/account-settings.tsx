@@ -298,7 +298,7 @@ export function AccountSettings({
 const accountDialog = {
   disable: {
     title: "Disable account?",
-    body: "Your profile and the stories, spots, plans, blogs, and shorts you published stay hidden until you sign in again.",
+    body: "Your profile and the stories, finds, plans, blogs, and hues you published stay hidden until you sign in again.",
     confirmLabel: "Disable account",
     pendingLabel: "Disabling",
   },

@@ -56,7 +56,7 @@ export function PlanForm({
 }) {
   const router = useRouter();
   const home = useDeskHome();
-  const trip = home === "/trips";
+  const trip = home === "/plans";
   const { stories, status } = useDesk();
   const story = stories.find((item) => item.id === storyId);
   const existing = planId ? story?.plans.find((item) => item.id === planId) : undefined;
@@ -186,7 +186,7 @@ export function PlanForm({
       return;
     }
     if (days.every((item) => item.blocks.length === 0)) {
-      setError("Add a note or a spot to the schedule");
+      setError("Add a note or a find to the schedule");
       return;
     }
     setError("");
@@ -221,12 +221,12 @@ export function PlanForm({
         {trip ? (
           <>
             <span className="font-medium">What is an itinerary?</span> The days, in order. Each day has a title and a
-            schedule: a note, or a spot you already added to this trip.
+            schedule: a note, or a find you already added to this trip.
           </>
         ) : (
           <>
             <span className="font-medium">What is a plan?</span> The days, in order. Each day has a title and a schedule:
-            a note, or a spot already in this story.
+            a note, or a find already in this story.
           </>
         )}
       </p>
@@ -362,7 +362,7 @@ export function PlanForm({
               Add a note
             </button>
             <button type="button" onClick={() => setPickerOpen(true)} className="rounded-full border border-border py-3 text-sm font-medium">
-              Add a spot
+              Add a find
             </button>
           </div>
         ) : null}
@@ -417,8 +417,8 @@ function SortableBlock({
 }) {
   const [confirming, setConfirming] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
-  const spot = block.kind === "stop" ? spots.find((item) => item.id === block.spotId) : null;
-  const kindLabel = block.kind === "note" ? "note" : "spot";
+  const find = block.kind === "stop" ? spots.find((item) => item.id === block.spotId) : null;
+  const kindLabel = block.kind === "note" ? "note" : "find";
 
   return (
     <li
@@ -431,9 +431,9 @@ function SortableBlock({
           isDragging ? "shadow-[0_12px_32px_rgba(18,35,42,0.16)] ring-2 ring-primary/25" : ""
         }`}
       >
-        {spot?.images[0] ? (
+        {find?.images[0] ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={spot.images[0]} alt="" className="aspect-[16/9] w-full object-cover" />
+          <img src={find.images[0]} alt="" className="aspect-[16/9] w-full object-cover" />
         ) : null}
         <div className="flex gap-2 px-2 py-3 text-sm">
           <button
@@ -454,12 +454,12 @@ function SortableBlock({
               </>
             ) : (
               <>
-                <p className="font-medium">{spot?.title ?? "Spot removed"}</p>
-                {spot ? (
+                <p className="font-medium">{find?.title ?? "Find removed"}</p>
+                {find ? (
                   <p className="text-muted-foreground">
-                    {categoryName(spot.category)}
-                    {spot.duration ? ` · ${spot.duration}` : ""}
-                    {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
+                    {categoryName(find.category)}
+                    {find.duration ? ` · ${find.duration}` : ""}
+                    {find.cost ? ` · ${formatInr(Number(find.cost))}` : ""}
                   </p>
                 ) : null}
               </>

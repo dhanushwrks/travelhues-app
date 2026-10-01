@@ -18,10 +18,10 @@ export function GlimpseRow({
 }) {
   const preview = glimpses.slice(0, 5);
   const more = moreAvailable || glimpses.length > 5;
-  const feed = country ? `/shorts?country=${country}` : "/shorts";
+  const feed = country ? `/hues?country=${country}` : "/hues";
 
   if (preview.length === 0) {
-    return <p className="px-5 text-sm text-muted-foreground">No shorts in this search yet.</p>;
+    return <p className="px-5 text-sm text-muted-foreground">No hues in this search yet.</p>;
   }
 
   return (
@@ -46,7 +46,7 @@ export function GlimpseRow({
                 className="block w-full text-left"
                 label={glimpse.displayName || glimpse.caption}
                 title="Sign in to watch this short"
-                body="Sign in to open shorts, stories, and creator pages."
+                body="Sign in to open hues, stories, and creator pages."
               >
                 {tile}
               </LoginGateCard>
@@ -63,8 +63,8 @@ export function GlimpseRow({
           {guest ? (
             <LoginGateButton
               className="grid aspect-[9/16] w-full place-items-center rounded-2xl bg-foreground px-3 text-center text-sm text-background"
-              title="Sign in to watch more shorts"
-              body="You’ve seen a preview. Sign in to load fresh shorts and keep scrolling."
+              title="Sign in to watch more hues"
+              body="You’ve seen a preview. Sign in to load fresh hues and keep scrolling."
             >
               Login to view more
             </LoginGateButton>

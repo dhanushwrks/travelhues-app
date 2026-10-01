@@ -33,7 +33,7 @@ export function StoryBrowser({
   const [filter, setFilter] = useState<SpotType | "all">("all");
   const [openId, setOpenId] = useState<string | null>(guest ? null : initialSpot || null);
   const [loginOpen, setLoginOpen] = useState(false);
-  const spots =
+  const finds =
     filter === "all"
       ? story.spots
       : story.spots.filter((spot) => spot.type === filter);
@@ -47,7 +47,7 @@ export function StoryBrowser({
   return (
     <>
       <div className="mt-5 flex border-b border-border">
-        <SectionTab label="Spots" count={story.spots.length} pressed={tab === "spots"} onClick={() => setTab("spots")} />
+        <SectionTab label="Finds" count={story.spots.length} pressed={tab === "spots"} onClick={() => setTab("spots")} />
         <SectionTab
           label="Plans"
           count={story.itineraries.length}
@@ -70,11 +70,11 @@ export function StoryBrowser({
               />
             ))}
           </div>
-          {spots.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-muted-foreground">No spots in this category.</p>
+          {finds.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-muted-foreground">No finds in this category.</p>
           ) : (
             <ul className="grid grid-cols-2 gap-3 px-5 pb-10 lg:grid-cols-3">
-              {spots.map((spot) => (
+              {finds.map((spot) => (
                 <li key={spot.id}>
                   <SpotCard
                     spot={spot}
@@ -219,7 +219,7 @@ export function StoryBrowser({
         open={loginOpen}
         onClose={() => setLoginOpen(false)}
         title="Sign in to open this"
-        body="Sign in to open spots, plans, and blogs inside a story."
+        body="Sign in to open finds, plans, and blogs inside a story."
       />
     </>
   );

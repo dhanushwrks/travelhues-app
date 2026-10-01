@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Travelhues",
     short_name: "Travelhues",
-    description: "Stories, spots, and day-by-day itineraries.",
+    description: "Stories, finds, and day-by-day itineraries.",
     id: "/",
     start_url: "/",
     scope: "/",

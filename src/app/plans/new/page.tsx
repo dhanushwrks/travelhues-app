@@ -10,7 +10,7 @@ export default async function NewTripPage() {
   if (session.role !== "traveler") redirect("/");
   const countries = await loadEnabledCountries();
   return (
-    <DeskScope home="/trips">
+    <DeskScope home="/plans">
       <StoryForm countries={countries} />
     </DeskScope>
   );

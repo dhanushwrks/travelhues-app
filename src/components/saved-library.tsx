@@ -20,7 +20,7 @@ export function SavedLibrary({ marks }: { marks: ContentMark[] }) {
         <h1 className="mt-3 font-display text-3xl">Saved</h1>
       </header>
       <div className="mt-5 grid grid-cols-2 border-b border-border">
-        <Tab label="Spots" count={spots.length} pressed={tab === "spots"} onClick={() => setTab("spots")} />
+        <Tab label="Finds" count={spots.length} pressed={tab === "spots"} onClick={() => setTab("spots")} />
         <Tab
           label="Itineraries"
           count={itineraries.length}
@@ -30,7 +30,7 @@ export function SavedLibrary({ marks }: { marks: ContentMark[] }) {
       </div>
       {items.length === 0 ? (
         <p className="px-5 pt-8 text-sm text-muted-foreground">
-          {tab === "spots" ? "Save a spot from a story and it lands here." : "Save an itinerary from a destination and it lands here."}
+          {tab === "spots" ? "Save a find from a story and it lands here." : "Save an itinerary from a destination and it lands here."}
         </p>
       ) : (
         <ul className="grid gap-px bg-border md:grid-cols-2">
@@ -39,7 +39,7 @@ export function SavedLibrary({ marks }: { marks: ContentMark[] }) {
               <Link
                 href={
                   mark.kind === "spot"
-                    ? `/stories/${mark.storySlug}?spot=${mark.spotId}`
+                    ? `/stories/${mark.storySlug}?find=${mark.spotId}`
                     : `/stories/${mark.storySlug}/itineraries/${mark.itinerarySlug}`
                 }
                 className="block px-5 py-4"

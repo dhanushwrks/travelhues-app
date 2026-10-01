@@ -18,14 +18,14 @@ export default async function EditTripItineraryPage({
   const { resume } = await searchParams;
   if (tab === "spots") {
     return (
-      <DeskScope home="/trips">
+      <DeskScope home="/plans">
         <SpotEdit storyId={id} spotId={itemId} />
       </DeskScope>
     );
   }
   if (tab !== "plans") notFound();
   return (
-    <DeskScope home="/trips">
+    <DeskScope home="/plans">
       <PlanForm storyId={id} planId={itemId} resume={resume === "1"} />
     </DeskScope>
   );

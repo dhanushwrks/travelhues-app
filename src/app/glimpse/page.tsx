@@ -10,5 +10,5 @@ export default async function GlimpseRedirect({
   if (country) query.set("country", country);
   if (start) query.set("start", start);
   const suffix = query.toString();
-  redirect(suffix ? `/shorts?${suffix}` : "/shorts");
+  redirect(suffix ? `/hues?${suffix}` : "/hues");
 }

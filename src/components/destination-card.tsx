@@ -42,7 +42,7 @@ export function DestinationCard({
         <Count icon={Share2} value={0} label="shares" />
       </p>
       <p className="mt-2 flex flex-nowrap items-center gap-x-1.5 overflow-hidden px-4 pb-4 text-[13px] text-muted-foreground">
-        <Count icon={MapPin} value={story.spots.length} label="Spots" named />
+        <Count icon={MapPin} value={story.spots.length} label="Finds" named />
         <span aria-hidden>|</span>
         <Count icon={Route} value={story.itineraries.length} label="Plans" named />
         <span aria-hidden>|</span>

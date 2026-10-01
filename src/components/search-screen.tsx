@@ -57,13 +57,13 @@ export function SearchScreen({
   guest = false,
 }: {
   countries: { code: string; name: string; flag?: string }[];
-  initial: { q?: string; kind?: string; country?: string; spot?: string; sort?: string };
+  initial: { q?: string; kind?: string; country?: string; find?: string; sort?: string };
   guest?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState(initial.q ?? "");
   const [debounced, setDebounced] = useState(initial.q ?? "");
-  const [category, setCategory] = useState<Category | "">(asCategory(initial.kind, initial.spot));
+  const [category, setCategory] = useState<Category | "">(asCategory(initial.kind, initial.find));
   const [country, setCountry] = useState((initial.country ?? "").toUpperCase());
   const [sort, setSort] = useState<Sort>(asSort(initial.sort));
   const [sortOpen, setSortOpen] = useState(false);
@@ -88,11 +88,11 @@ export function SearchScreen({
   useEffect(() => {
     const params = new URLSearchParams();
     const kind = categoryKind(category);
-    const spot = categorySpot(category);
+    const find = categorySpot(category);
     if (debounced) params.set("q", debounced);
     if (kind !== "all") params.set("kind", kind);
     if (country) params.set("country", country);
-    if (spot) params.set("spot", spot);
+    if (find) params.set("find", find);
     if (sort !== "relevance") params.set("sort", sort);
     const next = params.size ? `/search?${params}` : "/search";
     router.replace(next, { scroll: false });
@@ -144,7 +144,7 @@ export function SearchScreen({
       q: debounced,
       kind: categoryKind(category),
       country,
-      spot: categorySpot(category),
+      find: categorySpot(category),
       sort,
       page: String(next),
       limit: "8",
@@ -184,7 +184,7 @@ export function SearchScreen({
             <span className="sr-only">Search</span>
             <input
               value={q}
-              placeholder="Stories, spots, itineraries"
+              placeholder="Stories, finds, itineraries"
               className="w-full rounded-full border border-border bg-background px-4 py-3 outline-none"
               onChange={(event) => setQ(event.target.value)}
             />
@@ -568,7 +568,7 @@ function hitHref(hit: Hit) {
   if (hit.kind === "creator") return `/u/${hit.username}`;
   if (hit.kind === "itinerary") return `/stories/${hit.username}/${hit.storySlug}/itineraries/${hit.itinerarySlug}`;
   const path = `/stories/${hit.username}/${hit.storySlug}`;
-  return hit.kind === "place" ? `${path}?spot=${encodeURIComponent(hit.spotId)}` : path;
+  return hit.kind === "place" ? `${path}?find=${encodeURIComponent(hit.spotId)}` : path;
 }
 
 function hitKey(hit: Hit) {
@@ -578,16 +578,16 @@ function hitKey(hit: Hit) {
 function kindLabel(kind: Hit["kind"]) {
   if (kind === "country") return "Country";
   if (kind === "story") return "Story";
-  if (kind === "place") return "Spot";
+  if (kind === "place") return "Find";
   if (kind === "itinerary") return "Plan";
   return "Creator";
 }
 
-function asCategory(kind: string | undefined, spot: string | undefined): Category | "" {
+function asCategory(kind: string | undefined, find: string | undefined): Category | "" {
   if (kind === "itinerary") return "plans";
   if (kind !== "place") return "";
-  if (spot === "food" || spot === "stay") return spot;
-  if (spot === "activity,sightseeing" || spot === "experiences" || spot === "experience") return "experiences";
+  if (find === "food" || find === "stay") return find;
+  if (find === "activity,sightseeing" || find === "experiences" || find === "experience") return "experiences";
   return "";
 }
 

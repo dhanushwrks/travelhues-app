@@ -147,7 +147,7 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
       router.refresh();
     } catch (caught) {
       setSaving(false);
-      setError(caught instanceof Error ? caught.message : "Could not save the spot");
+      setError(caught instanceof Error ? caught.message : "Could not save the find");
     }
   }
 
@@ -156,10 +156,10 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
       <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto px-5 pt-5 pb-6 contain-paint">
       <div className="flex items-center gap-3">
         <BackLink href={back} label="Story" />
-        <h1 className="text-lg font-medium">New spot</h1>
+        <h1 className="text-lg font-medium">New find</h1>
       </div>
       <p className="text-sm leading-6">
-        <span className="font-medium">What is a spot?</span> One stop in this story. A room, a meal, a walk, a shop.
+        <span className="font-medium">What is a find?</span> One stop in this story. A room, a meal, a walk, a shop.
         Plans line these up by day.
       </p>
       <label className="grid gap-1 text-sm">
@@ -351,7 +351,7 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
           disabled={saving}
           className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving ? <Loader label="Saving" /> : "Create spot"}
+          {saving ? <Loader label="Saving" /> : "Create find"}
         </button>
       </div>
     </form>

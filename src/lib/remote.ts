@@ -85,6 +85,16 @@ export function loadStories(token?: string) {
   return load<Story[]>("/stories", token);
 }
 
+export function loadDestinations(
+  token: string | undefined,
+  query: { country?: string; limit?: number } = {},
+) {
+  const params = new URLSearchParams();
+  if (query.country) params.set("country", query.country);
+  params.set("limit", String(query.limit ?? 10));
+  return load<Story[]>(`/destinations?${params}`, token);
+}
+
 export function loadStory(token: string | undefined, slug: string) {
   return load<Story>(`/stories/${slug}`, token);
 }
@@ -114,4 +124,39 @@ export function loadCreator(token: string | undefined, username: string) {
     `/creators/${username}`,
     token,
   );
+}
+
+export type CreatorListItem = {
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  coverUrl: string;
+  blurb: string;
+  introVideoUrl: string;
+  stories: number;
+  countries: number;
+  spots: number;
+  itineraries: number;
+  blogs: number;
+};
+
+export type CreatorsPage = {
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  items: CreatorListItem[];
+};
+
+export function loadCreators(
+  token: string | undefined,
+  query: { q?: string; country?: string; page?: number; limit?: number } = {},
+) {
+  const params = new URLSearchParams();
+  if (query.q) params.set("q", query.q);
+  if (query.country) params.set("country", query.country);
+  if (query.page) params.set("page", String(query.page));
+  if (query.limit) params.set("limit", String(query.limit));
+  const suffix = params.size ? `?${params}` : "";
+  return load<CreatorsPage>(`/creators${suffix}`, token);
 }

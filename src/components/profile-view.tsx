@@ -71,7 +71,7 @@ export function ProfileView({
         </div>
         <dl className="mt-5 grid grid-cols-3 text-center">
           <Stat value={person.counts.stories} label="Stories" />
-          <Stat value={person.counts.spots} label="Spots" />
+          <Stat value={person.counts.spots} label="Finds" />
           <Stat value={person.counts.itineraries} label="Itineraries" />
         </dl>
         <SocialLinks links={person.socials} />

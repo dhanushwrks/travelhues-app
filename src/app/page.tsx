@@ -9,13 +9,15 @@ import { DestinationCard } from "@/components/destination-card";
 import { GlimpseRow } from "@/components/glimpse-row";
 import { LoginGateButton } from "@/components/login-prompt";
 import { countryName } from "@/lib/countries";
-import { emptyLibrary, storyLikeCount } from "@/lib/marks";
+import { emptyLibrary, storyLikeTotals } from "@/lib/marks";
 import { loadEnabledCountries, loadGlimpses, loadLibrary, loadProfile, loadStories } from "@/lib/remote";
 import { GUEST_SHORTS_LIMIT, getSession } from "@/lib/session";
 import type { Story } from "@/lib/types";
 
 const GUEST_DESTINATION_LIMIT = 3;
 const GUEST_CREATOR_LIMIT = 3;
+const CREATOR_PREVIEW_LIMIT = 4;
+const DESTINATION_PREVIEW_LIMIT = 4;
 export default async function ExplorePage({
   searchParams,
 }: {
@@ -40,21 +42,28 @@ export default async function ExplorePage({
     const stored = story.destination.country;
     return stored.toUpperCase() === code || stored.toLowerCase() === place.toLowerCase();
   });
+  const marks = library ?? emptyLibrary;
+  const likeTotals = storyLikeTotals(marks);
   const destinations = visibleStories
     .filter((story) => story.itineraries.length > 0)
-    .sort((a, b) => b.itineraries.length - a.itineraries.length);
-  const marks = library ?? emptyLibrary;
-  const rankedCreators = topCreators(visibleStories, marks);
+    .sort((a, b) => (likeTotals.get(b.slug) ?? 0) - (likeTotals.get(a.slug) ?? 0) || b.itineraries.length - a.itineraries.length);
+  const rankedCreators = topCreators(visibleStories, likeTotals);
   const creators = await Promise.all(
-    (guest ? rankedCreators.slice(0, GUEST_CREATOR_LIMIT) : rankedCreators).map(async (creator) => ({
-      ...creator,
-      blurb: await creatorBlurb(token, creator.username, creator.bio),
-    })),
+    rankedCreators
+      .slice(0, guest ? GUEST_CREATOR_LIMIT : CREATOR_PREVIEW_LIMIT)
+      .map(async (creator) => {
+        const profile = await creatorProfile(token, creator.username, creator.bio);
+        return {
+          ...creator,
+          blurb: profile.blurb,
+          introVideoUrl: profile.introVideoUrl,
+        };
+      }),
   );
   const first = guest ? "Wanderer" : session.displayName.split(" ")[0] || "there";
   const suggested = suggestCountries(countries);
   const shortPreview = (glimpses ?? []).slice(0, GUEST_SHORTS_LIMIT);
-  const destinationPreview = destinations.slice(0, guest ? GUEST_DESTINATION_LIMIT : 4);
+  const destinationPreview = destinations.slice(0, guest ? GUEST_DESTINATION_LIMIT : DESTINATION_PREVIEW_LIMIT);
 
   return (
     <div className="h-full overflow-y-auto pb-8">
@@ -68,7 +77,7 @@ export default async function ExplorePage({
       </header>
       <section className="mt-8 grid gap-3">
         <div className="px-5">
-          <h2 className="font-display text-2xl">Shorts</h2>
+          <h2 className="font-display text-2xl">Hues</h2>
         </div>
         <GlimpseRow
           glimpses={shortPreview}
@@ -78,7 +87,25 @@ export default async function ExplorePage({
         />
       </section>
       <section className="mt-8">
-        <h2 className="px-5 font-display text-2xl">Top destinations</h2>
+        <div className="flex items-center justify-between gap-3 px-5">
+          <h2 className="font-display text-2xl">Top destinations</h2>
+          {guest ? (
+            <LoginGateButton
+              className="shrink-0 text-sm font-medium text-primary"
+              title="Sign in to see more destinations"
+              body="Sign in to browse every destination with itineraries on Travelhues."
+            >
+              View all
+            </LoginGateButton>
+          ) : (
+            <Link
+              href={selected ? `/destinations?country=${code}` : "/destinations"}
+              className="shrink-0 text-sm font-medium text-primary"
+            >
+              View all
+            </Link>
+          )}
+        </div>
         {destinations.length === 0 ? (
           <p className="px-5 pt-4 text-sm text-muted-foreground">
             {place ? `No itineraries in ${countryName(code)} yet.` : "No destinations with itineraries yet."}
@@ -114,7 +141,22 @@ export default async function ExplorePage({
         )}
       </section>
       <section className="mt-8">
-        <h2 className="px-5 font-display text-2xl">Top creators</h2>
+        <div className="flex items-center justify-between gap-3 px-5">
+          <h2 className="font-display text-2xl">Top creators</h2>
+          {guest ? (
+            <LoginGateButton
+              className="shrink-0 text-sm font-medium text-primary"
+              title="Sign in to see all creators"
+              body="Sign in to browse every creator on Travelhues."
+            >
+              View all
+            </LoginGateButton>
+          ) : (
+            <Link href="/creators" className="shrink-0 text-sm font-medium text-primary">
+              View all
+            </Link>
+          )}
+        </div>
         {creators.length === 0 ? (
           <p className="px-5 pt-4 text-sm text-muted-foreground">No creators in this search yet.</p>
         ) : (
@@ -124,6 +166,26 @@ export default async function ExplorePage({
                 <CreatorCard creator={creator} guest={guest} />
               </li>
             ))}
+            {guest ? (
+              <li className="w-72 shrink-0 snap-start">
+                <LoginGateButton
+                  className="flex h-full min-h-56 w-full items-center justify-center rounded-3xl border border-dashed border-foreground/25 px-6 text-center text-sm font-medium"
+                  title="Sign in to see all creators"
+                  body="Sign in to browse every creator on Travelhues."
+                >
+                  Login to view all
+                </LoginGateButton>
+              </li>
+            ) : (
+              <li className="w-72 shrink-0 snap-start">
+                <Link
+                  href="/creators"
+                  className="flex h-full min-h-56 items-center justify-center rounded-3xl border border-dashed border-foreground/25 px-6 text-center text-sm font-medium"
+                >
+                  View all creators
+                </Link>
+              </li>
+            )}
           </CardRow>
         )}
       </section>
@@ -153,7 +215,7 @@ function CardRow({ children }: { children: ReactNode }) {
   );
 }
 
-function topCreators(stories: Story[], library: Parameters<typeof storyLikeCount>[0]) {
+function topCreators(stories: Story[], likeTotals: Map<string, number>) {
   const grouped = new Map<
     string,
     {
@@ -170,7 +232,7 @@ function topCreators(stories: Story[], library: Parameters<typeof storyLikeCount
     const username = story.creator.username;
     if (!username) continue;
     const current = grouped.get(username);
-    const likes = storyLikeCount(library, story.slug);
+    const likes = likeTotals.get(story.slug) ?? 0;
     if (!current) {
       grouped.set(username, {
         username,
@@ -189,11 +251,14 @@ function topCreators(stories: Story[], library: Parameters<typeof storyLikeCount
   return [...grouped.values()].sort((a, b) => b.stories - a.stories || b.likes - a.likes);
 }
 
-async function creatorBlurb(token: string | undefined, username: string, bio: string) {
+async function creatorProfile(token: string | undefined, username: string, bio: string) {
   try {
     const person = await loadProfile(token, username);
-    return person?.headline?.trim() || person?.bio?.trim() || bio.trim();
+    return {
+      blurb: person?.headline?.trim() || person?.bio?.trim() || bio.trim(),
+      introVideoUrl: person?.introVideoUrl?.trim() || "",
+    };
   } catch {
-    return bio.trim();
+    return { blurb: bio.trim(), introVideoUrl: "" };
   }
 }

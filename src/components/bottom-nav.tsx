@@ -16,7 +16,8 @@ const travelerItems = [
       path === "/" ||
       path.startsWith("/stories") ||
       path.startsWith("/u/") ||
-      path.startsWith("/destinations"),
+      path.startsWith("/destinations") ||
+      path.startsWith("/creators"),
   },
   {
     href: "/search",
@@ -26,18 +27,18 @@ const travelerItems = [
     active: (path: string) => path === "/search" || path.startsWith("/search/"),
   },
   {
-    href: "/shorts",
-    label: "Shorts",
+    href: "/hues",
+    label: "Hues",
     icon: Play,
     featured: true,
-    active: (path: string) => path === "/shorts" || path.startsWith("/shorts/") || path === "/glimpse" || path.startsWith("/glimpse/"),
+    active: (path: string) => path === "/hues" || path.startsWith("/hues/") || path === "/glimpse" || path.startsWith("/glimpse/"),
   },
   {
-    href: "/trips",
-    label: "My trips",
+    href: "/plans",
+    label: "My plans",
     icon: Luggage,
     featured: false,
-    active: (path: string) => path === "/trips" || path.startsWith("/trips/"),
+    active: (path: string) => path === "/plans" || path.startsWith("/plans/"),
   },
   {
     href: "/account",
@@ -72,7 +73,7 @@ function creatorItems(username: string) {
       icon: Plus,
       featured: true,
       active: (path: string) =>
-        path === "/storefront/new" || path === "/shorts/new" || path === "/studio/new" || path.startsWith("/studio/new/"),
+        path === "/storefront/new" || path === "/hues/new" || path === "/studio/new" || path.startsWith("/studio/new/"),
     },
     {
       href: storefrontHref,
@@ -266,7 +267,7 @@ function RailCreate() {
           </button>
           <button
             type="button"
-            onClick={() => choose("/shorts/new")}
+            onClick={() => choose("/hues/new")}
             className="rounded-xl px-3 py-2.5 text-left text-sm font-medium hover:bg-secondary"
           >
             Short
@@ -306,7 +307,7 @@ function BarCreate() {
           </button>
           <button
             type="button"
-            onClick={() => choose("/shorts/new")}
+            onClick={() => choose("/hues/new")}
             className="rounded-full bg-card px-4 py-2.5 text-sm font-medium shadow-[0_8px_20px_rgba(18,35,42,0.12)] ring-1 ring-border"
           >
             Short

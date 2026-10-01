@@ -23,7 +23,7 @@ import { storyHref, type Story } from "@/lib/types";
 
 const worldCountries = 197;
 
-type Shelf = "posts" | "shorts" | "stories";
+type Shelf = "posts" | "hues" | "stories";
 
 export function Storefront({
   person,
@@ -35,7 +35,7 @@ export function Storefront({
   const [shelf, setShelf] = useState<Shelf>("stories");
   const allPosts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
   const posts = allPosts.filter((post) => post.kind !== "glimpse");
-  const shorts = allPosts.filter((post) => post.kind === "glimpse");
+  const hues = allPosts.filter((post) => post.kind === "glimpse");
   const traveled = [...new Set(person.countriesTraveled.map((code) => code.toUpperCase()))].filter((code) =>
     /^[A-Z]{2}$/.test(code),
   );
@@ -86,7 +86,7 @@ export function Storefront({
           pressed={shelf === "posts"}
           onClick={() => setShelf("posts")}
         />
-        <ShelfTab label="Shorts" count={shorts.length} pressed={shelf === "shorts"} onClick={() => setShelf("shorts")} />
+        <ShelfTab label="Hues" count={hues.length} pressed={shelf === "hues"} onClick={() => setShelf("hues")} />
         <ShelfTab
           label="Stories"
           count={person.stories.length}
@@ -95,7 +95,7 @@ export function Storefront({
         />
       </div>
       {shelf === "posts" ? <PostsGrid posts={posts} /> : null}
-      {shelf === "shorts" ? <ShortsGrid shorts={shorts} /> : null}
+      {shelf === "hues" ? <ShortsGrid hues={hues} /> : null}
       {shelf === "stories" ? <StoryShelf stories={person.stories} library={library} /> : null}
     </div>
   );
@@ -166,7 +166,7 @@ function StoryShelf({ stories, library }: { stories: Story[]; library: Library }
   return (
     <ul className="grid gap-6 px-5 pt-6 md:grid-cols-2">
       {stories.map((story) => {
-        const spots = story.spots.filter((spot) => !spot.archived).length;
+        const spots = story.spots.filter((find) => !find.archived).length;
         const itineraries = story.itineraries.filter((plan) => !plan.archived).length;
         const likes = storyLikeCount(library, story.slug);
         return (
@@ -182,7 +182,7 @@ function StoryShelf({ stories, library }: { stories: Story[]; library: Library }
                 </span>
               </span>
               <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-4 text-sm text-muted-foreground">
-                <Count icon={MapPin} value={spots} label="spots" />
+                <Count icon={MapPin} value={spots} label="Finds" />
                 <Count icon={Route} value={itineraries} label="itineraries" />
                 <Count icon={Heart} value={likes} label="likes" />
                 <Count icon={Share2} value={0} label="shares" />
@@ -214,14 +214,14 @@ function Count({
   );
 }
 
-function ShortsGrid({ shorts }: { shorts: MediaPost[] }) {
-  if (shorts.length === 0) {
-    return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No shorts yet.</p>;
+function ShortsGrid({ hues }: { hues: MediaPost[] }) {
+  if (hues.length === 0) {
+    return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No hues yet.</p>;
   }
 
   return (
     <ul className="grid grid-cols-3 gap-px bg-border md:grid-cols-4 lg:grid-cols-6">
-      {shorts.map((short) => {
+      {hues.map((short) => {
         const likes = postBoard(short.id).likes;
         const saves = 0;
         return (

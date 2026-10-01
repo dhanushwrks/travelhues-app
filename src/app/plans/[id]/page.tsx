@@ -18,7 +18,7 @@ export default async function TripPage({
   const { tab } = await searchParams;
   const initial: StoryTab = tab === "plans" ? "plans" : "spots";
   return (
-    <DeskScope home="/trips">
+    <DeskScope home="/plans">
       <StoryDesk key={`${id}-${initial}`} storyId={id} initialTab={initial} />
     </DeskScope>
   );

@@ -29,6 +29,17 @@ export function storyLikeCount(library: Library, slug: string) {
   return total;
 }
 
+/** One-pass totals of spot + itinerary likes keyed by story slug. */
+export function storyLikeTotals(library: Library) {
+  const totals = new Map<string, number>();
+  for (const count of library.counts) {
+    const match = /^(?:spot|itinerary):([^:]+):/.exec(count.key);
+    if (!match) continue;
+    totals.set(match[1], (totals.get(match[1]) ?? 0) + count.likes);
+  }
+  return totals;
+}
+
 export function markState(
   library: Library,
   kind: "itinerary" | "spot",

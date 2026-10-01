@@ -15,14 +15,14 @@ const categoryOrder = ["stay", "food", "sightseeing", "activity", "shop"];
 const blogThumb = "/blog-thumb.svg";
 
 const tabs: { id: StoryTab; label: string }[] = [
-  { id: "spots", label: "Spots" },
+  { id: "spots", label: "Finds" },
   { id: "plans", label: "Plans" },
   { id: "blogs", label: "Blogs" },
 ];
 
 export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab: StoryTab }) {
   const home = useDeskHome();
-  const trip = home === "/trips";
+  const trip = home === "/plans";
   const visibleTabs = trip ? tabs.filter((item) => item.id !== "blogs") : tabs;
   const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
@@ -33,7 +33,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
     return (
       <div className="px-5 pt-6">
         <Link href={home} className="text-sm text-primary">
-          {trip ? "My trips" : "Studio"}
+          {trip ? "My plans" : "Studio"}
         </Link>
         {status === "error" ? <p className="pt-6 text-sm text-primary">{problem}</p> : <PageLoader label={trip ? "Loading the trip" : "Loading the story"} />}
       </div>
@@ -44,7 +44,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
     return (
       <div className="px-5 pt-6">
         <Link href={home} className="text-sm text-primary">
-          {trip ? "My trips" : "Studio"}
+          {trip ? "My plans" : "Studio"}
         </Link>
         <p className="pt-6 text-sm text-muted-foreground">
           {trip ? "That trip is not in your list." : "That story is not on this desk."}
@@ -57,7 +57,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
     <div className="h-full overflow-y-auto pb-10">
       {trip ? (
         <div className="relative flex items-center justify-center px-5 pt-6">
-          <BackLink href={home} label="My trips" className="absolute left-5" />
+          <BackLink href={home} label="My plans" className="absolute left-5" />
           <Image src="/travelhues-logo.png" alt="Travelhues" width={374} height={102} className="h-12 w-fit" />
         </div>
       ) : (
@@ -87,7 +87,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
         </p>
         <p className="mt-3 text-[15px] leading-6">{story.about}</p>
         <dl className="mt-4 flex gap-6 text-sm">
-          <Count value={story.spots.length} label={story.spots.length === 1 ? "spot" : "spots"} />
+          <Count value={story.spots.length} label={story.spots.length === 1 ? "find" : "finds"} />
           <Count
             value={story.plans.length}
             label={
@@ -142,18 +142,18 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
             <span>
               <span className="block text-sm font-medium">{trip && tab === "plans" ? "Add an itinerary" : addLabel[tab]}</span>
               <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                {trip && tab === "plans" ? "The days, built from your spots." : addHint[tab]}
+                {trip && tab === "plans" ? "The days, built from your finds." : addHint[tab]}
               </span>
             </span>
           </Link>
         </li>
         {tab === "spots"
           ? story.spots
-              .filter((spot) => spotFilter === "all" || spot.category === spotFilter)
-              .map((spot) => (
-              <li key={spot.id} className="flex">
-                <Link href={`${home}/${story.id}/spots/${spot.id}`} className="flex h-full w-full">
-                  <Card imageUrl={spot.images[0] ?? ""} title={spot.title} detail={spot.summary} archived={spot.archived} />
+              .filter((find) => spotFilter === "all" || find.category === spotFilter)
+              .map((find) => (
+              <li key={find.id} className="flex">
+                <Link href={`${home}/${story.id}/spots/${find.id}`} className="flex h-full w-full">
+                  <Card imageUrl={find.images[0] ?? ""} title={find.title} detail={find.summary} archived={find.archived} />
                 </Link>
               </li>
             ))
@@ -192,7 +192,7 @@ export function StoryDesk({ storyId, initialTab }: { storyId: string; initialTab
 }
 
 const addLabel: Record<StoryTab, string> = {
-  spots: "Add a spot",
+  spots: "Add a find",
   plans: "Add a plan",
   blogs: "Add a blog",
 };
@@ -212,8 +212,8 @@ function Count({ value, label }: { value: number; label: string }) {
   );
 }
 
-function spotCategories(spots: { category: string }[]) {
-  const present = new Set(spots.map((spot) => spot.category));
+function spotCategories(finds: { category: string }[]) {
+  const present = new Set(finds.map((find) => find.category));
   const known = categoryOrder.filter((category) => present.has(category));
   const extra = [...present].filter((category) => !categoryOrder.includes(category)).sort();
   return [...known, ...extra];
