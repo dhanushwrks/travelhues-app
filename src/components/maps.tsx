@@ -226,6 +226,38 @@ export async function renderDynamicRoute(
   return { clear };
 }
 
+export type CommuteEstimate = {
+  minutes: number;
+  distanceM: number;
+};
+
+export async function estimateCommuteLeg(
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number },
+  mode: "cab" | "public" | "self_drive" | "flight",
+): Promise<CommuteEstimate | null> {
+  if (mode === "flight") return null;
+  await loadGoogleMaps();
+  const routes = (await google.maps.importLibrary("routes")) as google.maps.RoutesLibrary;
+  const travelMode =
+    mode === "public" ? routes.TravelMode.TRANSIT : routes.TravelMode.DRIVING;
+  try {
+    const result = await new routes.DirectionsService().route({
+      origin,
+      destination,
+      travelMode,
+    });
+    const leg = result.routes[0]?.legs[0];
+    if (!leg?.duration) return null;
+    return {
+      minutes: Math.max(1, Math.round(leg.duration.value / 60)),
+      distanceM: leg.distance?.value ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 const quietMapStyle: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#efece6" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },

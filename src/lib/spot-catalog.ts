@@ -12,6 +12,7 @@ export const seedSpotCatalog: SpotCatalogItem[] = [
   { slug: "activity", label: "Activity", kinds: ["Trek", "Class", "Boat", "Walk"] },
   { slug: "sightseeing", label: "Sightseeing", kinds: ["Temple", "Viewpoint", "Neighborhood"] },
   { slug: "shop", label: "Shop", kinds: ["Market", "Boutique"] },
+  { slug: "rental", label: "Rental", kinds: ["Car", "Bike", "Scooter"] },
 ];
 
 export async function fetchSpotCatalog(): Promise<SpotCatalogItem[]> {

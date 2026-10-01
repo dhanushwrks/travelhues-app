@@ -11,11 +11,12 @@ import {
   type CreatorStory,
   type PlanBlock,
   type PlanDay,
+  type PlanReservation,
   type StoryBlog,
   type StoryPlan,
   type StorySpot,
 } from "@/lib/mock/studio";
-import { spotTypes, type Itinerary, type Spot, type Story } from "@/lib/types";
+import { spotTypes, type Itinerary, type Reservation, type Spot, type Story } from "@/lib/types";
 
 const DeskHomeContext = createContext("/studio");
 
@@ -208,8 +209,10 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
     coverUrl,
     days: plan.days.map((day) => ({
       title: day.title,
+      brief: day.brief.trim() || undefined,
       blocks: day.blocks.map((block) => toBlock(block, story?.spots ?? [])),
     })),
+    reservations: plan.reservations.map(toPublicReservation),
   });
   await pull(token);
 }
@@ -230,8 +233,10 @@ export async function updateDeskPlan(storyId: string, planId: string, plan: Omit
       coverUrl,
       days: plan.days.map((day) => ({
         title: day.title,
+        brief: day.brief.trim() || undefined,
         blocks: day.blocks.map((block) => toBlock(block, story?.spots ?? [])),
       })),
+      reservations: plan.reservations.map(toPublicReservation),
     },
     "PUT",
   );
@@ -396,33 +401,160 @@ function toSpot(spot: Spot): StorySpot {
 }
 
 function toPlan(plan: Story["itineraries"][number]): StoryPlan {
+  const migrated = migrateBlockReservations(plan);
   return {
     id: plan.slug,
     title: plan.title,
     summary: plan.summary,
     images: plan.coverUrl ? [mediaUrl(plan.coverUrl)] : [],
     days: plan.days.map((day, index) => toDay(day, index)),
+    reservations: mergedReservations(plan.reservations, migrated),
     archived: plan.archived ?? false,
   };
 }
 
+function mergedReservations(
+  fromApi: Reservation[] | undefined,
+  migrated: PlanReservation[],
+): PlanReservation[] {
+  const mapped = (fromApi ?? []).map(fromPublicReservation);
+  if (mapped.length > 0) return mapped;
+  return migrated;
+}
+
+function migrateBlockReservations(plan: Story["itineraries"][number]): PlanReservation[] {
+  const items: PlanReservation[] = [];
+  plan.days.forEach((day, dayIndex) => {
+    (day.blocks as unknown as Array<Record<string, unknown>>).forEach((raw, blockIndex) => {
+      if (raw.kind !== "reservation") return;
+      const type = normalizeReservationType(typeof raw.type === "string" ? raw.type : undefined);
+      const details =
+        raw.details && typeof raw.details === "object"
+          ? (raw.details as Record<string, string>)
+          : {};
+      items.push({
+        id: `migrated-${dayIndex}-${blockIndex}`,
+        type,
+        title: typeof raw.title === "string" ? raw.title : "Suggestion",
+        spotId: typeof raw.spotId === "string" ? raw.spotId : "",
+        fromDay: dayIndex,
+        toDay: dayIndex,
+        fromPlace: details.from ?? "",
+        toPlace: details.to ?? "",
+        rentalKind: type === "rental" ? "car" : "",
+        estCost: "",
+        link: typeof raw.link === "string" ? raw.link : "",
+        notes: typeof raw.notes === "string" ? raw.notes : "",
+        airline: details.airline ?? "",
+        flightNumber: details.flightNumber ?? "",
+        timeOfDay: "",
+      });
+    });
+  });
+  return items;
+}
+
+function normalizeReservationType(value?: string): PlanReservation["type"] {
+  if (value === "hotel" || value === "stay") return "stay";
+  if (value === "car" || value === "rental") return "rental";
+  if (value === "flight" || value === "experience") return value;
+  return "experience";
+}
+
+function fromPublicReservation(item: Reservation): PlanReservation {
+  return {
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    spotId: item.spotId ?? "",
+    fromDay: item.fromDay,
+    toDay: item.toDay,
+    fromPlace: item.fromPlace ?? "",
+    toPlace: item.toPlace ?? "",
+    rentalKind: item.rentalKind ?? "",
+    estCost: item.estCostThb != null && item.estCostThb > 0 ? String(item.estCostThb) : "",
+    link: item.link ?? "",
+    notes: item.notes ?? "",
+    airline: item.airline ?? "",
+    flightNumber: item.flightNumber ?? "",
+    timeOfDay: item.timeOfDay ?? "",
+  };
+}
+
+function toPublicReservation(item: PlanReservation): Reservation {
+  return {
+    id: item.id,
+    type: item.type,
+    title: item.title.trim(),
+    spotId: item.spotId.trim() || undefined,
+    fromDay: item.fromDay,
+    toDay: Math.max(item.fromDay, item.toDay),
+    fromPlace: item.fromPlace.trim() || undefined,
+    toPlace: item.toPlace.trim() || undefined,
+    rentalKind: item.rentalKind || undefined,
+    estCostThb: toCost(item.estCost) || undefined,
+    link: item.link.trim() || undefined,
+    notes: item.notes.trim() || undefined,
+    airline: item.airline.trim() || undefined,
+    flightNumber: item.flightNumber.trim() || undefined,
+    timeOfDay: item.timeOfDay.trim() || undefined,
+  };
+}
+
 function toDay(day: Story["itineraries"][number]["days"][number], index: number): PlanDay {
+  const blocks: PlanBlock[] = [];
+  day.blocks.forEach((block, blockIndex) => {
+    if (block.kind === "note") {
+      blocks.push({ id: `note-${index}-${blockIndex}`, kind: "note", body: block.body, minutes: "" });
+      return;
+    }
+    if (block.kind === "spot") {
+      blocks.push({
+        id: `stop-${index}-${blockIndex}`,
+        kind: "stop",
+        spotId: block.spotId,
+        commute: block.commute
+          ? {
+              mode: block.commute.mode,
+              notes: block.commute.notes ?? "",
+              minutes: block.commute.minutes != null ? String(block.commute.minutes) : "",
+              cost: block.commute.costThb != null && block.commute.costThb > 0 ? String(block.commute.costThb) : "",
+              mapsMinutes: block.commute.mapsMinutes,
+              mapsDistanceM: block.commute.mapsDistanceM,
+              minutesSource: block.commute.minutesSource,
+            }
+          : undefined,
+      });
+    }
+  });
   return {
     id: `day-${index + 1}`,
     title: day.title,
-    blocks: day.blocks.map((block, blockIndex) => {
-      if (block.kind === "note") {
-        return { id: `note-${index}-${blockIndex}`, kind: "note", body: block.body, minutes: "" };
-      }
-      return { id: `stop-${index}-${blockIndex}`, kind: "stop", spotId: block.spotId };
-    }),
+    brief: day.brief ?? "",
+    blocks,
   };
 }
 
 function toBlock(block: PlanBlock, spots: StorySpot[]) {
   if (block.kind === "note") return { kind: "note" as const, body: block.body };
   const title = spots.find((spot) => spot.id === block.spotId)?.title ?? "Stop";
-  return { kind: "spot" as const, spotId: block.spotId, body: title };
+  const commute = block.commute
+    ? {
+        mode: block.commute.mode,
+        notes: block.commute.notes.trim() || undefined,
+        minutes: Number.parseInt(block.commute.minutes, 10) || undefined,
+        costThb: toCost(block.commute.cost) || undefined,
+        mapsMinutes: block.commute.mapsMinutes,
+        mapsDistanceM: block.commute.mapsDistanceM,
+        minutesSource: block.commute.minutesSource,
+      }
+    : undefined;
+  return {
+    kind: "spot" as const,
+    spotId: block.spotId,
+    body: title,
+    commute: commute?.mode ? commute : undefined,
+  };
 }
 
 function toMinutes(value: string) {
@@ -490,11 +622,10 @@ export function deskPlanAsPublic(plan: StoryPlan): Itinerary {
     coverUrl: plan.images[0] ?? "",
     days: plan.days.map((day) => ({
       title: day.title,
-      blocks: day.blocks.map((block) => {
-        if (block.kind === "note") return { kind: "note" as const, body: block.body };
-        return { kind: "spot" as const, spotId: block.spotId, body: "" };
-      }),
+      brief: day.brief.trim() || undefined,
+      blocks: day.blocks.map((block) => toBlock(block, [])),
     })),
+    reservations: plan.reservations.map(toPublicReservation),
     archived: plan.archived ?? false,
   };
 }

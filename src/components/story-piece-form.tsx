@@ -11,11 +11,13 @@ export function StoryPieceForm({
   tab,
   fromPlan = false,
   planId = "",
+  initialCategory = "",
 }: {
   storyId: string;
   tab: StoryTab;
   fromPlan?: boolean;
   planId?: string;
+  initialCategory?: string;
 }) {
   const home = useDeskHome();
   useDesk();
@@ -24,6 +26,7 @@ export function StoryPieceForm({
     return (
       <SpotForm
         storyId={storyId}
+        initialCategory={initialCategory}
         returnTo={
           fromPlan
             ? planId

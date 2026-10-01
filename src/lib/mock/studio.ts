@@ -30,7 +30,7 @@ export type MediaPost = {
   media?: PostMedia[];
 };
 
-export const spotCategories = ["stay", "food", "activity", "sightseeing", "shop"] as const;
+export const spotCategories = ["stay", "food", "activity", "sightseeing", "shop", "rental"] as const;
 
 export type SpotCategory = (typeof spotCategories)[number];
 
@@ -44,6 +44,7 @@ export const categoryLabel: Record<SpotCategory, string> = {
   activity: "Activity",
   sightseeing: "Sightseeing",
   shop: "Shop",
+  rental: "Rental",
 };
 
 export const subcategories: Record<SpotCategory, string[]> = {
@@ -52,6 +53,7 @@ export const subcategories: Record<SpotCategory, string[]> = {
   activity: ["Trek", "Class", "Boat", "Walk"],
   sightseeing: ["Temple", "Viewpoint", "Neighborhood"],
   shop: ["Market", "Boutique"],
+  rental: ["Car", "Bike", "Scooter"],
 };
 
 export type StorySpot = {
@@ -82,17 +84,81 @@ export type PlanNote = {
   minutes: string;
 };
 
+export type PlanCommute = {
+  mode: "cab" | "public" | "self_drive" | "flight";
+  notes: string;
+  minutes: string;
+  cost: string;
+  mapsMinutes?: number;
+  mapsDistanceM?: number;
+  minutesSource?: "manual" | "maps" | "maps_overridden";
+};
+
 export type PlanStop = {
   id: string;
   kind: "stop";
   spotId: string;
+  commute?: PlanCommute;
+};
+
+export type PlanReservation = {
+  id: string;
+  type: "stay" | "rental" | "flight" | "experience";
+  title: string;
+  spotId: string;
+  fromDay: number;
+  toDay: number;
+  fromPlace: string;
+  toPlace: string;
+  rentalKind: "" | "car" | "bike" | "scooter";
+  estCost: string;
+  link: string;
+  notes: string;
+  airline: string;
+  flightNumber: string;
+  timeOfDay: string;
 };
 
 export type PlanBlock = PlanNote | PlanStop;
 
+export const emptyPlanReservation = (
+  partial?: Partial<PlanReservation>,
+): Omit<PlanReservation, "id"> => ({
+  type: "stay",
+  title: "",
+  spotId: "",
+  fromDay: 0,
+  toDay: 0,
+  fromPlace: "",
+  toPlace: "",
+  rentalKind: "",
+  estCost: "",
+  link: "",
+  notes: "",
+  airline: "",
+  flightNumber: "",
+  timeOfDay: "",
+  ...partial,
+});
+
+export const commuteModeLabel: Record<PlanCommute["mode"], string> = {
+  cab: "Cab",
+  public: "Public transport",
+  self_drive: "Self drive",
+  flight: "Flight",
+};
+
+export const reservationTypeLabel: Record<PlanReservation["type"], string> = {
+  stay: "Stay",
+  rental: "Rental",
+  flight: "Flight",
+  experience: "Experience",
+};
+
 export type PlanDay = {
   id: string;
   title: string;
+  brief: string;
   blocks: PlanBlock[];
 };
 
@@ -102,6 +168,7 @@ export type StoryPlan = {
   summary: string;
   images: string[];
   days: PlanDay[];
+  reservations: PlanReservation[];
   archived?: boolean;
 };
 
@@ -202,13 +269,15 @@ export const seedStories: CreatorStory[] = [
           {
             id: "arrival",
             title: "Arrival on the coast",
+            brief: "",
             blocks: [{ id: "breakfast", kind: "stop", spotId: "fort-lane" }],
           },
-          { id: "river", title: "The river towns", blocks: [] },
-          { id: "hill", title: "One hill day", blocks: [] },
-          { id: "market", title: "The night market", blocks: [] },
-          { id: "train", title: "The train home", blocks: [] },
+          { id: "river", title: "The river towns", brief: "", blocks: [] },
+          { id: "hill", title: "One hill day", brief: "", blocks: [] },
+          { id: "market", title: "The night market", brief: "", blocks: [] },
+          { id: "train", title: "The train home", brief: "", blocks: [] },
         ],
+        reservations: [],
       },
     ],
     blogs: [
@@ -233,6 +302,7 @@ export type PlanDraft = {
   summary: string;
   images: string[];
   days: PlanDay[];
+  reservations: PlanReservation[];
   active: number;
 };
 

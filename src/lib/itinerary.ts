@@ -1,11 +1,22 @@
-import type { Day, Spot, Story } from "@/lib/types";
+import type { Day, Itinerary, Reservation, Spot, Story } from "@/lib/types";
 
-export function itineraryBudget(story: Story, days: Day[]) {
+export function itineraryBudget(story: Story, days: Day[], reservations: Reservation[] = []) {
   let total = 0;
   for (const day of days) {
     for (const block of day.blocks) {
       if (block.kind !== "spot") continue;
       const spot = spotById(story, block.spotId);
+      if (spot) total += spot.avgCostThb;
+      if (block.commute?.costThb) total += block.commute.costThb;
+    }
+  }
+  for (const item of reservations) {
+    if (item.estCostThb) {
+      total += item.estCostThb;
+      continue;
+    }
+    if (item.spotId) {
+      const spot = spotById(story, item.spotId);
       if (spot) total += spot.avgCostThb;
     }
   }
@@ -32,4 +43,8 @@ export function spotsInOrder(story: Story, days: Day[]): Spot[] {
   }
 
   return spots;
+}
+
+export function itineraryReservations(itinerary: Itinerary) {
+  return itinerary.reservations ?? [];
 }

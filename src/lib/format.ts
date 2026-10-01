@@ -8,6 +8,7 @@ const rupee = new Intl.NumberFormat("en-IN", {
 
 export function formatDuration(minutes: number, type: SpotType) {
   if (type === "stay") return "Overnight";
+  if (type === "rental") return minutes > 0 ? `${Math.max(1, Math.round(minutes / 60))} day` : "Per day";
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
@@ -23,6 +24,7 @@ export function formatCost(amount: number, type: SpotType) {
   if (amount <= 0) return "Free";
   const priced = `about ${formatInr(amount)}`;
   if (type === "stay") return `${priced} a night`;
+  if (type === "rental") return `${priced} a day`;
   return priced;
 }
 

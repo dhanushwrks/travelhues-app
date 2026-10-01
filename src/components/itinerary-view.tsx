@@ -3,17 +3,41 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Bed,
+  Bus,
+  Car,
+  CarTaxiFront,
+  ExternalLink,
+  Plane,
+  Ticket,
+  ChevronLeft,
+  List,
+  Map,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { ChevronLeft, List, Map } from "lucide-react";
 
 import { Loader } from "@/components/loader";
 import { SpotSheet } from "@/components/spot-sheet";
 import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
+import { formatCommuteDistance, formatCommuteMinutes, commuteModeLabel } from "@/lib/commute";
 import { formatCost, formatDuration, formatInr } from "@/lib/format";
 import { itineraryBudget, spotById } from "@/lib/itinerary";
 import { markState, type Library } from "@/lib/marks";
-import { storyHref, type Block, type Day, type Itinerary, type Spot, type Story } from "@/lib/types";
+import {
+  formatDayRange,
+  reservationsForDay,
+  storyHref,
+  type Block,
+  type CommuteLeg,
+  type Day,
+  type Itinerary,
+  type Reservation,
+  type ReservationType,
+  type Spot,
+  type Story,
+} from "@/lib/types";
 
 const RouteMap = dynamic(
   () => import("@/components/maps").then((mod) => mod.RouteMap),
@@ -26,6 +50,27 @@ const RouteMap = dynamic(
     ),
   },
 );
+
+const reservationIcons: Record<ReservationType, typeof Plane> = {
+  stay: Bed,
+  rental: Car,
+  flight: Plane,
+  experience: Ticket,
+};
+
+const reservationLabels: Record<ReservationType, string> = {
+  stay: "Stay",
+  rental: "Rental",
+  flight: "Flight",
+  experience: "Experience",
+};
+
+const commuteIcons = {
+  cab: CarTaxiFront,
+  public: Bus,
+  self_drive: Car,
+  flight: Plane,
+} as const;
 
 export function ItineraryView({
   story,
@@ -50,6 +95,7 @@ export function ItineraryView({
   const [scrolled, setScrolled] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const hideIntro = scrolled || mode === "map";
+  const allReservations = itinerary.reservations ?? [];
 
   const visibleDays = useMemo(
     () =>
@@ -59,8 +105,8 @@ export function ItineraryView({
     [day, itinerary.days],
   );
   const timeline = useMemo(
-    () => buildTimeline(story, itinerary.days, visibleDays),
-    [story, itinerary.days, visibleDays],
+    () => buildTimeline(story, itinerary.days, visibleDays, allReservations),
+    [story, itinerary.days, visibleDays, allReservations],
   );
   const points = useMemo(() => {
     const seen = new Set<string>();
@@ -76,8 +122,15 @@ export function ItineraryView({
     );
   }, [timeline, day]);
   const stopCount = points.length;
-  const budget = useMemo(() => itineraryBudget(story, itinerary.days), [story, itinerary.days]);
-  const visibleBudget = useMemo(() => itineraryBudget(story, visibleDays), [story, visibleDays]);
+  const budget = useMemo(
+    () => itineraryBudget(story, itinerary.days, allReservations),
+    [story, itinerary.days, allReservations],
+  );
+  const visibleBudget = useMemo(() => {
+    if (day === "overview") return budget;
+    const dayReservations = reservationsForDay(allReservations, day);
+    return itineraryBudget(story, visibleDays, dayReservations);
+  }, [budget, day, story, visibleDays, allReservations]);
   const openSpot = story.spots.find((spot) => spot.id === openId) ?? null;
 
   return (
@@ -121,7 +174,8 @@ export function ItineraryView({
                     <p className="mt-3 text-sm leading-6">
                       <span className="font-medium">Average budget </span>
                       <span className="text-muted-foreground">
-                        {formatInr(budget.perDay)} a day, {formatInr(budget.total)} for the stops on this plan.
+                        {formatInr(budget.perDay)} a day, {formatInr(budget.total)} including stops, transfers, and
+                        suggested reservations.
                       </span>
                     </p>
                   ) : null}
@@ -146,7 +200,7 @@ export function ItineraryView({
         />
         {itinerary.days.map((item, index) => (
           <DayChip
-            key={item.title}
+            key={`${item.title}-${index}`}
             label={`Day ${index + 1}`}
             pressed={day === index}
             onClick={() => setDay(index)}
@@ -185,17 +239,97 @@ export function ItineraryView({
                 Day {section.dayNumber}
                 <span className="mt-0.5 block text-sm font-normal text-muted-foreground">{section.title}</span>
               </h3>
+              {section.brief ? (
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{section.brief}</p>
+              ) : null}
               <ol className="relative mt-4">
                 <span className="absolute top-3 bottom-3 left-[13px] w-px bg-border" aria-hidden />
-                {section.entries.map((entry, entryIndex) =>
-                  entry.kind === "note" ? (
-                    <li key={entryIndex} className="relative flex gap-3 pb-5">
-                      <span className="relative z-10 grid size-7 shrink-0 place-items-center" aria-hidden>
-                        <span className="size-2.5 rounded-full bg-foreground/25" />
-                      </span>
-                      <p className="pt-1 text-sm leading-6 text-muted-foreground">{entry.body}</p>
-                    </li>
-                  ) : (
+                {section.entries.map((entry, entryIndex) => {
+                  if (entry.kind === "reservation") {
+                    const Icon = reservationIcons[entry.reservation.type];
+                    const linked = entry.reservation.spotId
+                      ? spotById(story, entry.reservation.spotId)
+                      : null;
+                    return (
+                      <li key={`res-${entry.reservation.id}-${entryIndex}`} className="relative flex gap-3 pb-5">
+                        <span className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-background">
+                          <Icon className="size-3.5" />
+                        </span>
+                        <div className="min-w-0 flex-1 rounded-2xl bg-card p-3 ring-1 ring-border">
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Suggested {reservationLabels[entry.reservation.type].toLowerCase()}
+                          </p>
+                          <p className="mt-0.5 text-sm font-medium">{entry.reservation.title}</p>
+                          {entry.meta ? (
+                            <p className="mt-1 text-xs text-muted-foreground">{entry.meta}</p>
+                          ) : null}
+                          {entry.reservation.notes ? (
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">{entry.reservation.notes}</p>
+                          ) : null}
+                          <div className="mt-2 flex flex-wrap gap-3">
+                            {linked ? (
+                              <button
+                                type="button"
+                                onClick={() => setOpenId(linked.id)}
+                                className="text-xs font-medium text-primary"
+                              >
+                                View find
+                              </button>
+                            ) : null}
+                            {entry.reservation.link ? (
+                              <a
+                                href={entry.reservation.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+                              >
+                                Where to book
+                                <ExternalLink className="size-3" />
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  }
+                  if (entry.kind === "commute") {
+                    const Icon = commuteIcons[entry.commute.mode];
+                    const minutes = entry.commute.minutes ?? entry.commute.mapsMinutes ?? 0;
+                    const meta = [
+                      commuteModeLabel[entry.commute.mode],
+                      formatCommuteMinutes(minutes),
+                      entry.commute.costThb ? formatInr(entry.commute.costThb) : "",
+                      formatCommuteDistance(entry.commute.mapsDistanceM),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ");
+                    return (
+                      <li key={entryIndex} className="relative flex gap-3 pb-4">
+                        <span className="relative z-10 grid size-7 shrink-0 place-items-center" aria-hidden>
+                          <span className="grid size-6 place-items-center rounded-full bg-secondary text-muted-foreground ring-1 ring-border">
+                            <Icon className="size-3" />
+                          </span>
+                        </span>
+                        <div className="min-w-0 pt-1">
+                          <p className="text-xs font-medium text-muted-foreground">{meta}</p>
+                          {entry.commute.notes ? (
+                            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{entry.commute.notes}</p>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  }
+                  if (entry.kind === "note") {
+                    return (
+                      <li key={entryIndex} className="relative flex gap-3 pb-5">
+                        <span className="relative z-10 grid size-7 shrink-0 place-items-center" aria-hidden>
+                          <span className="size-2.5 rounded-full bg-foreground/25" />
+                        </span>
+                        <p className="pt-1 text-sm leading-6 text-muted-foreground">{entry.body}</p>
+                      </li>
+                    );
+                  }
+                  return (
                     <li key={entryIndex} className="relative flex gap-3 pb-5">
                       <span className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
                         {entry.number}
@@ -220,8 +354,8 @@ export function ItineraryView({
                         </span>
                       </button>
                     </li>
-                  ),
-                )}
+                  );
+                })}
               </ol>
             </section>
           ))}
@@ -252,24 +386,52 @@ export function ItineraryView({
   );
 }
 
-function buildTimeline(story: Story, allDays: Day[], visibleDays: Day[]) {
+function buildTimeline(
+  story: Story,
+  allDays: Day[],
+  visibleDays: Day[],
+  reservations: Reservation[],
+) {
   let number = 0;
-  return visibleDays.map((day) => ({
-    key: `day-${allDays.indexOf(day)}`,
-    dayNumber: allDays.indexOf(day) + 1,
-    title: day.title,
-    entries: day.blocks.flatMap((block) =>
+  return visibleDays.map((day) => {
+    const dayIndex = allDays.indexOf(day);
+    const dayReservations = reservationsForDay(reservations, dayIndex).map((item) =>
+      reservationEntry(item),
+    );
+    const schedule = day.blocks.flatMap((block) =>
       toEntry(story, block, () => {
         number += 1;
         return number;
       }),
-    ),
-  }));
+    );
+    return {
+      key: `day-${dayIndex}`,
+      dayNumber: dayIndex + 1,
+      title: day.title,
+      brief: day.brief ?? "",
+      entries: [...dayReservations, ...schedule],
+    };
+  });
 }
 
 type TimelineEntry =
   | { kind: "note"; body: string }
+  | { kind: "commute"; commute: CommuteLeg }
+  | { kind: "reservation"; reservation: Reservation; meta: string }
   | { kind: "spot"; number: number; spot: Spot; body: string; meta: string };
+
+function reservationEntry(item: Reservation): TimelineEntry {
+  const meta = [
+    formatDayRange(item.fromDay, item.toDay),
+    item.fromPlace && item.toPlace ? `${item.fromPlace} → ${item.toPlace}` : "",
+    item.rentalKind ?? "",
+    item.timeOfDay ?? "",
+    item.estCostThb ? formatInr(item.estCostThb) : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return { kind: "reservation", reservation: item, meta };
+}
 
 function toEntry(story: Story, block: Block, nextNumber: () => number): TimelineEntry[] {
   if (block.kind === "note") return [{ kind: "note" as const, body: block.body }];
@@ -278,7 +440,10 @@ function toEntry(story: Story, block: Block, nextNumber: () => number): Timeline
   const meta = [spot.avgMinutes > 0 ? formatDuration(spot.avgMinutes, spot.type) : "", spot.avgCostThb > 0 ? formatCost(spot.avgCostThb, spot.type) : ""]
     .filter(Boolean)
     .join(" · ");
-  return [{ kind: "spot" as const, number: nextNumber(), spot, body: block.body, meta }];
+  const entries: TimelineEntry[] = [];
+  if (block.commute) entries.push({ kind: "commute", commute: block.commute });
+  entries.push({ kind: "spot" as const, number: nextNumber(), spot, body: block.body, meta });
+  return entries;
 }
 
 function SpotThumb({ spot }: { spot: Spot }) {

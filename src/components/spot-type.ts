@@ -1,5 +1,6 @@
 import {
   Bed,
+  Car,
   Landmark,
   Sailboat,
   ShoppingBag,
@@ -42,5 +43,11 @@ export const spotTypeMeta: Record<
     icon: ShoppingBag,
     chip: "bg-[#9a3d55] text-white",
     ink: "text-[#9a3d55]",
+  },
+  rental: {
+    label: "Rental",
+    icon: Car,
+    chip: "bg-[#3d6b5a] text-white",
+    ink: "text-[#3d6b5a]",
   },
 };

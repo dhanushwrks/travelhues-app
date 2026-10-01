@@ -12,16 +12,22 @@ export default async function NewTripPiecePage({
   searchParams,
 }: {
   params: Promise<{ id: string; tab: string }>;
-  searchParams: Promise<{ from?: string; plan?: string }>;
+  searchParams: Promise<{ from?: string; plan?: string; category?: string }>;
 }) {
   const session = await requireSession();
   if (session.role !== "traveler") redirect("/");
   const { id, tab } = await params;
-  const { from, plan } = await searchParams;
+  const { from, plan, category } = await searchParams;
   if (!tabs.includes(tab as StoryTab)) notFound();
   return (
     <DeskScope home="/plans">
-      <StoryPieceForm storyId={id} tab={tab as StoryTab} fromPlan={from === "plan"} planId={plan ?? ""} />
+      <StoryPieceForm
+        storyId={id}
+        tab={tab as StoryTab}
+        fromPlan={from === "plan"}
+        planId={plan ?? ""}
+        initialCategory={category ?? ""}
+      />
     </DeskScope>
   );
 }

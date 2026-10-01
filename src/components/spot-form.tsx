@@ -23,7 +23,15 @@ const difficulties = ["Easy", "Moderate", "Hard"];
 const seasons = ["Year round", "Dry months", "Cool months", "Monsoon"];
 const ages = ["All ages", "Families", "Adults"];
 
-export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: string }) {
+export function SpotForm({
+  storyId,
+  returnTo,
+  initialCategory = "",
+}: {
+  storyId: string;
+  returnTo?: string;
+  initialCategory?: string;
+}) {
   const router = useRouter();
   const home = useDeskHome();
   const back = returnTo ?? `${home}/${storyId}?tab=spots`;
@@ -34,7 +42,7 @@ export function SpotForm({ storyId, returnTo }: { storyId: string; returnTo?: st
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [tips, setTips] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(initialCategory);
   const [subcategory, setSubcategory] = useState("");
   const [catalog, setCatalog] = useState<SpotCatalogItem[]>(seedSpotCatalog);
   const [placeName, setPlaceName] = useState("");

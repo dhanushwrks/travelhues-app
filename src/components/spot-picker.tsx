@@ -15,12 +15,18 @@ export function SpotPicker({
   onOpenChange,
   onAdd,
   onCreate,
+  title = "Add a find",
+  confirmLabel = "Add find",
+  searchPlaceholder = "Search finds",
 }: {
   open: boolean;
   spots: StorySpot[];
   onOpenChange: (open: boolean) => void;
   onAdd: (spotId: string) => void;
-  onCreate: () => void;
+  onCreate?: () => void;
+  title?: string;
+  confirmLabel?: string;
+  searchPlaceholder?: string;
 }) {
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState("");
@@ -56,10 +62,10 @@ export function SpotPicker({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[88dvh] max-h-[88dvh] gap-0 overflow-hidden rounded-t-3xl p-0 data-[side=bottom]:left-1/2 data-[side=bottom]:w-full data-[side=bottom]:max-w-[430px] data-[side=bottom]:-translate-x-1/2 md:data-[side=bottom]:max-w-xl"
+        className="flex h-[88dvh] max-h-[88dvh] flex-col gap-0 overflow-hidden rounded-t-3xl p-0 data-[side=bottom]:left-1/2 data-[side=bottom]:w-full data-[side=bottom]:max-w-[430px] data-[side=bottom]:-translate-x-1/2 md:data-[side=bottom]:max-w-xl"
       >
         <div className="flex items-center justify-between px-5 pt-5 pr-12">
-          <SheetTitle className="text-lg font-medium">Add a find</SheetTitle>
+          <SheetTitle className="text-lg font-medium">{title}</SheetTitle>
         </div>
         <div className="grid gap-3 px-5 pt-4">
           <label className="relative">
@@ -70,15 +76,19 @@ export function SpotPicker({
                 setQuery(event.target.value);
                 setShown(pageSize);
               }}
-              placeholder="Search finds"
-              aria-label="Search finds"
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
               className="w-full rounded-2xl border border-border bg-background py-3 pr-4 pl-10"
             />
           </label>
           <div className="flex items-center justify-between text-sm">
-            <button type="button" onClick={onCreate} className="font-medium text-primary">
-              + New find
-            </button>
+            {onCreate ? (
+              <button type="button" onClick={onCreate} className="font-medium text-primary">
+                + New find
+              </button>
+            ) : (
+              <span />
+            )}
             <span className="text-muted-foreground">
               {matches.length} {matches.length === 1 ? "find" : "finds"}
             </span>
@@ -87,7 +97,7 @@ export function SpotPicker({
         <ul className="grid min-h-0 flex-1 gap-2 overflow-y-auto px-5 py-3">
           {visible.length === 0 ? (
             <li className="py-6 text-sm text-muted-foreground">
-              {spots.length === 0 ? "This story has no finds yet." : "Nothing matches that search."}
+              {spots.length === 0 ? "No matching finds for this category yet." : "Nothing matches that search."}
             </li>
           ) : (
             visible.map((spot) => (
@@ -110,6 +120,7 @@ export function SpotPicker({
                     <span className="block truncate font-medium">{spot.title}</span>
                     <span className="mt-0.5 block text-muted-foreground">
                       {categoryName(spot.category)}
+                      {spot.subcategory ? ` · ${spot.subcategory}` : ""}
                       {spot.duration ? ` · ${spot.duration}` : ""}
                       {spot.cost ? ` · ${formatInr(Number(spot.cost))}` : ""}
                     </span>
@@ -140,7 +151,7 @@ export function SpotPicker({
             }}
             className="rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
-            Add find
+            {confirmLabel}
           </button>
         </div>
       </SheetContent>

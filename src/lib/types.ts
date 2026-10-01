@@ -4,6 +4,7 @@ export const spotTypes = [
   "activity",
   "sightseeing",
   "shop",
+  "rental",
 ] as const;
 
 export type SpotType = (typeof spotTypes)[number];
@@ -23,6 +24,40 @@ export type Spot = {
   archived?: boolean;
 };
 
+export const commuteModes = ["cab", "public", "self_drive", "flight"] as const;
+export type CommuteMode = (typeof commuteModes)[number];
+
+export type CommuteLeg = {
+  mode: CommuteMode;
+  notes?: string;
+  minutes?: number;
+  costThb?: number;
+  mapsMinutes?: number;
+  mapsDistanceM?: number;
+  minutesSource?: "manual" | "maps" | "maps_overridden";
+};
+
+export const reservationTypes = ["stay", "rental", "flight", "experience"] as const;
+export type ReservationType = (typeof reservationTypes)[number];
+
+export type Reservation = {
+  id: string;
+  type: ReservationType;
+  title: string;
+  spotId?: string;
+  fromDay: number;
+  toDay: number;
+  fromPlace?: string;
+  toPlace?: string;
+  rentalKind?: "car" | "bike" | "scooter";
+  estCostThb?: number;
+  link?: string;
+  notes?: string;
+  airline?: string;
+  flightNumber?: string;
+  timeOfDay?: string;
+};
+
 export type NoteBlock = {
   kind: "note";
   body: string;
@@ -32,12 +67,14 @@ export type SpotBlock = {
   kind: "spot";
   spotId: string;
   body: string;
+  commute?: CommuteLeg;
 };
 
 export type Block = NoteBlock | SpotBlock;
 
 export type Day = {
   title: string;
+  brief?: string;
   blocks: Block[];
 };
 
@@ -47,6 +84,7 @@ export type Itinerary = {
   summary: string;
   coverUrl: string;
   days: Day[];
+  reservations?: Reservation[];
   archived?: boolean;
 };
 
@@ -102,4 +140,15 @@ export function itineraryHref(story: Pick<Story, "slug" | "creator">, itineraryS
 
 export function blogHref(story: Pick<Story, "slug" | "creator">, blogSlug: string) {
   return `/stories/${story.creator.username}/${story.slug}/blogs/${blogSlug}`;
+}
+
+export function reservationsForDay(reservations: Reservation[] | undefined, dayIndex: number) {
+  return (reservations ?? []).filter(
+    (item) => dayIndex >= item.fromDay && dayIndex <= item.toDay,
+  );
+}
+
+export function formatDayRange(fromDay: number, toDay: number) {
+  if (fromDay === toDay) return `Day ${fromDay + 1}`;
+  return `Day ${fromDay + 1}–${toDay + 1}`;
 }
