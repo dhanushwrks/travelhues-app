@@ -8,7 +8,7 @@ Seeded creator accounts for testing Travelhues. Sign in on the creator login. Th
 - Email: `mira.sen@seed.travelhues.app`
 - Password: `HueSeed-mira-41`
 - Home country: IN
-- Story: Jaipur courtyards (`jaipur-courtyards`) — 5 spots, 1 plan, 1 read, 1 short
+- Story: Jaipur courtyards (`jaipur-courtyards`) — 17 spots, 3 plans, 1 read, 1 short. Long plan: Pink city, slowly (`pink-city-slowly`) — 16 stops across 4 days.
 
 ## Arun Patel
 
@@ -16,7 +16,7 @@ Seeded creator accounts for testing Travelhues. Sign in on the creator login. Th
 - Email: `arun.patel@seed.travelhues.app`
 - Password: `HueSeed-arun-52`
 - Home country: TH
-- Story: Chiang Mai lanes (`chiang-mai-lanes`) — 5 spots, 1 plan, 1 read, 1 short
+- Story: Chiang Mai lanes (`chiang-mai-lanes`) — 17 spots, 3 plans, 1 read, 1 short. Long plan: Old city, four days (`old-city-four-days`) — 16 stops across 4 days.
 
 ## Linh Tran
 
@@ -24,7 +24,7 @@ Seeded creator accounts for testing Travelhues. Sign in on the creator login. Th
 - Email: `linh.tran@seed.travelhues.app`
 - Password: `HueSeed-linh-63`
 - Home country: VN
-- Story: Hoi An by bicycle (`hoi-an-lanterns`) — 5 spots, 1 plan, 1 read, 1 short
+- Story: Hoi An by bicycle (`hoi-an-lanterns`) — 17 spots, 3 plans, 1 read, 1 short. Long plan: Four days by the river (`four-days-by-the-river`) — 16 stops across 4 days.
 
 ## Aisha Rahman
 
@@ -32,7 +32,7 @@ Seeded creator accounts for testing Travelhues. Sign in on the creator login. Th
 - Email: `aisha.rahman@seed.travelhues.app`
 - Password: `HueSeed-aisha-74`
 - Home country: MY
-- Story: Penang stall map (`penang-stalls`) — 5 spots, 1 plan, 1 read, 1 short
+- Story: Penang stall map (`penang-stalls`) — 17 spots, 3 plans, 1 read, 1 short. Long plan: George Town, four days (`george-town-four-days`) — 16 stops across 4 days.
 
 ## Sagar Thapa
 
@@ -40,7 +40,7 @@ Seeded creator accounts for testing Travelhues. Sign in on the creator login. Th
 - Email: `sagar.thapa@seed.travelhues.app`
 - Password: `HueSeed-sagar-85`
 - Home country: NP
-- Stories: Kathmandu squares (`kathmandu-squares`), Pokhara lake path (`pokhara-lake-path`)
+- Stories: Kathmandu squares (`kathmandu-squares`) — 17 spots, 3 plans. Long plan: The valley in four days (`valley-in-four-days`) — 16 stops across 4 days. Pokhara lake path (`pokhara-lake-path`) — 16 spots, 3 plans. Long plan: Lake and two ridges (`lake-and-two-ridges`) — 16 stops across 4 days.
 
 ## Dewi Putri
 
@@ -48,7 +48,7 @@ Seeded creator accounts for testing Travelhues. Sign in on the creator login. Th
 - Email: `dewi.putri@seed.travelhues.app`
 - Password: `HueSeed-dewi-96`
 - Home country: ID
-- Story: Ubud paths (`ubud-paths`) — 5 spots, 1 plan, 1 read, 1 short
+- Story: Ubud paths (`ubud-paths`) — 17 spots, 3 plans, 1 read, 1 short. Long plan: Ubud, four mornings (`ubud-four-mornings`) — 16 stops across 4 days.
 
 ## Amina Nur
 
@@ -56,4 +56,4 @@ Seeded creator accounts for testing Travelhues. Sign in on the creator login. Th
 - Email: `amina.nur@seed.travelhues.app`
 - Password: `HueSeed-amina-17`
 - Home country: KZ
-- Story: Almaty ridges (`almaty-ridges`) — 5 spots, 1 plan, 1 read, 1 short
+- Story: Almaty ridges (`almaty-ridges`) — 17 spots, 3 plans, 1 read, 1 short. Long plan: City and the lake (`city-and-the-lake`) — 16 stops across 4 days.

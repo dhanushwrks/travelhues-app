@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import { LoginPrompt } from "@/components/login-prompt";
 import { SpotSheet } from "@/components/spot-sheet";
 import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
@@ -19,23 +20,29 @@ export function StoryBrowser({
   library,
   initialSpot = "",
   initialTab = "spots",
+  guest = false,
 }: {
   story: Story;
   traveler: boolean;
   library: Library;
   initialSpot?: string;
   initialTab?: StorySection;
+  guest?: boolean;
 }) {
-  const [tab, setTab] = useState<StorySection>(initialSpot ? "spots" : initialTab);
+  const [tab, setTab] = useState<StorySection>(initialSpot && !guest ? "spots" : initialTab);
   const [filter, setFilter] = useState<SpotType | "all">("all");
-  const [openId, setOpenId] = useState<string | null>(initialSpot || null);
+  const [openId, setOpenId] = useState<string | null>(guest ? null : initialSpot || null);
+  const [loginOpen, setLoginOpen] = useState(false);
   const spots =
     filter === "all"
       ? story.spots
       : story.spots.filter((spot) => spot.type === filter);
   const openSpot = story.spots.find((spot) => spot.id === openId) ?? null;
-
   const blogs = story.blogs ?? [];
+
+  function askLogin() {
+    setLoginOpen(true);
+  }
 
   return (
     <>
@@ -52,11 +59,7 @@ export function StoryBrowser({
       {tab === "spots" ? (
         <>
           <div className="flex gap-2 overflow-x-auto px-5 py-4">
-            <FilterChip
-              label="All"
-              pressed={filter === "all"}
-              onClick={() => setFilter("all")}
-            />
+            <FilterChip label="All" pressed={filter === "all"} onClick={() => setFilter("all")} />
             {spotTypes.map((type) => (
               <FilterChip
                 key={type}
@@ -68,14 +71,18 @@ export function StoryBrowser({
             ))}
           </div>
           {spots.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-muted-foreground">
-              No spots in this category.
-            </p>
+            <p className="px-5 py-8 text-sm text-muted-foreground">No spots in this category.</p>
           ) : (
             <ul className="grid grid-cols-2 gap-3 px-5 pb-10 lg:grid-cols-3">
               {spots.map((spot) => (
                 <li key={spot.id}>
-                  <SpotCard spot={spot} onOpen={() => setOpenId(spot.id)} />
+                  <SpotCard
+                    spot={spot}
+                    onOpen={() => {
+                      if (guest) askLogin();
+                      else setOpenId(spot.id);
+                    }}
+                  />
                 </li>
               ))}
             </ul>
@@ -83,49 +90,62 @@ export function StoryBrowser({
         </>
       ) : null}
       {tab === "itinerary" ? (
-      <section className="px-5 pt-5 pb-10">
-        {story.itineraries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No itineraries in this story yet.</p>
-        ) : (
-        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          {story.itineraries.map((itinerary) => {
-            const state = markState(library, "itinerary", story.slug, itinerary.slug);
-            return (
-            <li key={itinerary.slug} className="overflow-hidden rounded-2xl bg-white ring-1 ring-border">
-              <Link href={itineraryHref(story, itinerary.slug)} className="block">
-                <div className="relative aspect-[4/3]">
-                  <Image
-                    src={itinerary.coverUrl}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 50vw, 33vw"
-                  />
-                </div>
-                <div className="space-y-1 px-3 pt-3">
-                  <p className="line-clamp-2 text-sm font-medium">{itinerary.title}</p>
-                  <p className="text-xs leading-5 text-muted-foreground">
-                    {itinerary.days.length} {itinerary.days.length === 1 ? "day" : "days"}
-                  </p>
-                </div>
-              </Link>
-              <div className="px-3 pt-2 pb-3">
-                <MarkControls
-                  traveler={traveler}
-                  storySlug={story.slug}
-                  kind="itinerary"
-                  itinerarySlug={itinerary.slug}
-                  liked={state.liked}
-                  saved={state.saved}
-                  likes={state.likes}
-                />
-              </div>
-            </li>
-            );
-          })}
-        </ul>
-        )}
-      </section>
+        <section className="px-5 pt-5 pb-10">
+          {story.itineraries.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No itineraries in this story yet.</p>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              {story.itineraries.map((itinerary) => {
+                const state = markState(library, "itinerary", story.slug, itinerary.slug);
+                const card = (
+                  <>
+                    <div className="relative aspect-[4/3]">
+                      <Image
+                        src={itinerary.coverUrl}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 1024px) 50vw, 33vw"
+                      />
+                    </div>
+                    <div className="space-y-1 px-3 pt-3">
+                      <p className="line-clamp-2 text-sm font-medium">{itinerary.title}</p>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {itinerary.days.length} {itinerary.days.length === 1 ? "day" : "days"}
+                      </p>
+                    </div>
+                  </>
+                );
+                return (
+                  <li key={itinerary.slug} className="overflow-hidden rounded-2xl bg-white ring-1 ring-border">
+                    {guest ? (
+                      <button type="button" className="block w-full text-left" onClick={askLogin}>
+                        {card}
+                      </button>
+                    ) : (
+                      <Link href={itineraryHref(story, itinerary.slug)} className="block">
+                        {card}
+                      </Link>
+                    )}
+                    {guest ? null : (
+                      <div className="px-3 pt-2 pb-3">
+                        <MarkControls
+                          traveler={traveler}
+                          storySlug={story.slug}
+                          kind="itinerary"
+                          itinerarySlug={itinerary.slug}
+                          liked={state.liked}
+                          saved={state.saved}
+                          likes={state.likes}
+                        />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       ) : null}
       {tab === "blogs" ? (
         <section className="px-5 pt-5 pb-10">
@@ -133,24 +153,52 @@ export function StoryBrowser({
             <p className="text-sm text-muted-foreground">No blogs in this story yet.</p>
           ) : (
             <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-              {blogs.map((blog) => (
-                <li key={blog.slug}>
-                  <Link href={blogHref(story, blog.slug)} className="block overflow-hidden rounded-2xl bg-white ring-1 ring-border">
-                  <span className="relative block aspect-[4/3] bg-muted">
-                    {blog.coverUrl?.includes("images.unsplash.com") ? (
-                      <Image src={blog.coverUrl} alt="" fill className="object-cover" sizes="(max-width: 1024px) 50vw, 33vw" />
+              {blogs.map((blog) => {
+                const card = (
+                  <>
+                    <span className="relative block aspect-[4/3] bg-muted">
+                      {blog.coverUrl?.includes("images.unsplash.com") ? (
+                        <Image
+                          src={blog.coverUrl}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 1024px) 50vw, 33vw"
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={blog.coverUrl || "/blog-thumb.svg"} alt="" className="size-full object-cover" />
+                      )}
+                    </span>
+                    <span className="block px-3 py-3">
+                      <p className="line-clamp-2 text-sm font-medium">{blog.title}</p>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                        {plainText(blog.body)}
+                      </p>
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={blog.slug}>
+                    {guest ? (
+                      <button
+                        type="button"
+                        className="block w-full overflow-hidden rounded-2xl bg-white text-left ring-1 ring-border"
+                        onClick={askLogin}
+                      >
+                        {card}
+                      </button>
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={blog.coverUrl || "/blog-thumb.svg"} alt="" className="size-full object-cover" />
+                      <Link
+                        href={blogHref(story, blog.slug)}
+                        className="block overflow-hidden rounded-2xl bg-white ring-1 ring-border"
+                      >
+                        {card}
+                      </Link>
                     )}
-                  </span>
-                  <span className="block px-3 py-3">
-                    <p className="line-clamp-2 text-sm font-medium">{blog.title}</p>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{plainText(blog.body)}</p>
-                  </span>
-                  </Link>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
@@ -166,6 +214,12 @@ export function StoryBrowser({
         onOpenChange={(open) => {
           if (!open) setOpenId(null);
         }}
+      />
+      <LoginPrompt
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        title="Sign in to open this"
+        body="Sign in to open spots, plans, and blogs inside a story."
       />
     </>
   );

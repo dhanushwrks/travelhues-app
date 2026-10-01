@@ -160,62 +160,7 @@ export type StoryTab = "spots" | "plans" | "blogs";
 export const storefrontBio =
   "I film the road as it happens, from night markets to slow trains, and leave the route so someone else can walk it.";
 
-export const seedPosts: MediaPost[] = [
-  {
-    id: "night-market",
-    kind: "photo",
-    caption: "The lane lights up after eight.",
-    imageUrl: photo("photo-1555396273-367ea4eb4db5"),
-    videoUrl: "",
-    media: [
-      { kind: "photo", imageUrl: photo("photo-1555396273-367ea4eb4db5"), videoUrl: "" },
-      { kind: "photo", imageUrl: photo("photo-1508009603885-50cf7c579365"), videoUrl: "" },
-      { kind: "photo", imageUrl: photo("photo-1559339352-11d035aa65de"), videoUrl: "" },
-    ],
-  },
-  {
-    id: "river-ferry",
-    kind: "photo",
-    caption: "Last ferry, still warm.",
-    imageUrl: photo("photo-1508009603885-50cf7c579365"),
-    videoUrl: "",
-  },
-  {
-    id: "platform",
-    kind: "video",
-    caption: "A minute on the platform before the train.",
-    imageUrl: photo("photo-1474487548417-781cb71495f3"),
-    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-  },
-  {
-    id: "morning-bowl",
-    kind: "photo",
-    caption: "Breakfast before the city is loud.",
-    imageUrl: photo("photo-1504674900247-0877df9cc836"),
-    videoUrl: "",
-  },
-  {
-    id: "courtyard",
-    kind: "photo",
-    caption: "Dusk in the courtyard.",
-    imageUrl: photo("photo-1528183429752-a97d0bf99b5a"),
-    videoUrl: "",
-  },
-  {
-    id: "hill-road",
-    kind: "glimpse",
-    caption: "The road into the hills.",
-    imageUrl: photo("photo-1469854523086-cc02fe5d8800"),
-    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-  },
-  {
-    id: "night-bus",
-    kind: "glimpse",
-    caption: "Window seat, city dropping away.",
-    imageUrl: photo("photo-1544620341-11cb2cd7c626"),
-    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-  },
-];
+export const seedPosts: MediaPost[] = [];
 
 export const seedStories: CreatorStory[] = [
   {

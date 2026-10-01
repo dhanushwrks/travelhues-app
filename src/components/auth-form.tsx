@@ -17,16 +17,20 @@ export function AuthForm({
   mode,
   intent,
   notice = "",
+  nextPath = "",
 }: {
   mode: "login" | "signup";
   intent: "traveler" | "tcc";
   notice?: string;
+  nextPath?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState(notice);
   const [pending, setPending] = useState(false);
   const [consent, setConsent] = useState(false);
   const creator = intent === "tcc";
+  const safeNext =
+    nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "";
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +74,11 @@ export function AuthForm({
         return;
       }
       saveSession({ accessToken: payload.accessToken, user: payload.user });
-      router.push(payload.user.role === "tcc" ? "/storefront" : "/");
+      const dest =
+        payload.user.role === "tcc"
+          ? "/storefront"
+          : safeNext || "/";
+      router.push(dest);
       router.refresh();
     } catch {
       setError("Could not reach Travelhues");

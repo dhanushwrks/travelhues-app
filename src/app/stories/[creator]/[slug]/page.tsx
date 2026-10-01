@@ -5,7 +5,7 @@ import { StoryBrowser } from "@/components/story-browser";
 import { StoryHero } from "@/components/story-hero";
 import { emptyLibrary } from "@/lib/marks";
 import { loadGlimpses, loadLibrary, loadProfile, loadStory } from "@/lib/remote";
-import { requireSession } from "@/lib/session";
+import { getSession } from "@/lib/session";
 import { storyHref } from "@/lib/types";
 
 export async function generateMetadata({
@@ -14,8 +14,8 @@ export async function generateMetadata({
   params: Promise<{ creator: string; slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const session = await requireSession();
-  const story = await loadStory(session.token, slug);
+  const session = await getSession();
+  const story = await loadStory(session?.token, slug);
   if (!story) return { title: "Story" };
   return { title: story.title, description: story.summary };
 }
@@ -29,12 +29,13 @@ export default async function StoryPage({
 }) {
   const { creator, slug } = await params;
   const { spot = "", tab = "" } = await searchParams;
-  const session = await requireSession();
+  const session = await getSession();
+  const guest = !session;
   const [story, library, glimpses, profile] = await Promise.all([
-    loadStory(session.token, slug),
-    loadLibrary(session.token),
-    loadGlimpses(session.token),
-    loadProfile(session.token, creator),
+    loadStory(session?.token, slug),
+    loadLibrary(session?.token),
+    loadGlimpses(session?.token),
+    loadProfile(session?.token, creator),
   ]);
   if (!story) notFound();
   if (story.creator.username !== creator) {
@@ -44,10 +45,7 @@ export default async function StoryPage({
     redirect(`${storyHref(story)}${extra.size ? `?${extra.toString()}` : ""}`);
   }
 
-  // Story.creator.avatarUrl is denormalized and can still hold seed Unsplash faces;
-  // prefer the live profile photo when present.
   const portrait = profile?.avatarUrl ?? story.creator.avatarUrl;
-
   const highlight =
     (glimpses ?? []).find((item) => item.link?.storySlug === story.slug && item.videoUrl)?.videoUrl ?? "";
 
@@ -66,10 +64,11 @@ export default async function StoryPage({
       </div>
       <StoryBrowser
         story={story}
-        traveler={session.role === "traveler"}
+        traveler={session?.role === "traveler"}
         library={library ?? emptyLibrary}
-        initialSpot={spot}
+        initialSpot={guest ? "" : spot}
         initialTab={tab === "itinerary" || tab === "blogs" ? tab : "spots"}
+        guest={guest}
       />
     </div>
   );

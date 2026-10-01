@@ -4,29 +4,34 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { CountrySearch } from "@/components/country-search";
+import { CreatorCard } from "@/components/creator-card";
 import { DestinationCard } from "@/components/destination-card";
 import { GlimpseRow } from "@/components/glimpse-row";
+import { LoginGateButton } from "@/components/login-prompt";
 import { countryName } from "@/lib/countries";
 import { emptyLibrary, storyLikeCount } from "@/lib/marks";
-import { mediaUrl } from "@/lib/api";
 import { loadEnabledCountries, loadGlimpses, loadLibrary, loadProfile, loadStories } from "@/lib/remote";
-import { requireSession } from "@/lib/session";
+import { GUEST_SHORTS_LIMIT, getSession } from "@/lib/session";
 import type { Story } from "@/lib/types";
 
+const GUEST_DESTINATION_LIMIT = 3;
+const GUEST_CREATOR_LIMIT = 3;
 export default async function ExplorePage({
   searchParams,
 }: {
   searchParams: Promise<{ country?: string }>;
 }) {
-  const session = await requireSession();
-  if (session.role === "tcc") redirect("/storefront");
+  const session = await getSession();
+  if (session?.role === "tcc") redirect("/storefront");
+  const guest = !session;
+  const token = session?.token;
   const { country = "" } = await searchParams;
   const code = country.toUpperCase();
   const [countries, stories, glimpses, library] = await Promise.all([
     loadEnabledCountries(),
-    loadStories(session.token),
-    loadGlimpses(session.token, code || undefined),
-    loadLibrary(session.token),
+    loadStories(token),
+    loadGlimpses(token, code || undefined),
+    loadLibrary(token),
   ]);
   const selected = countries.find((item) => item.code === code);
   const place = selected?.name ?? "";
@@ -39,14 +44,17 @@ export default async function ExplorePage({
     .filter((story) => story.itineraries.length > 0)
     .sort((a, b) => b.itineraries.length - a.itineraries.length);
   const marks = library ?? emptyLibrary;
+  const rankedCreators = topCreators(visibleStories, marks);
   const creators = await Promise.all(
-    topCreators(visibleStories, marks).map(async (creator) => ({
+    (guest ? rankedCreators.slice(0, GUEST_CREATOR_LIMIT) : rankedCreators).map(async (creator) => ({
       ...creator,
-      blurb: await creatorBlurb(session.token, creator.username, creator.bio),
+      blurb: await creatorBlurb(token, creator.username, creator.bio),
     })),
   );
-  const first = session.displayName.split(" ")[0] || "there";
+  const first = guest ? "Wanderer" : session.displayName.split(" ")[0] || "there";
   const suggested = suggestCountries(countries);
+  const shortPreview = (glimpses ?? []).slice(0, GUEST_SHORTS_LIMIT);
+  const destinationPreview = destinations.slice(0, guest ? GUEST_DESTINATION_LIMIT : 4);
 
   return (
     <div className="h-full overflow-y-auto pb-8">
@@ -62,7 +70,12 @@ export default async function ExplorePage({
         <div className="px-5">
           <h2 className="font-display text-2xl">Shorts</h2>
         </div>
-        <GlimpseRow glimpses={glimpses ?? []} country={selected ? code : ""} />
+        <GlimpseRow
+          glimpses={shortPreview}
+          country={selected ? code : ""}
+          guest={guest}
+          moreAvailable={(glimpses ?? []).length > GUEST_SHORTS_LIMIT}
+        />
       </section>
       <section className="mt-8">
         <h2 className="px-5 font-display text-2xl">Top destinations</h2>
@@ -72,19 +85,31 @@ export default async function ExplorePage({
           </p>
         ) : (
           <CardRow>
-            {destinations.slice(0, 4).map((story) => (
+            {destinationPreview.map((story) => (
               <li key={story.slug} className={cardWidth}>
-                <DestinationCard story={story} library={marks} />
+                <DestinationCard story={story} library={marks} guest={guest} />
               </li>
             ))}
-            <li className={cardWidth}>
-              <Link
-                href={selected ? `/destinations?country=${code}` : "/destinations"}
-                className="flex h-full min-h-72 items-center justify-center rounded-3xl border border-dashed border-foreground/25 px-6 text-center text-sm font-medium"
-              >
-                View all
-              </Link>
-            </li>
+            {guest ? (
+              <li className={cardWidth}>
+                <LoginGateButton
+                  className="flex h-full min-h-72 w-full items-center justify-center rounded-3xl border border-dashed border-foreground/25 px-6 text-center text-sm font-medium"
+                  title="Sign in to see more destinations"
+                  body="Sign in to browse every destination with itineraries on Travelhues."
+                >
+                  Login to view more
+                </LoginGateButton>
+              </li>
+            ) : (
+              <li className={cardWidth}>
+                <Link
+                  href={selected ? `/destinations?country=${code}` : "/destinations"}
+                  className="flex h-full min-h-72 items-center justify-center rounded-3xl border border-dashed border-foreground/25 px-6 text-center text-sm font-medium"
+                >
+                  View all
+                </Link>
+              </li>
+            )}
           </CardRow>
         )}
       </section>
@@ -96,27 +121,7 @@ export default async function ExplorePage({
           <CardRow>
             {creators.map((creator) => (
               <li key={creator.username} className="w-72 shrink-0 snap-start">
-                <Link href={`/u/${creator.username}`} className="block overflow-hidden rounded-3xl bg-card ring-1 ring-border">
-                  <span className="relative block aspect-[16/10] bg-muted">
-                    {creator.coverUrl ? <Cover src={creator.coverUrl} /> : null}
-                  </span>
-                  <span className="grid gap-2 px-4 py-4">
-                    <span className="flex items-center gap-3">
-                      <span className="relative size-11 shrink-0 overflow-hidden rounded-full bg-secondary">
-                        {creator.avatarUrl ? <Cover src={creator.avatarUrl} /> : null}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium">{creator.displayName}</span>
-                        <span className="block text-sm text-muted-foreground">
-                          {creator.stories} {creator.stories === 1 ? "story" : "stories"}
-                        </span>
-                      </span>
-                    </span>
-                    {creator.blurb ? (
-                      <span className="line-clamp-2 text-sm leading-5 text-muted-foreground">{creator.blurb}</span>
-                    ) : null}
-                  </span>
-                </Link>
+                <CreatorCard creator={creator} guest={guest} />
               </li>
             ))}
           </CardRow>
@@ -145,17 +150,6 @@ function CardRow({ children }: { children: ReactNode }) {
       {children}
       <li aria-hidden className="-ml-4 w-5 shrink-0" />
     </ul>
-  );
-}
-
-function Cover({ src }: { src: string }) {
-  const url = mediaUrl(src);
-  if (url.includes("images.unsplash.com")) {
-    return <Image src={url} alt="" fill className="object-cover" sizes="180px" />;
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className="size-full object-cover" />
   );
 }
 
@@ -195,7 +189,7 @@ function topCreators(stories: Story[], library: Parameters<typeof storyLikeCount
   return [...grouped.values()].sort((a, b) => b.stories - a.stories || b.likes - a.likes);
 }
 
-async function creatorBlurb(token: string, username: string, bio: string) {
+async function creatorBlurb(token: string | undefined, username: string, bio: string) {
   try {
     const person = await loadProfile(token, username);
     return person?.headline?.trim() || person?.bio?.trim() || bio.trim();

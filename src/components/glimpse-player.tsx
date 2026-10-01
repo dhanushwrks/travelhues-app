@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bookmark, Heart, MessageCircle, Share2, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { LoginPrompt } from "@/components/login-prompt";
 import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 import { linkHref, type Glimpse } from "@/lib/glimpse";
@@ -13,10 +14,14 @@ export function GlimpsePlayer({
   initial,
   startId,
   traveler = true,
+  guest = false,
+  guestCapped = false,
 }: {
   initial: Glimpse[];
   startId: string;
   traveler?: boolean;
+  guest?: boolean;
+  guestCapped?: boolean;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [glimpses, setGlimpses] = useState(initial);
@@ -30,6 +35,17 @@ export function GlimpsePlayer({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  useEffect(() => {
+    if (!guest) return;
+    try {
+      window.sessionStorage.setItem("th_guest_shorts", "1");
+      window.localStorage.setItem("th_guest_shorts", "1");
+    } catch {
+      /* ignore */
+    }
+  }, [guest]);
 
   useEffect(() => {
     const root = scroller.current;
@@ -75,7 +91,10 @@ export function GlimpsePlayer({
   }, [active, sound]);
 
   async function toggleLike(glimpse: Glimpse) {
-    if (!traveler) return;
+    if (guest || !traveler) {
+      setLoginOpen(true);
+      return;
+    }
     const response = await fetch(`${apiBase}/glimpses/${glimpse.id}/like`, {
       method: "POST",
       headers: { Authorization: `Bearer ${readCookie("th_access")}` },
@@ -90,7 +109,10 @@ export function GlimpsePlayer({
   }
 
   function toggleSave(id: string) {
-    if (!traveler) return;
+    if (guest || !traveler) {
+      setLoginOpen(true);
+      return;
+    }
     setSaved((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
       window.localStorage.setItem("th_saved_shorts", JSON.stringify(next));
@@ -266,7 +288,37 @@ export function GlimpsePlayer({
             </div>
           </article>
         ))}
+        {guest && guestCapped ? (
+          <article
+            data-index={glimpses.length}
+            data-id="guest-login"
+            className="relative grid h-full place-items-center snap-start bg-foreground px-6 text-center text-background"
+          >
+            <div className="grid max-w-sm gap-4">
+              <p className="font-display text-3xl">That’s the preview</p>
+              <p className="text-sm text-background/80">
+                Sign in to load fresh shorts and keep scrolling.
+              </p>
+              <button
+                type="button"
+                className="rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground"
+                onClick={() => setLoginOpen(true)}
+              >
+                Login to view more
+              </button>
+              <Link href="/" className="text-sm text-background/80 underline">
+                Back to explore
+              </Link>
+            </div>
+          </article>
+        ) : null}
       </div>
+      <LoginPrompt
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        title="Sign in to watch more shorts"
+        body="You’ve seen a preview. Sign in to load fresh shorts and keep scrolling."
+      />
       {open ? (
         <section className="absolute inset-x-0 bottom-0 z-20 grid max-h-[55%] gap-3 overflow-y-auto bg-card px-4 pt-4 pb-6 text-foreground">
           <div className="flex items-center justify-between">

@@ -1,16 +1,23 @@
+"use client";
+
 import Link from "next/link";
 
+import { LoginGateButton, LoginGateCard } from "@/components/login-prompt";
 import type { Glimpse } from "@/lib/glimpse";
 
 export function GlimpseRow({
   glimpses,
   country,
+  guest = false,
+  moreAvailable = false,
 }: {
   glimpses: Glimpse[];
   country: string;
+  guest?: boolean;
+  moreAvailable?: boolean;
 }) {
   const preview = glimpses.slice(0, 5);
-  const more = glimpses.length > 5;
+  const more = moreAvailable || glimpses.length > 5;
   const feed = country ? `/shorts?country=${country}` : "/shorts";
 
   if (preview.length === 0) {
@@ -19,9 +26,9 @@ export function GlimpseRow({
 
   return (
     <ul className="flex gap-3 overflow-x-auto px-5 pb-1">
-      {preview.map((glimpse) => (
-        <li key={glimpse.id} className="w-28 shrink-0">
-          <Link href={`${feed}${feed.includes("?") ? "&" : "?"}start=${glimpse.id}`} className="block">
+      {preview.map((glimpse) => {
+        const tile = (
+          <>
             <span className="relative block aspect-[9/16] overflow-hidden rounded-2xl bg-foreground">
               {glimpse.posterUrl ? (
                 <Poster src={glimpse.posterUrl} />
@@ -30,17 +37,45 @@ export function GlimpseRow({
               )}
             </span>
             <span className="mt-1 block truncate text-xs">{glimpse.displayName}</span>
-          </Link>
-        </li>
-      ))}
+          </>
+        );
+        return (
+          <li key={glimpse.id} className="w-28 shrink-0">
+            {guest ? (
+              <LoginGateCard
+                className="block w-full text-left"
+                label={glimpse.displayName || glimpse.caption}
+                title="Sign in to watch this short"
+                body="Sign in to open shorts, stories, and creator pages."
+              >
+                {tile}
+              </LoginGateCard>
+            ) : (
+              <Link href={`${feed}${feed.includes("?") ? "&" : "?"}start=${glimpse.id}`} className="block">
+                {tile}
+              </Link>
+            )}
+          </li>
+        );
+      })}
       {more ? (
         <li className="w-28 shrink-0">
-          <Link
-            href={feed}
-            className="grid aspect-[9/16] place-items-center rounded-2xl bg-foreground px-3 text-center text-sm text-background"
-          >
-            View more
-          </Link>
+          {guest ? (
+            <LoginGateButton
+              className="grid aspect-[9/16] w-full place-items-center rounded-2xl bg-foreground px-3 text-center text-sm text-background"
+              title="Sign in to watch more shorts"
+              body="You’ve seen a preview. Sign in to load fresh shorts and keep scrolling."
+            >
+              Login to view more
+            </LoginGateButton>
+          ) : (
+            <Link
+              href={feed}
+              className="grid aspect-[9/16] place-items-center rounded-2xl bg-foreground px-3 text-center text-sm text-background"
+            >
+              View more
+            </Link>
+          )}
         </li>
       ) : null}
     </ul>

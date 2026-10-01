@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 
+import { GuestTrips } from "@/components/guest-trips";
 import { StudioHome } from "@/components/studio-home";
 import { DeskScope } from "@/lib/studio-desk";
-import { requireSession } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
 export default async function TripsPage() {
-  const session = await requireSession();
+  const session = await getSession();
+  if (!session) return <GuestTrips />;
   if (session.role !== "traveler") redirect("/");
   return (
     <DeskScope home="/trips">

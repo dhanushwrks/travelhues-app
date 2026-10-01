@@ -8,18 +8,23 @@ import type { Itinerary, Story } from "@/lib/types";
 
 const base = apiBase;
 
-async function load<T>(path: string, token: string): Promise<T | null> {
+async function load<T>(path: string, token?: string): Promise<T | null> {
+  const headers: HeadersInit = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(`${base}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
     cache: "no-store",
   });
-  if (response.status === 401) redirect("/login");
+  if (response.status === 401) {
+    if (token) redirect("/login");
+    return null;
+  }
   if (response.status === 404) return null;
   if (!response.ok) throw new Error("Could not load Travelhues");
   return (await response.json()) as T;
 }
 
-export function loadGlimpses(token: string, country?: string) {
+export function loadGlimpses(token?: string, country?: string) {
   const query = country ? `?country=${encodeURIComponent(country)}` : "";
   return load<Glimpse[]>(`/glimpses${query}`, token);
 }
@@ -76,11 +81,11 @@ export async function loadBrandLinks(): Promise<BrandLinks> {
   }
 }
 
-export function loadStories(token: string) {
+export function loadStories(token?: string) {
   return load<Story[]>("/stories", token);
 }
 
-export function loadStory(token: string, slug: string) {
+export function loadStory(token: string | undefined, slug: string) {
   return load<Story>(`/stories/${slug}`, token);
 }
 
@@ -95,15 +100,16 @@ export function loadMe(token: string) {
   return load<Person>("/me", token);
 }
 
-export function loadProfile(token: string, username: string) {
+export function loadProfile(token: string | undefined, username: string) {
   return load<Person>(`/profiles/${username}`, token);
 }
 
-export function loadLibrary(token: string) {
+export function loadLibrary(token?: string) {
+  if (!token) return Promise.resolve(null);
   return load<Library>("/marks", token);
 }
 
-export function loadCreator(token: string, username: string) {
+export function loadCreator(token: string | undefined, username: string) {
   return load<{ creator: Story["creator"]; stories: Story[] }>(
     `/creators/${username}`,
     token,

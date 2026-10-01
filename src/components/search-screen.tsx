@@ -9,6 +9,7 @@ import { ArrowUpDown, X } from "lucide-react";
 
 import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
+import { LoginGateCard } from "@/components/login-prompt";
 import { apiBase, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 import { countryFlag } from "@/lib/countries";
@@ -53,9 +54,11 @@ const sorts: { id: Exclude<Sort, "relevance">; label: string; hint: string }[] =
 export function SearchScreen({
   countries,
   initial,
+  guest = false,
 }: {
   countries: { code: string; name: string; flag?: string }[];
   initial: { q?: string; kind?: string; country?: string; spot?: string; sort?: string };
+  guest?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState(initial.q ?? "");
@@ -146,8 +149,10 @@ export function SearchScreen({
       page: String(next),
       limit: "8",
     });
+    const token = readCookie("th_access");
+    const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
     return fetch(`${apiBase}/search?${params}`, {
-      headers: { Authorization: `Bearer ${readCookie("th_access")}` },
+      headers,
       cache: "no-store",
     })
       .then(async (response) => {
@@ -259,7 +264,7 @@ export function SearchScreen({
       <ul className="grid gap-3 px-5 pt-3">
         {results.map((item) => (
           <li key={hitKey(item)}>
-            <Result hit={item} />
+            <Result hit={item} guest={guest} />
           </li>
         ))}
       </ul>
@@ -277,9 +282,9 @@ export function SearchScreen({
   );
 }
 
-function Result({ hit }: { hit: Hit }) {
-  return (
-    <Link href={hitHref(hit)} className="flex gap-3 overflow-hidden rounded-3xl bg-card p-3 ring-1 ring-border">
+function Result({ hit, guest = false }: { hit: Hit; guest?: boolean }) {
+  const body = (
+    <>
       <span className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-secondary">
         {hit.kind === "country" ? (
           <span className="grid size-full place-items-center text-3xl">{countryFlag(hit.code)}</span>
@@ -287,11 +292,30 @@ function Result({ hit }: { hit: Hit }) {
           <Cover src={hit.imageUrl} />
         ) : null}
       </span>
-      <span className="min-w-0 py-1">
+      <span className="min-w-0 py-1 text-left">
         <span className="text-xs font-medium text-primary">{kindLabel(hit.kind)}</span>
         <span className="mt-1 block truncate font-medium">{hit.title}</span>
         <span className="mt-1 line-clamp-2 text-sm text-muted-foreground">{hit.subtitle}</span>
       </span>
+    </>
+  );
+
+  if (guest && hit.kind !== "country") {
+    return (
+      <LoginGateCard
+        className="flex w-full gap-3 overflow-hidden rounded-3xl bg-card p-3 text-left ring-1 ring-border"
+        label={hit.title}
+        title="Sign in to open this"
+        body="Sign in to open stories, creators, places, and plans."
+      >
+        {body}
+      </LoginGateCard>
+    );
+  }
+
+  return (
+    <Link href={hitHref(hit)} className="flex gap-3 overflow-hidden rounded-3xl bg-card p-3 ring-1 ring-border">
+      {body}
     </Link>
   );
 }
