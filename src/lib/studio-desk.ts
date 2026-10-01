@@ -245,13 +245,17 @@ export async function updateDeskPlan(storyId: string, planId: string, plan: Omit
 
 export async function setDeskArchived(
   storyId: string,
-  kind: "spots" | "plans" | "blogs",
+  kind: "spots" | "plans" | "blogs" | "story",
   id: string,
   archived: boolean,
 ) {
   const token = tokenOrThrow();
-  const path = kind === "plans" ? "itineraries" : kind;
-  await send(token, `/stories/${storyId}/${path}/${id}/archive`, { archived });
+  if (kind === "story") {
+    await send(token, `/stories/${storyId}/archive`, { archived });
+  } else {
+    const path = kind === "plans" ? "itineraries" : kind;
+    await send(token, `/stories/${storyId}/${path}/${id}/archive`, { archived });
+  }
   await pull(token);
 }
 
@@ -354,6 +358,7 @@ function toDesk(story: Story): CreatorStory {
     about: story.summary,
     coverUrl: mediaUrl(story.coverUrl),
     videoUrl: "",
+    archived: story.archived ?? false,
     spots: story.spots.map(toSpot),
     plans: story.itineraries.map((plan) => toPlan(plan)),
     blogs: (story.blogs ?? []).map((blog) => ({

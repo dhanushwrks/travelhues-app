@@ -217,6 +217,7 @@ export type CreatorStory = {
   about: string;
   coverUrl: string;
   videoUrl: string;
+  archived?: boolean;
   spots: StorySpot[];
   plans: StoryPlan[];
   blogs: StoryBlog[];

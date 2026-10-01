@@ -193,10 +193,12 @@ export function CommuteBridge({
 
   return (
     <>
-      <div className="relative flex flex-wrap items-center gap-2 py-1 pl-1">
-        <span className="ml-[18px] h-6 w-px bg-border" aria-hidden />
-        {trigger}
-        {onAddText && onAddSpot ? <AddItemHereMenu onText={onAddText} onSpot={onAddSpot} /> : null}
+      <div className="relative flex gap-2 py-1 pl-1">
+        <span className="ml-[18px] w-px shrink-0 self-stretch bg-border" aria-hidden />
+        <div className="grid min-w-0 gap-1.5">
+          {trigger}
+          {onAddText && onAddSpot ? <AddItemHereMenu onText={onAddText} onSpot={onAddSpot} /> : null}
+        </div>
       </div>
       <Sheet
         open={open}

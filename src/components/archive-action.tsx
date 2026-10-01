@@ -15,7 +15,7 @@ export function ArchiveAction({
   compact = false,
 }: {
   storyId: string;
-  kind: StoryTab;
+  kind: StoryTab | "story";
   itemId: string;
   archived: boolean;
   compact?: boolean;

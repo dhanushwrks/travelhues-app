@@ -51,7 +51,14 @@ export function StudioHome({
                 <span className="relative block aspect-[16/9] overflow-hidden rounded-3xl bg-secondary">
                   <Cover src={story.coverUrl} />
                 </span>
-                <span className="mt-3 block text-lg font-medium">{story.title}</span>
+                <span className="mt-3 flex items-center gap-2">
+                  <span className="block text-lg font-medium">{story.title}</span>
+                  {story.archived ? (
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Archived
+                    </span>
+                  ) : null}
+                </span>
                 <span className="mt-0.5 block text-sm text-muted-foreground">
                   {countryFlag(story.country)} {countryName(story.country)}
                 </span>

@@ -873,8 +873,7 @@ function SortableBlock({
           <button
             type="button"
             aria-label="Drag to reorder"
-            disabled={confirming}
-            className="touch-none shrink-0 self-center rounded-lg p-1.5 text-muted-foreground hover:bg-background/60 hover:text-foreground disabled:opacity-40"
+            className="touch-none shrink-0 self-center rounded-lg p-1.5 text-muted-foreground hover:bg-background/60 hover:text-foreground"
             {...attributes}
             {...listeners}
           >
@@ -912,39 +911,60 @@ function SortableBlock({
                 ) : null}
               </>
             )}
-            {confirming ? (
-              <div className="mt-1 grid gap-2 rounded-xl bg-background/70 px-3 py-2.5">
-                <p className="text-sm leading-5">Remove this {kindLabel} from the day?</p>
-                <div className="flex items-center gap-4">
-                  <button type="button" onClick={() => setConfirming(false)} className="text-sm text-muted-foreground">
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirming(false);
-                      onRemove();
-                    }}
-                    className="text-sm font-medium text-primary"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </div>
-          {!confirming ? (
-            <button
-              type="button"
-              aria-label={`Remove ${kindLabel}`}
-              onClick={() => setConfirming(true)}
-              className="shrink-0 self-start rounded-lg p-1.5 text-muted-foreground hover:bg-background/60 hover:text-foreground"
-            >
-              <Trash2 className="size-4" />
-            </button>
-          ) : null}
+          <button
+            type="button"
+            aria-label={`Remove ${kindLabel}`}
+            onClick={() => setConfirming(true)}
+            className="shrink-0 self-start rounded-lg p-1.5 text-muted-foreground hover:bg-background/60 hover:text-foreground"
+          >
+            <Trash2 className="size-4" />
+          </button>
         </div>
       </article>
+      {confirming ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-[#12232a]/40 px-5"
+          role="presentation"
+          onClick={() => setConfirming(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`remove-${block.id}-title`}
+            className="grid w-full max-w-sm gap-4 rounded-3xl bg-card p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="grid gap-1">
+              <h4 id={`remove-${block.id}-title`} className="font-display text-2xl">
+                Remove this {kindLabel}?
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                It will leave this day’s schedule. You can add it again later if you need it.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="rounded-full border border-border py-3 text-sm font-medium"
+                onClick={() => setConfirming(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
+                onClick={() => {
+                  setConfirming(false);
+                  onRemove();
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

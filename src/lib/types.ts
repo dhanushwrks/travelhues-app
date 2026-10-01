@@ -122,6 +122,7 @@ export type Story = {
   spots: Spot[];
   itineraries: Itinerary[];
   blogs?: StoryBlog[];
+  archived?: boolean;
 };
 
 export function storyImages(story: Pick<Story, "coverUrl" | "images">) {

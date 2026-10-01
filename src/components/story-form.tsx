@@ -1,9 +1,11 @@
 "use client";
 
+import { Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { ArchiveAction } from "@/components/archive-action";
 import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
 import { countryFlag } from "@/lib/countries";
@@ -22,6 +24,7 @@ export function StoryForm({
   const editing = Boolean(storyId);
   const { stories, status, problem } = useDesk();
   const existing = storyId ? stories.find((item) => item.id === storyId) : undefined;
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [country, setCountry] = useState(countries[0]?.code ?? "");
   const [title, setTitle] = useState("");
@@ -32,6 +35,7 @@ export function StoryForm({
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
 
   useEffect(() => {
     if (!editing || !existing || hydrated) return;
@@ -42,6 +46,15 @@ export function StoryForm({
     setVideoUrl(existing.videoUrl);
     setHydrated(true);
   }, [editing, existing, hydrated]);
+
+  useEffect(() => {
+    if (!confirmSaveOpen) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && !saving) setConfirmSaveOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmSaveOpen, saving]);
 
   async function onCover(file: File | undefined) {
     if (!file) return;
@@ -75,7 +88,7 @@ export function StoryForm({
     setVideoUrl(URL.createObjectURL(file));
   }
 
-  async function save(event: FormEvent) {
+  function save(event: FormEvent) {
     event.preventDefault();
     if (!country) {
       setError("Choose a country");
@@ -94,6 +107,10 @@ export function StoryForm({
       return;
     }
     setError("");
+    setConfirmSaveOpen(true);
+  }
+
+  async function commitSave() {
     setSaving(true);
     try {
       const payload = {
@@ -104,14 +121,17 @@ export function StoryForm({
       };
       if (storyId) {
         await updateDeskStory(storyId, payload);
+        setConfirmSaveOpen(false);
         router.push(`${home}/${storyId}`);
       } else {
         const id = await createDeskStory(payload);
+        setConfirmSaveOpen(false);
         router.push(`${home}/${id}`);
       }
       router.refresh();
     } catch (caught) {
       setSaving(false);
+      setConfirmSaveOpen(false);
       setError(
         caught instanceof Error
           ? caught.message
@@ -156,10 +176,36 @@ export function StoryForm({
       : "New story";
 
   return (
-    <form onSubmit={save} className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl">
+    <>
+    <form
+      ref={formRef}
+      onSubmit={save}
+      className="relative grid h-full gap-5 overflow-y-auto px-5 pt-5 pb-10 md:mx-auto md:max-w-2xl"
+    >
       <div className="flex items-center gap-3">
         <BackLink href={back} label={trip ? "My plans" : "Studio"} />
-        <h1 className="text-lg font-medium">{heading}</h1>
+        <h1 className="min-w-0 flex-1 text-lg font-medium">{heading}</h1>
+        <div className="flex shrink-0 items-center gap-2">
+          {editing && storyId && existing ? (
+            <ArchiveAction
+              storyId={storyId}
+              kind="story"
+              itemId={storyId}
+              archived={existing.archived ?? false}
+              compact
+            />
+          ) : null}
+          <button
+            type="button"
+            aria-label={editing ? (trip ? "Save trip" : "Save story") : trip ? "Create trip" : "Create story"}
+            disabled={reading || saving || (editing && !hydrated)}
+            onClick={() => formRef.current?.requestSubmit()}
+            className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          >
+            {saving || reading ? <Loader className="size-4" /> : <Save className="size-4" />}
+            {editing ? "Save" : "Create"}
+          </button>
+        </div>
       </div>
       {editing ? null : (
         <p className="text-sm leading-6">
@@ -257,6 +303,59 @@ export function StoryForm({
         </p>
       )}
     </form>
+    {confirmSaveOpen ? (
+      <div
+        className="fixed inset-0 z-50 grid place-items-center bg-[#12232a]/40 px-5"
+        role="presentation"
+        onClick={() => {
+          if (!saving) setConfirmSaveOpen(false);
+        }}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="story-save-confirm-title"
+          className="grid w-full max-w-sm gap-4 rounded-3xl bg-card p-6"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="grid gap-1">
+            <h4 id="story-save-confirm-title" className="font-display text-2xl">
+              {editing
+                ? trip
+                  ? "Save trip?"
+                  : "Save story?"
+                : trip
+                  ? "Create trip?"
+                  : "Create story?"}
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {editing
+                ? "This updates the story details for viewers."
+                : "This creates the story so you can add finds, plans, and blogs."}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="rounded-full border border-border py-3 text-sm font-medium disabled:opacity-60"
+              disabled={saving}
+              onClick={() => setConfirmSaveOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+              disabled={saving}
+              onClick={() => void commitSave()}
+            >
+              {saving ? <Loader label="Saving" /> : editing ? "Save" : "Create"}
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
 
