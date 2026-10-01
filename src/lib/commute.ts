@@ -1,6 +1,8 @@
 import type { CommuteMode } from "@/lib/types";
 
 export const commuteModeLabel: Record<CommuteMode, string> = {
+  walk: "Walk",
+  cycle: "Cycle",
   cab: "Cab",
   public: "Public transport",
   self_drive: "Self drive",

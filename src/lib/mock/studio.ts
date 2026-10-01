@@ -85,7 +85,7 @@ export type PlanNote = {
 };
 
 export type PlanCommute = {
-  mode: "cab" | "public" | "self_drive" | "flight";
+  mode: "walk" | "cycle" | "cab" | "public" | "self_drive" | "flight";
   notes: string;
   minutes: string;
   cost: string;
@@ -142,6 +142,8 @@ export const emptyPlanReservation = (
 });
 
 export const commuteModeLabel: Record<PlanCommute["mode"], string> = {
+  walk: "Walk",
+  cycle: "Cycle",
   cab: "Cab",
   public: "Public transport",
   self_drive: "Self drive",

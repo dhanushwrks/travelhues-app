@@ -24,7 +24,7 @@ export type Spot = {
   archived?: boolean;
 };
 
-export const commuteModes = ["cab", "public", "self_drive", "flight"] as const;
+export const commuteModes = ["walk", "cycle", "cab", "public", "self_drive", "flight"] as const;
 export type CommuteMode = (typeof commuteModes)[number];
 
 export type CommuteLeg = {

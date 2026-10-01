@@ -25,6 +25,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } fro
 import { ArchiveAction } from "@/components/archive-action";
 import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
+import { estimateCommuteLeg } from "@/components/maps";
 import { PictureTray } from "@/components/picture-tray";
 import {
   AddItemHereMenu,
@@ -55,6 +56,78 @@ import { createDeskPlan, updateDeskPlan, useDesk, useDeskHome } from "@/lib/stud
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
 
+function priorStopSpotId(blocks: PlanBlock[], beforeIndex: number) {
+  for (let index = beforeIndex - 1; index >= 0; index -= 1) {
+    const block = blocks[index];
+    if (block?.kind === "stop") return block.spotId;
+  }
+  return null;
+}
+
+async function commutePatchesAfterReorder(
+  before: PlanBlock[],
+  after: PlanBlock[],
+  spots: StorySpot[],
+) {
+  const patches = new Map<string, PlanCommute | "clear">();
+  const beforeIndex = new Map(before.map((block, index) => [block.id, index]));
+
+  for (let index = 0; index < after.length; index += 1) {
+    const block = after[index];
+    if (block.kind !== "stop" || !block.commute) continue;
+
+    const nextPrior = priorStopSpotId(after, index);
+    const oldIndex = beforeIndex.get(block.id);
+    const prevPrior = oldIndex == null ? null : priorStopSpotId(before, oldIndex);
+
+    if (nextPrior == null) {
+      patches.set(block.id, "clear");
+      continue;
+    }
+    if (nextPrior === prevPrior) continue;
+    if (block.commute.mode === "flight") continue;
+
+    const fromSpot = spots.find((spot) => spot.id === nextPrior);
+    const toSpot = spots.find((spot) => spot.id === block.spotId);
+    const kept = {
+      mode: block.commute.mode,
+      notes: block.commute.notes,
+      cost: block.commute.cost,
+      minutes: "",
+    } satisfies PlanCommute;
+
+    if (
+      fromSpot?.lat == null ||
+      fromSpot?.lng == null ||
+      toSpot?.lat == null ||
+      toSpot?.lng == null
+    ) {
+      patches.set(block.id, kept);
+      continue;
+    }
+
+    const estimate = await estimateCommuteLeg(
+      { lat: fromSpot.lat, lng: fromSpot.lng },
+      { lat: toSpot.lat, lng: toSpot.lng },
+      block.commute.mode,
+    );
+    patches.set(
+      block.id,
+      estimate
+        ? {
+            ...block.commute,
+            minutes: String(estimate.minutes),
+            mapsMinutes: estimate.minutes,
+            mapsDistanceM: estimate.distanceM,
+            minutesSource: "maps",
+          }
+        : kept,
+    );
+  }
+
+  return patches;
+}
+
 export function PlanForm({
   storyId,
   planId,
@@ -78,7 +151,6 @@ export function PlanForm({
   const [days, setDays] = useState<PlanDay[]>([{ id: "day-1", title: "", brief: "", blocks: [] }]);
   const [reservations, setReservations] = useState<PlanReservation[]>([]);
   const [active, setActive] = useState(0);
-  const [adding, setAdding] = useState<"note" | null>(null);
   const [addingReservation, setAddingReservation] = useState(false);
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null);
   const [pendingCommuteStopId, setPendingCommuteStopId] = useState<string | null>(null);
@@ -130,6 +202,7 @@ export function PlanForm({
   }
   const [note, setNote] = useState("");
   const [minutes, setMinutes] = useState("");
+  const [noteError, setNoteError] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
@@ -207,21 +280,6 @@ export function PlanForm({
     return { title, summary, images, days, reservations, active };
   }
 
-  function addNote() {
-    if (note.trim().length < 8) {
-      setError("Write the note");
-      return;
-    }
-    setError("");
-    updateDay(active, {
-      ...day,
-      blocks: [...day.blocks, { id: nextPieceId("note"), kind: "note", body: note.trim(), minutes: minutes.trim() }],
-    });
-    setNote("");
-    setMinutes("");
-    setAdding(null);
-  }
-
   function addStop(spotId: string) {
     const hadPriorStop = day.blocks.some((block) => block.kind === "stop");
     const stopId = nextPieceId("stop");
@@ -231,7 +289,6 @@ export function PlanForm({
       next.splice(insertAt, 0, stop);
       updateDay(active, { ...day, blocks: next });
       setInsertAt(null);
-      setAdding(null);
       const priorExists = next.slice(0, insertAt).some((block) => block.kind === "stop");
       if (priorExists) setPendingCommuteStopId(stopId);
       return;
@@ -240,7 +297,6 @@ export function PlanForm({
       ...day,
       blocks: [...day.blocks, stop],
     });
-    setAdding(null);
     if (hadPriorStop) setPendingCommuteStopId(stopId);
   }
 
@@ -248,16 +304,17 @@ export function PlanForm({
     setInsertAt(index);
     setNote("");
     setMinutes("");
+    setNoteError("");
     setNoteInsertOpen(true);
   }
 
   function commitInsertedNote() {
     if (note.trim().length < 8) {
-      setError("Write the note");
+      setNoteError("Write a bit more for the note");
       return;
     }
     if (insertAt == null) return;
-    setError("");
+    setNoteError("");
     const next = [...day.blocks];
     next.splice(insertAt, 0, {
       id: nextPieceId("note"),
@@ -294,7 +351,31 @@ export function PlanForm({
     const from = day.blocks.findIndex((block) => block.id === dragged.id);
     const to = day.blocks.findIndex((block) => block.id === over.id);
     if (from < 0 || to < 0) return;
-    updateDay(active, { ...day, blocks: arrayMove(day.blocks, from, to) });
+    const previous = day.blocks;
+    const moved = arrayMove(previous, from, to);
+    const dayIndex = active;
+    updateDay(dayIndex, { ...day, blocks: moved });
+    void (async () => {
+      const patches = await commutePatchesAfterReorder(previous, moved, spots);
+      if (patches.size === 0) return;
+      setDays((current) =>
+        current.map((item, index) => {
+          if (index !== dayIndex) return item;
+          return {
+            ...item,
+            blocks: item.blocks.map((block) => {
+              const patch = patches.get(block.id);
+              if (!patch || block.kind !== "stop") return block;
+              if (patch === "clear") {
+                const { commute: _removed, ...rest } = block;
+                return rest;
+              }
+              return { ...block, commute: patch };
+            }),
+          };
+        }),
+      );
+    })();
   }
 
   function save(event: FormEvent) {
@@ -338,10 +419,11 @@ export function PlanForm({
           toDay: Math.min(Math.max(item.toDay, item.fromDay), days.length - 1),
         })),
       };
+      let savedId = planId;
       if (planId) await updateDeskPlan(storyId, planId, saved);
-      else await createDeskPlan(storyId, saved);
+      else savedId = await createDeskPlan(storyId, saved);
       setConfirmSaveOpen(false);
-      router.push(planId ? `${home}/${storyId}/plans/${planId}` : `${home}/${storyId}?tab=plans`);
+      router.push(`${home}/${storyId}/plans/${savedId}`);
       router.refresh();
     } catch (caught) {
       setSaving(false);
@@ -489,8 +571,8 @@ export function PlanForm({
               aria-pressed={index === active}
               onClick={() => {
                 setActive(index);
-                setAdding(null);
                 setPendingCommuteStopId(null);
+                setNoteInsertOpen(false);
               }}
               className={`shrink-0 rounded-full px-4 py-2 text-sm ${
                 index === active ? "bg-foreground text-background" : "bg-secondary text-foreground"
@@ -505,8 +587,8 @@ export function PlanForm({
               const next = [...days, { id: nextPieceId("day"), title: "", brief: "", blocks: [] }];
               setDays(next);
               setActive(next.length - 1);
-              setAdding(null);
               setPendingCommuteStopId(null);
+              setNoteInsertOpen(false);
             }}
             className="shrink-0 rounded-full border border-dashed border-foreground/30 px-4 py-2 text-sm"
           >
@@ -654,54 +736,30 @@ export function PlanForm({
             </SortableContext>
           </DndContext>
         )}
-        {adding === "note" ? (
-          <div className="grid gap-2 rounded-2xl bg-secondary p-3">
-            <textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              rows={3}
-              placeholder="A note for this part of the day"
-              className={field}
-            />
-            <input
-              value={minutes}
-              onChange={(event) => setMinutes(event.target.value)}
-              placeholder="How long, if it matters"
-              className={field}
-            />
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setAdding(null)} className="text-sm text-muted-foreground">
-                Cancel
-              </button>
-              <button type="button" onClick={addNote} className="text-sm font-medium text-primary">
-                Add note
-              </button>
-            </div>
+        <div className="grid gap-2">
+          <p className="text-sm font-medium">Add an item to day’s schedule</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => insertNoteAt(day.blocks.length)}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border py-3 text-sm font-medium"
+            >
+              <Pencil className="size-4" />
+              Text
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setInsertAt(null);
+                setPickerOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border py-3 text-sm font-medium"
+            >
+              <Mountain className="size-4" />
+              Add a Spot
+            </button>
           </div>
-        ) : null}
-        {adding === null ? (
-          <div className="grid gap-2">
-            <p className="text-sm font-medium">Add an item to day’s schedule</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setAdding("note")}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-border py-3 text-sm font-medium"
-              >
-                <Pencil className="size-4" />
-                Text
-              </button>
-              <button
-                type="button"
-                onClick={() => setPickerOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-border py-3 text-sm font-medium"
-              >
-                <Mountain className="size-4" />
-                Add a Spot
-              </button>
-            </div>
-          </div>
-        ) : null}
+        </div>
         <SpotPicker
           open={pickerOpen}
           spots={spots}
@@ -727,6 +785,7 @@ export function PlanForm({
               setInsertAt(null);
               setNote("");
               setMinutes("");
+              setNoteError("");
             }
           }}
         >
@@ -737,13 +796,18 @@ export function PlanForm({
             <div className="border-b border-border px-5 pt-5 pr-12 pb-3">
               <SheetTitle className="text-lg font-medium">Add a note</SheetTitle>
               <SheetDescription className="mt-1 text-sm text-muted-foreground">
-                Inserts into this spot in the day
+                {insertAt != null && insertAt < day.blocks.length
+                  ? "Inserts into this spot in the day"
+                  : "Adds to the end of this day"}
               </SheetDescription>
             </div>
             <div className="grid gap-3 px-5 py-4">
               <textarea
                 value={note}
-                onChange={(event) => setNote(event.target.value)}
+                onChange={(event) => {
+                  setNote(event.target.value);
+                  if (noteError) setNoteError("");
+                }}
                 rows={4}
                 placeholder="A note for this part of the day"
                 className={field}
@@ -754,18 +818,19 @@ export function PlanForm({
                 placeholder="How long, if it matters"
                 className={field}
               />
-              <div className="flex items-center gap-4">
+              {noteError ? <p className="text-sm text-primary">{noteError}</p> : null}
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setNoteInsertOpen(false)}
-                  className="text-sm text-muted-foreground"
+                  className="rounded-full border border-border py-3 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={commitInsertedNote}
-                  className="ml-auto text-sm font-medium text-primary"
+                  className="rounded-full bg-primary py-3 text-sm font-medium text-primary-foreground"
                 >
                   Add note
                 </button>

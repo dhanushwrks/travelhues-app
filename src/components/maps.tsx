@@ -234,13 +234,19 @@ export type CommuteEstimate = {
 export async function estimateCommuteLeg(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
-  mode: "cab" | "public" | "self_drive" | "flight",
+  mode: "walk" | "cycle" | "cab" | "public" | "self_drive" | "flight",
 ): Promise<CommuteEstimate | null> {
   if (mode === "flight") return null;
   await loadGoogleMaps();
   const routes = (await google.maps.importLibrary("routes")) as google.maps.RoutesLibrary;
   const travelMode =
-    mode === "public" ? routes.TravelMode.TRANSIT : routes.TravelMode.DRIVING;
+    mode === "public"
+      ? routes.TravelMode.TRANSIT
+      : mode === "walk"
+        ? routes.TravelMode.WALKING
+        : mode === "cycle"
+          ? routes.TravelMode.BICYCLING
+          : routes.TravelMode.DRIVING;
   try {
     const result = await new routes.DirectionsService().route({
       origin,

@@ -5,10 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Bed,
+  Bike,
   Bus,
   Car,
   CarTaxiFront,
   ExternalLink,
+  Footprints,
   Plane,
   Ticket,
   ChevronLeft,
@@ -66,6 +68,8 @@ const reservationLabels: Record<ReservationType, string> = {
 };
 
 const commuteIcons = {
+  walk: Footprints,
+  cycle: Bike,
   cab: CarTaxiFront,
   public: Bus,
   self_drive: Car,

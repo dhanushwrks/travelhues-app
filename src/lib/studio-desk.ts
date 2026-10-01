@@ -202,8 +202,9 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
   for (const image of plan.images) images.push(await uploadImage(token, image));
   const coverUrl = images[0] || story?.coverUrl;
   if (!coverUrl) throw new Error("Add a cover picture for the plan");
+  const id = slugify(plan.title, "plan");
   await send(token, `/stories/${storyId}/itineraries`, {
-    slug: slugify(plan.title, "plan"),
+    slug: id,
     title: plan.title,
     summary: plan.summary,
     coverUrl,
@@ -215,6 +216,7 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
     reservations: plan.reservations.map(toPublicReservation),
   });
   await pull(token);
+  return id;
 }
 
 export async function updateDeskPlan(storyId: string, planId: string, plan: Omit<StoryPlan, "id">) {

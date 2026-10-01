@@ -7,6 +7,7 @@ import {
   Car,
   CarTaxiFront,
   ExternalLink,
+  Footprints,
   Hotel,
   Plane,
   Ticket,
@@ -34,11 +35,13 @@ import { formatDayRange } from "@/lib/types";
 const field =
   "w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-foreground/30";
 
-const commuteModes = ["cab", "public", "self_drive", "flight"] as const;
+const commuteModes = ["walk", "cycle", "cab", "public", "self_drive", "flight"] as const;
 const reservationTypes = ["stay", "rental", "flight", "experience"] as const;
 const rentalKinds = ["car", "bike", "scooter"] as const;
 
 const commuteIcons = {
+  walk: Footprints,
+  cycle: Bike,
   cab: CarTaxiFront,
   public: Bus,
   self_drive: Car,
@@ -340,7 +343,7 @@ function CommuteEditor({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2">
         {commuteModes.map((mode) => {
           const Icon = commuteIcons[mode];
           const pressed = draft.mode === mode;
