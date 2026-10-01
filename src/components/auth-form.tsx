@@ -75,9 +75,11 @@ export function AuthForm({
       }
       saveSession({ accessToken: payload.accessToken, user: payload.user });
       const dest =
-        payload.user.role === "tcc"
-          ? "/storefront"
-          : safeNext || "/";
+        payload.user.role === "admin"
+          ? "/admin"
+          : payload.user.role === "tcc"
+            ? "/storefront"
+            : safeNext || "/";
       router.push(dest);
       router.refresh();
     } catch {

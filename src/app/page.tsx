@@ -25,6 +25,7 @@ export default async function ExplorePage({
 }) {
   const session = await getSession();
   if (session?.role === "tcc") redirect("/storefront");
+  if (session?.role === "admin") redirect("/admin");
   const guest = !session;
   const token = session?.token;
   const { country = "" } = await searchParams;

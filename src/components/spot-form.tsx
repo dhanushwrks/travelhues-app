@@ -12,6 +12,7 @@ import { PictureTray } from "@/components/picture-tray";
 import { PurchaseAccessFields } from "@/components/purchase-access-fields";
 import { fetchSpotCatalog, seedSpotCatalog, type SpotCatalogItem } from "@/lib/spot-catalog";
 import { createDeskSpot, useDesk, useDeskHome } from "@/lib/studio-desk";
+import { defaultPurchasePriceInr } from "@/lib/commerce-defaults";
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
 
@@ -61,7 +62,7 @@ export function SpotForm({
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [referenceUrl, setReferenceUrl] = useState("");
   const [purchaseOnly, setPurchaseOnly] = useState(false);
-  const [priceInr, setPriceInr] = useState(99);
+  const [priceInr, setPriceInr] = useState(defaultPurchasePriceInr());
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const chosen = catalog.find((item) => item.slug === category);

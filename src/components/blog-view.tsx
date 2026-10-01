@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { PurchaseSheet } from "@/components/purchase-sheet";
+import { ReportControl } from "@/components/report-control";
 import { formatInr } from "@/lib/format";
 import { blogMarkup } from "@/lib/mock/studio";
 import { storyHref, type Story, type StoryBlog } from "@/lib/types";
@@ -38,7 +39,15 @@ export function BlogView({
           <Link href={editHref} className="shrink-0 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium">
             Edit
           </Link>
-        ) : null}
+        ) : (
+          <ReportControl
+            targetKind="blog"
+            targetId={blog.slug}
+            targetLabel={blog.title}
+            targetOwnerUsername={story.creator.username}
+            targetOwnerRole="tcc"
+          />
+        )}
       </div>
       <div className="relative mx-5 mt-4 aspect-[4/3] overflow-hidden rounded-3xl bg-secondary">
         <Cover src={blog.coverUrl || "/blog-thumb.svg"} />

@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   const payload = (await response.json().catch(() => null)) as {
     message?: string | string[];
     accessToken?: string;
-    user?: { role: "tcc" | "traveler"; username: string; displayName: string };
+    user?: { role: "tcc" | "traveler" | "admin"; username: string; displayName: string };
   } | null;
   if (!response.ok || !payload?.accessToken || !payload.user) {
     const message = Array.isArray(payload?.message)
@@ -48,7 +48,9 @@ export async function GET(request: Request) {
     return fail(url, message);
   }
 
-  const dest = new URL(payload.user.role === "tcc" ? "/storefront" : "/", url.origin);
+  const home =
+    payload.user.role === "admin" ? "/admin" : payload.user.role === "tcc" ? "/storefront" : "/";
+  const dest = new URL(home, url.origin);
   const redirect = NextResponse.redirect(dest);
   for (const cookie of pending) {
     redirect.cookies.set(cookie.name, cookie.value, cookie.options);

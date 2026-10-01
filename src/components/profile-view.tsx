@@ -5,6 +5,7 @@ import { mediaUrl } from "@/lib/api";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { Person } from "@/lib/profile";
 import { ProfileMast } from "@/components/profile-mast";
+import { ReportControl } from "@/components/report-control";
 import { ShareProfileButton } from "@/components/share-profile-button";
 import { SocialLinks } from "@/components/social-links";
 import { storyHref } from "@/lib/types";
@@ -69,6 +70,17 @@ export function ProfileView({
             <p className="text-muted-foreground">+{extra} {extra === 1 ? "country" : "countries"}</p>
           ) : null}
         </div>
+        {!editHref ? (
+          <div className="mt-3">
+            <ReportControl
+              targetKind="profile"
+              targetId={person.username}
+              targetLabel={`@${person.username}`}
+              targetOwnerUsername={person.username}
+              targetOwnerRole={person.role === "admin" ? "traveler" : person.role}
+            />
+          </div>
+        ) : null}
         <dl className="mt-5 grid grid-cols-3 text-center">
           <Stat value={person.counts.stories} label="Stories" />
           <Stat value={person.counts.spots} label="Finds" />

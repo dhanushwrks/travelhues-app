@@ -13,6 +13,7 @@ const openExact = new Set([
   "/login",
   "/login/user",
   "/login/tcc",
+  "/login/admin",
   "/signup",
   "/join",
   "/privacy",
@@ -39,6 +40,22 @@ export function proxy(request: NextRequest) {
   }
 
   const token = request.cookies.get("th_access")?.value;
+  const role = request.cookies.get("th_role")?.value;
+
+  if (role === "admin") {
+    if (pathname.startsWith("/admin") || pathname === "/login/admin") {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
+  if (pathname.startsWith("/admin")) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login/admin", request.url));
+    }
+    return NextResponse.redirect(new URL(role === "tcc" ? "/storefront" : "/", request.url));
+  }
+
   if (token) return NextResponse.next();
 
   if (!isPublicPath(pathname)) {

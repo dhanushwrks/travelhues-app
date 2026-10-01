@@ -10,6 +10,7 @@ import { compressImage } from "@/components/profile-fields";
 import { Loader, PageLoader } from "@/components/loader";
 import { PurchaseAccessFields } from "@/components/purchase-access-fields";
 import { blogExcerpt } from "@/lib/mock/studio";
+import { defaultPurchasePriceInr } from "@/lib/commerce-defaults";
 import { addDeskBlog, updateDeskBlog, useDesk, useDeskHome } from "@/lib/studio-desk";
 
 export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string }) {
@@ -22,7 +23,7 @@ export function BlogForm({ storyId, blogId }: { storyId: string; blogId?: string
   const [body, setBody] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [purchaseOnly, setPurchaseOnly] = useState(false);
-  const [priceInr, setPriceInr] = useState(99);
+  const [priceInr, setPriceInr] = useState(defaultPurchasePriceInr());
   const [loaded, setLoaded] = useState(blogId ? "" : "new");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);

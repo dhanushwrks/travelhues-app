@@ -35,6 +35,12 @@ export default async function LoginDoorPage() {
               <span className="mt-1 block text-sm text-muted-foreground">Write stories. New creators join the waitlist.</span>
             </Link>
           </div>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Staff?{" "}
+            <Link href="/login/admin" className="font-medium text-primary">
+              Admin sign in
+            </Link>
+          </p>
         </div>
       </div>
       <BrandFooter links={links} />

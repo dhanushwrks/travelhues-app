@@ -1,4 +1,4 @@
-export type AccountRole = "tcc" | "traveler";
+export type AccountRole = "tcc" | "traveler" | "admin";
 
 export function saveSession(session: {
   accessToken: string;

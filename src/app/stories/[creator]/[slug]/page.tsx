@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { StoryBrowser } from "@/components/story-browser";
 import { StoryHero } from "@/components/story-hero";
+import { ReportControl } from "@/components/report-control";
 import { emptyLibrary } from "@/lib/marks";
 import { loadGlimpses, loadLibrary, loadProfile, loadStory } from "@/lib/remote";
 import { getSession } from "@/lib/session";
@@ -61,6 +62,13 @@ export default async function StoryPage({
       <div className="space-y-3 px-5 pt-2">
         <h1 className="font-display text-4xl md:text-5xl">{story.title}</h1>
         <p className="text-[15px] leading-6">{story.summary}</p>
+        <ReportControl
+          targetKind="story"
+          targetId={story.slug}
+          targetLabel={story.title}
+          targetOwnerUsername={story.creator.username}
+          targetOwnerRole="tcc"
+        />
       </div>
       <StoryBrowser
         story={story}

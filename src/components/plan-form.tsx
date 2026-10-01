@@ -37,6 +37,7 @@ import {
 import { SpotPicker } from "@/components/spot-picker";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { formatInr } from "@/lib/format";
+import { defaultPurchasePriceInr } from "@/lib/commerce-defaults";
 import {
   categoryName,
   clearPlanDraft,
@@ -152,7 +153,7 @@ export function PlanForm({
   const [days, setDays] = useState<PlanDay[]>([{ id: "day-1", title: "", brief: "", blocks: [] }]);
   const [reservations, setReservations] = useState<PlanReservation[]>([]);
   const [purchaseOnly, setPurchaseOnly] = useState(false);
-  const [priceInr, setPriceInr] = useState(99);
+  const [priceInr, setPriceInr] = useState(defaultPurchasePriceInr());
   const [active, setActive] = useState(0);
   const [addingReservation, setAddingReservation] = useState(false);
   const [editingReservationId, setEditingReservationId] = useState<string | null>(null);

@@ -18,7 +18,7 @@ export type Person = {
   coverUrl: string;
   /** TCC introduction clip (≤30s). Empty when unset. */
   introVideoUrl?: string;
-  role: "tcc" | "traveler";
+  role: "tcc" | "traveler" | "admin";
   hidden: boolean;
   counts: { stories: number; spots: number; itineraries: number };
   stories: Story[];

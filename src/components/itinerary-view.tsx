@@ -23,6 +23,7 @@ import { useMemo, useRef, useState } from "react";
 
 import { Loader } from "@/components/loader";
 import { PurchaseLockBadge, PurchaseSheet } from "@/components/purchase-sheet";
+import { ReportControl } from "@/components/report-control";
 import { SpotSheet } from "@/components/spot-sheet";
 import { spotTypeMeta } from "@/components/spot-type";
 import { MarkControls } from "@/components/mark-controls";
@@ -175,7 +176,16 @@ export function ItineraryView({
                 >
                   <Lock className="size-3.5" />
                 </button>
-              ) : null}
+              ) : (
+                <ReportControl
+                  className="mt-2"
+                  targetKind="itinerary"
+                  targetId={itinerary.slug}
+                  targetLabel={itinerary.title}
+                  targetOwnerUsername={story.creator.username}
+                  targetOwnerRole="tcc"
+                />
+              )}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               Itinerary by{" "}
