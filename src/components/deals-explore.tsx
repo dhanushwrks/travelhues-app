@@ -40,10 +40,24 @@ export function DealsExplore({
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef(false);
+
+  function mergeDeals(current: PublicFlightDeal[], incoming: PublicFlightDeal[]) {
+    const seen = new Set(current.map((deal) => deal.id));
+    const next = [...current];
+    for (const deal of incoming) {
+      if (seen.has(deal.id)) continue;
+      seen.add(deal.id);
+      next.push(deal);
+    }
+    return next;
+  }
 
   const originLabel = origin ? origin : "All origins";
 
   const reload = useCallback(async (nextOrigin: string, nextSort: FlightDealSort) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       const page = await fetchFlightDealsPage({
@@ -55,12 +69,14 @@ export function DealsExplore({
       setItems(page.items);
       setHasMore(page.hasMore);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (loadingRef.current || !hasMore) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       const page = await fetchFlightDealsPage({
@@ -69,12 +85,18 @@ export function DealsExplore({
         offset: items.length,
         sort,
       });
-      setItems((prev) => [...prev, ...page.items]);
-      setHasMore(page.hasMore);
+      let grew = false;
+      setItems((prev) => {
+        const next = mergeDeals(prev, page.items);
+        grew = next.length > prev.length;
+        return next;
+      });
+      setHasMore(grew ? page.hasMore : false);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [hasMore, items.length, loading, origin, sort]);
+  }, [hasMore, items, origin, sort]);
 
   const skipInitialReload = useRef(true);
   useEffect(() => {
