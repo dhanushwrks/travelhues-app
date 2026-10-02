@@ -39,16 +39,17 @@ export default async function ExplorePage({
   const token = session?.token;
   const { country = "" } = await searchParams;
   const code = country.toUpperCase();
-  const [countries, stories, glimpses, library, person] = await Promise.all([
+  const [countries, stories, allGlimpses, library, person] = await Promise.all([
     loadEnabledCountries(),
     loadStories(token),
-    loadGlimpses(token, code || undefined),
+    loadGlimpses(token),
     loadLibrary(token),
     token ? loadMe(token) : Promise.resolve(null),
   ]);
   const homeAirport = person?.homeAirport?.toUpperCase() ?? "";
-  const flightDeals =
-    !guest && homeAirport ? ((await loadFlightDeals(homeAirport, 4)) ?? []) : [];
+  const flightDeals = guest
+    ? []
+    : ((await loadFlightDeals(homeAirport || undefined, 4)) ?? []);
   const selected = countries.find((item) => item.code === code);
   const place = selected?.name ?? "";
   const visibleStories = (stories ?? []).filter((story) => {
@@ -81,7 +82,7 @@ export default async function ExplorePage({
   });
   const first = guest ? "Wanderer" : session.displayName.split(" ")[0] || "there";
   const suggested = suggestCountries(countries);
-  const shortPreview = (glimpses ?? []).slice(0, GUEST_SHORTS_LIMIT);
+  const shortPreview = (allGlimpses ?? []).slice(0, GUEST_SHORTS_LIMIT);
   const destinationPreview = destinations.slice(0, guest ? GUEST_DESTINATION_LIMIT : DESTINATION_PREVIEW_LIMIT);
 
   return (
@@ -99,13 +100,28 @@ export default async function ExplorePage({
           <Link href="/account/edit" className="font-medium text-primary underline">
             Set your home airport
           </Link>{" "}
-          to see flight deals from your city.
+          to prioritize flight deals from your city, or{" "}
+          <Link href="/deals" className="font-medium text-primary underline">
+            browse all deals
+          </Link>
+          .
+        </p>
+      ) : null}
+      {!guest && homeAirport && flightDeals.length === 0 ? (
+        <p className="mt-4 px-5 text-sm text-muted-foreground">
+          No fares from {homeAirport} right now.{" "}
+          <Link href="/deals" className="font-medium text-primary underline">
+            See all flight deals
+          </Link>
+          .
         </p>
       ) : null}
       {flightDeals.length > 0 ? (
         <section className="mt-8 grid gap-3">
           <div className="flex items-center justify-between gap-3 px-5">
-            <h2 className="font-display text-2xl">Flights from {homeAirport}</h2>
+            <h2 className="font-display text-2xl">
+              {homeAirport ? `Flights from ${homeAirport}` : "Flight deals"}
+            </h2>
             <Link href="/deals" className="shrink-0 text-sm font-medium text-primary">
               View all
             </Link>
@@ -120,14 +136,17 @@ export default async function ExplorePage({
         </section>
       ) : null}
       <section className="mt-8 grid gap-3">
-        <div className="px-5">
+        <div className="flex items-center justify-between gap-3 px-5">
           <h2 className="font-display text-2xl">Hues</h2>
+          <Link href="/hues" className="shrink-0 text-sm font-medium text-primary">
+            Watch all
+          </Link>
         </div>
         <GlimpseRow
           glimpses={shortPreview}
-          country={selected ? code : ""}
+          country=""
           guest={guest}
-          moreAvailable={(glimpses ?? []).length > GUEST_SHORTS_LIMIT}
+          moreAvailable={(allGlimpses ?? []).length > GUEST_SHORTS_LIMIT}
         />
       </section>
       <section className="mt-8">
