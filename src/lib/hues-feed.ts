@@ -6,7 +6,9 @@ export type HuesFeedItem =
   | { kind: "ad"; ad: ShortAd };
 
 export function buildHuesFeed(glimpses: Glimpse[], ads: ShortAd[]): HuesFeedItem[] {
-  const pool = ads.filter((ad) => ad.id && ad.headline && ad.ctaUrl && ad.ctaLabel);
+  const pool = ads.filter(
+    (ad) => ad.id && ad.headline && ad.ctaUrl && ad.ctaLabel && ad.partnerName && ad.category,
+  );
   if (pool.length === 0) {
     return glimpses.map((glimpse) => ({ kind: "glimpse", glimpse }));
   }
