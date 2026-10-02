@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Loader } from "@/components/loader";
+import { compressImage } from "@/components/profile-fields";
+import { readCookie } from "@/lib/browser-session";
+import { uploadPostMedia } from "@/lib/post-media";
 import { savePost, type MediaKind } from "@/lib/mock/studio";
 
 const kinds: { id: MediaKind; label: string }[] = [
@@ -22,6 +25,7 @@ export function PostComposer() {
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   function chooseKind(next: MediaKind) {
     setKind(next);
@@ -55,7 +59,7 @@ export function PostComposer() {
     }
   }
 
-  function publish(event: React.FormEvent) {
+  async function publish(event: React.FormEvent) {
     event.preventDefault();
     if (!caption.trim()) {
       setError("Add a caption");
@@ -69,15 +73,31 @@ export function PostComposer() {
       setError("Choose a video");
       return;
     }
-    savePost({
-      id: `post-${Date.now()}`,
-      kind,
-      caption: caption.trim(),
-      imageUrl,
-      videoUrl: kind === "photo" ? "" : videoUrl,
-    });
-    router.push("/storefront");
-    router.refresh();
+    const token = readCookie("th_access");
+    if (!token) {
+      setError("Sign in again to post");
+      return;
+    }
+    setPublishing(true);
+    setError("");
+    try {
+      const uploadedImage = imageUrl ? await uploadPostMedia(token, imageUrl) : "";
+      const uploadedVideo =
+        kind === "photo" ? "" : await uploadPostMedia(token, videoUrl);
+      savePost({
+        id: `post-${Date.now()}`,
+        kind,
+        caption: caption.trim(),
+        imageUrl: uploadedImage,
+        videoUrl: uploadedVideo,
+      });
+      router.push("/storefront");
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not publish that post");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   return (
@@ -114,7 +134,7 @@ export function PostComposer() {
       <label className="grid gap-2 text-sm">
         {kind === "photo" ? "Photo" : "Video"}
         <span className="text-muted-foreground">
-          {kind === "photo" ? "JPEG, PNG, or WebP under 1 MB" : "MP4, MOV, or WebM under 12 MB"}
+          {kind === "photo" ? "JPEG, PNG, or WebP under 8 MB" : "MP4, MOV, or WebM under 40 MB"}
         </span>
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -136,13 +156,13 @@ export function PostComposer() {
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <button
         type="submit"
-        disabled={reading}
+        disabled={reading || publishing}
         className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {reading ? <Loader label="Preparing" /> : "Publish"}
+        {reading || publishing ? <Loader label={publishing ? "Uploading" : "Preparing"} /> : "Publish"}
       </button>
       <p className="text-sm text-muted-foreground">
-        This stays on this phone for now. It is not saved to the server yet.
+        Photos and videos upload to your Travelhues account when you publish.
       </p>
     </form>
   );
@@ -152,15 +172,15 @@ function readPhoto(file: File) {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
     return Promise.reject(new Error("Use a JPEG, PNG, or WebP photo"));
   }
-  if (file.size > 1_000_000) return Promise.reject(new Error("Photo must be under 1 MB"));
-  return readDataUrl(file);
+  if (file.size > 8_000_000) return Promise.reject(new Error("Photo must be under 8 MB"));
+  return compressImage(file, 1920);
 }
 
 function readClip(file: File) {
   if (!["video/mp4", "video/quicktime", "video/webm"].includes(file.type)) {
     return Promise.reject(new Error("Use an MP4, MOV, or WebM video"));
   }
-  if (file.size > 12_000_000) return Promise.reject(new Error("Video must be under 12 MB"));
+  if (file.size > 40_000_000) return Promise.reject(new Error("Video must be under 40 MB"));
   const videoUrl = URL.createObjectURL(file);
   return new Promise<{ videoUrl: string; imageUrl: string }>((resolve, reject) => {
     const video = document.createElement("video");
@@ -188,14 +208,5 @@ function readClip(file: File) {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       resolve({ videoUrl, imageUrl: canvas.toDataURL("image/jpeg", 0.72) });
     }
-  });
-}
-
-function readDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not read that photo"));
-    reader.readAsDataURL(file);
   });
 }

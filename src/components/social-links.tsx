@@ -1,3 +1,6 @@
+"use client";
+
+import { LoginGateButton } from "@/components/login-prompt";
 import type { SocialLink } from "@/lib/profile";
 
 const labels: Record<string, string> = {
@@ -10,23 +13,41 @@ const labels: Record<string, string> = {
   website: "Website",
 };
 
-export function SocialLinks({ links }: { links: SocialLink[] }) {
+export function SocialLinks({
+  links,
+  guestPreview = false,
+}: {
+  links: SocialLink[];
+  guestPreview?: boolean;
+}) {
   if (links.length === 0) return null;
   return (
     <ul className="mt-4 flex flex-wrap gap-3">
-      {links.map((link) => (
-        <li key={`${link.platform}-${link.url}`}>
-          <a
-            href={link.url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={labels[link.platform] ?? "Link"}
-            className="grid size-10 place-items-center rounded-full bg-secondary text-foreground"
-          >
+      {links.map((link) => {
+        const label = labels[link.platform] ?? "Link";
+        const icon = (
+          <span className="grid size-10 place-items-center rounded-full bg-secondary text-foreground">
             <SocialIcon platform={link.platform} />
-          </a>
-        </li>
-      ))}
+          </span>
+        );
+        return (
+          <li key={`${link.platform}-${link.url}`}>
+            {guestPreview ? (
+              <LoginGateButton
+                className="block"
+                title="Sign in to open links"
+                body="Create a free traveler account to visit this creator’s social profiles."
+              >
+                <span aria-label={label}>{icon}</span>
+              </LoginGateButton>
+            ) : (
+              <a href={link.url} target="_blank" rel="noreferrer" aria-label={label} className="block">
+                {icon}
+              </a>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

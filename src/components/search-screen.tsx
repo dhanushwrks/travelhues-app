@@ -300,6 +300,17 @@ function Result({ hit, guest = false }: { hit: Hit; guest?: boolean }) {
     </>
   );
 
+  if (guest && hit.kind === "creator") {
+    return (
+      <Link
+        href={`/u/${hit.username}`}
+        className="flex gap-3 overflow-hidden rounded-3xl bg-card p-3 ring-1 ring-border"
+      >
+        {body}
+      </Link>
+    );
+  }
+
   if (guest && hit.kind !== "country") {
     return (
       <LoginGateCard

@@ -3,21 +3,26 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Bookmark, Heart, MessageCircle, Share2, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { LoginPrompt } from "@/components/login-prompt";
+import { HuesAdSlide } from "@/components/hues-ad-slide";
 import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 import { linkHref, type Glimpse } from "@/lib/glimpse";
+import { buildHuesFeed, feedStartIndex } from "@/lib/hues-feed";
+import type { ShortAd } from "@/lib/short-ad";
 
 export function GlimpsePlayer({
   initial,
+  ads,
   startId,
   traveler = true,
   guest = false,
   guestCapped = false,
 }: {
   initial: Glimpse[];
+  ads: ShortAd[];
   startId: string;
   traveler?: boolean;
   guest?: boolean;
@@ -25,10 +30,8 @@ export function GlimpsePlayer({
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [glimpses, setGlimpses] = useState(initial);
-  const [active, setActive] = useState(() => {
-    const index = initial.findIndex((glimpse) => glimpse.id === startId);
-    return index >= 0 ? index : 0;
-  });
+  const feed = useMemo(() => buildHuesFeed(glimpses, ads), [glimpses, ads]);
+  const [active, setActive] = useState(() => feedStartIndex(buildHuesFeed(initial, ads), startId));
   const [sound, setSound] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
@@ -62,9 +65,13 @@ export function GlimpsePlayer({
     );
     for (const child of root.children) observer.observe(child);
     const start = root.querySelector<HTMLElement>(`[data-id="${CSS.escape(startId)}"]`);
-    start?.scrollIntoView();
+    if (start) start.scrollIntoView();
+    else {
+      const first = root.querySelector<HTMLElement>("[data-feed-index]");
+      first?.scrollIntoView();
+    }
     return () => observer.disconnect();
-  }, [startId]);
+  }, [startId, feed.length]);
 
   useEffect(() => {
     try {
@@ -78,9 +85,13 @@ export function GlimpsePlayer({
   }, []);
 
   useEffect(() => {
-    const videos = scroller.current?.querySelectorAll("video");
-    if (!videos) return;
-    videos.forEach((video, index) => {
+    const root = scroller.current;
+    if (!root) return;
+    const slides = root.querySelectorAll<HTMLElement>("[data-feed-index]");
+    slides.forEach((slide) => {
+      const index = Number(slide.dataset.feedIndex);
+      const video = slide.querySelector("video");
+      if (!video) return;
       video.muted = !sound;
       if (index === active) {
         void video.play().catch(() => undefined);
@@ -88,7 +99,7 @@ export function GlimpsePlayer({
       }
       video.pause();
     });
-  }, [active, sound]);
+  }, [active, sound, feed.length]);
 
   async function toggleLike(glimpse: Glimpse) {
     if (guest || !traveler) {
@@ -175,7 +186,7 @@ export function GlimpsePlayer({
     );
   }
 
-  if (glimpses.length === 0) {
+  if (feed.length === 0) {
     return (
       <div className="grid h-full place-items-center px-6 text-center">
         <div className="grid gap-3">
@@ -207,90 +218,37 @@ export function GlimpsePlayer({
         {sound ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
       </button>
       <div ref={scroller} className="h-full snap-y snap-mandatory overflow-y-auto">
-        {glimpses.map((glimpse, index) => (
-          <article
-            key={glimpse.id}
-            data-index={index}
-            data-id={glimpse.id}
-            className="relative h-full snap-start"
-          >
-            <video
-              src={glimpse.videoUrl}
-              poster={glimpse.posterUrl || undefined}
-              className="size-full object-cover"
-              playsInline
-              loop
-              muted
-              preload={index === active ? "auto" : "metadata"}
+        {feed.map((item, index) =>
+          item.kind === "ad" ? (
+            <div
+              key={`ad-${item.ad.id}-${index}`}
+              data-feed-index={index}
+              data-index={index}
+              data-id={`ad-${item.ad.id}`}
+              className="h-full snap-start"
+            >
+              <HuesAdSlide ad={item.ad} />
+            </div>
+          ) : (
+            <GlimpseSlide
+              key={item.glimpse.id}
+              glimpse={item.glimpse}
+              index={index}
+              active={active}
+              traveler={traveler}
+              saved={saved}
+              notice={notice}
+              onLike={() => void toggleLike(item.glimpse)}
+              onComments={() => setCommentsFor(item.glimpse.id)}
+              onShare={() => void share(item.glimpse)}
+              onSave={() => toggleSave(item.glimpse.id)}
             />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
-            <div className="absolute right-3 bottom-24 z-10 grid justify-items-center gap-4 text-center text-white md:bottom-6">
-              {traveler ? (
-                <RailButton
-                  label={glimpse.liked ? "Unlike" : "Like"}
-                  pressed={glimpse.liked}
-                  count={glimpse.likes}
-                  onClick={() => void toggleLike(glimpse)}
-                >
-                  <Heart className={`size-7 ${glimpse.liked ? "fill-primary text-primary" : ""}`} />
-                </RailButton>
-              ) : (
-                <div className="grid justify-items-center gap-0.5 text-xs drop-shadow" aria-label={`${glimpse.likes} likes`}>
-                  <Heart className="size-7" />
-                  <span>{glimpse.likes}</span>
-                </div>
-              )}
-              <RailButton
-                label="Notes"
-                count={glimpse.comments.length}
-                onClick={() => setCommentsFor(glimpse.id)}
-              >
-                <MessageCircle className="size-7" />
-              </RailButton>
-              <RailButton label="Share" onClick={() => void share(glimpse)}>
-                <Share2 className="size-7" />
-              </RailButton>
-              {traveler ? (
-                <RailButton
-                  label={saved.includes(glimpse.id) ? "Remove save" : "Save"}
-                  pressed={saved.includes(glimpse.id)}
-                  onClick={() => toggleSave(glimpse.id)}
-                >
-                  <Bookmark className={`size-7 ${saved.includes(glimpse.id) ? "fill-current" : ""}`} />
-                </RailButton>
-              ) : null}
-            </div>
-            <div className="pointer-events-none absolute inset-x-4 bottom-24 flex items-end gap-3 pr-16 text-white md:bottom-6">
-              <Link
-                href={`/u/${glimpse.username}`}
-                aria-label={glimpse.displayName || glimpse.username}
-                className="pointer-events-auto relative size-11 shrink-0 overflow-hidden rounded-full bg-white/20 ring-2 ring-white"
-              >
-                {glimpse.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={mediaUrl(glimpse.avatarUrl)} alt="" className="size-full object-cover" />
-                ) : (
-                  <span className="grid size-full place-items-center text-sm font-medium">
-                    {(glimpse.displayName || glimpse.username).slice(0, 1)}
-                  </span>
-                )}
-              </Link>
-              <div className="grid min-w-0 gap-2">
-                <p className="text-sm font-medium">@{glimpse.username}</p>
-                <p className="text-sm leading-5">{glimpse.caption}</p>
-                {notice ? <p className="text-xs text-white/80">{notice}</p> : null}
-                {glimpse.link ? (
-                  <Link href={linkHref(glimpse.link)} className="pointer-events-auto justify-self-start rounded-full bg-background/90 px-3 py-1 text-xs text-foreground">
-                    {glimpse.link.label}
-                  </Link>
-                ) : null}
-              </div>
-            </div>
-          </article>
-        ))}
+          ),
+        )}
         {guest && guestCapped ? (
           <article
-            data-index={glimpses.length}
+            data-feed-index={feed.length}
+            data-index={feed.length}
             data-id="guest-login"
             className="relative grid h-full place-items-center snap-start bg-foreground px-6 text-center text-background"
           >
@@ -360,6 +318,111 @@ export function GlimpsePlayer({
         </section>
       ) : null}
     </div>
+  );
+}
+
+function GlimpseSlide({
+  glimpse,
+  index,
+  active,
+  traveler,
+  saved,
+  notice,
+  onLike,
+  onComments,
+  onShare,
+  onSave,
+}: {
+  glimpse: Glimpse;
+  index: number;
+  active: number;
+  traveler: boolean;
+  saved: string[];
+  notice: string;
+  onLike: () => void;
+  onComments: () => void;
+  onShare: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <article
+      data-feed-index={index}
+      data-index={index}
+      data-id={glimpse.id}
+      className="relative h-full snap-start"
+    >
+      <video
+        src={glimpse.videoUrl}
+        poster={glimpse.posterUrl || undefined}
+        className="size-full object-cover"
+        playsInline
+        loop
+        muted
+        preload={index === active ? "auto" : "metadata"}
+      />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
+      <div className="absolute right-3 bottom-24 z-10 grid justify-items-center gap-4 text-center text-white md:bottom-6">
+        {traveler ? (
+          <RailButton
+            label={glimpse.liked ? "Unlike" : "Like"}
+            pressed={glimpse.liked}
+            count={glimpse.likes}
+            onClick={onLike}
+          >
+            <Heart className={`size-7 ${glimpse.liked ? "fill-primary text-primary" : ""}`} />
+          </RailButton>
+        ) : (
+          <div className="grid justify-items-center gap-0.5 text-xs drop-shadow" aria-label={`${glimpse.likes} likes`}>
+            <Heart className="size-7" />
+            <span>{glimpse.likes}</span>
+          </div>
+        )}
+        <RailButton label="Notes" count={glimpse.comments.length} onClick={onComments}>
+          <MessageCircle className="size-7" />
+        </RailButton>
+        <RailButton label="Share" onClick={onShare}>
+          <Share2 className="size-7" />
+        </RailButton>
+        {traveler ? (
+          <RailButton
+            label={saved.includes(glimpse.id) ? "Remove save" : "Save"}
+            pressed={saved.includes(glimpse.id)}
+            onClick={onSave}
+          >
+            <Bookmark className={`size-7 ${saved.includes(glimpse.id) ? "fill-current" : ""}`} />
+          </RailButton>
+        ) : null}
+      </div>
+      <div className="pointer-events-none absolute inset-x-4 bottom-24 flex items-end gap-3 pr-16 text-white md:bottom-6">
+        <Link
+          href={`/u/${glimpse.username}`}
+          aria-label={glimpse.displayName || glimpse.username}
+          className="pointer-events-auto relative size-11 shrink-0 overflow-hidden rounded-full bg-white/20 ring-2 ring-white"
+        >
+          {glimpse.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={mediaUrl(glimpse.avatarUrl)} alt="" className="size-full object-cover" />
+          ) : (
+            <span className="grid size-full place-items-center text-sm font-medium">
+              {(glimpse.displayName || glimpse.username).slice(0, 1)}
+            </span>
+          )}
+        </Link>
+        <div className="grid min-w-0 gap-2">
+          <p className="text-sm font-medium">@{glimpse.username}</p>
+          <p className="text-sm leading-5">{glimpse.caption}</p>
+          {notice ? <p className="text-xs text-white/80">{notice}</p> : null}
+          {glimpse.link ? (
+            <Link
+              href={linkHref(glimpse.link)}
+              className="pointer-events-auto justify-self-start rounded-full bg-background/90 px-3 py-1 text-xs text-foreground"
+            >
+              {glimpse.link.label}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 

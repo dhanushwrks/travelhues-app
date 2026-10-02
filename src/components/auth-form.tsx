@@ -32,9 +32,12 @@ export function AuthForm({
   const safeNext =
     nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "";
 
+  const travelerLogin = !creator && mode === "login";
+  const emailNeedsConsent = mode === "signup" || travelerLogin;
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (mode === "signup" && !consent) {
+    if (emailNeedsConsent && !consent) {
       setError(consentRequiredMessage);
       return;
     }
@@ -114,29 +117,10 @@ export function AuthForm({
       >
       <h1 className="font-display text-3xl">{title}</h1>
       <p className="text-sm leading-6 text-muted-foreground">{lead}</p>
-      {!creator && mode === "login" ? (
-        <>
-          <ConsentCheckbox
-            id="google-legal-consent"
-            required={false}
-            checked={consent}
-            onChange={(checked) => {
-              setConsent(checked);
-              if (checked) setError("");
-            }}
-          />
-          <GoogleSignInButton
-            allowed={consent}
-            onBlocked={() => setError(consentRequiredMessage)}
-            className="rounded-full border border-border bg-background px-4 py-3 text-sm font-medium"
-          />
-          <p className="text-center text-sm text-muted-foreground">or</p>
-        </>
-      ) : null}
       {mode === "signup" ? <Input name="displayName" label="Name" /> : null}
       <Input name="email" label="Email" type="email" />
       <Input name="password" label="Password" type="password" />
-      {mode === "signup" ? (
+      {emailNeedsConsent ? (
         <ConsentCheckbox
           checked={consent}
           onChange={(checked) => {
@@ -148,11 +132,21 @@ export function AuthForm({
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <button
         type="submit"
-        disabled={pending || (mode === "signup" && !consent)}
+        disabled={pending || (emailNeedsConsent && !consent)}
         className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
         {pending ? <Loader label={mode === "signup" ? "Creating account" : "Signing in"} /> : mode === "signup" ? "Create account" : "Sign in"}
       </button>
+      {travelerLogin ? (
+        <>
+          <p className="text-center text-sm text-muted-foreground">or</p>
+          <GoogleSignInButton className={socialButton} />
+          <button type="button" className={socialButton}>
+            <FacebookMark />
+            Continue with Facebook
+          </button>
+        </>
+      ) : null}
       {creator ? (
         <div className="grid gap-3">
           <p className="text-center text-sm leading-6 text-muted-foreground">
@@ -173,6 +167,20 @@ export function AuthForm({
       )}
       </form>
     </div>
+  );
+}
+
+const socialButton =
+  "flex items-center justify-center gap-2 rounded-full border border-border bg-background px-4 py-3 text-sm font-medium";
+
+function FacebookMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4">
+      <path
+        fill="#1877F2"
+        d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.09 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.96h-1.51c-1.49 0-1.95.93-1.95 1.89v2.27h3.32l-.53 3.49h-2.79V24C19.61 23.09 24 18.1 24 12.07z"
+      />
+    </svg>
   );
 }
 

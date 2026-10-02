@@ -5,6 +5,8 @@ import { useState } from "react";
 
 import { BackLink } from "@/components/back-link";
 import { Loader } from "@/components/loader";
+import { readCookie } from "@/lib/browser-session";
+import { persistPostMedia } from "@/lib/post-media";
 import { savePost, type PostMedia } from "@/lib/mock/studio";
 
 const maxItems = 5;
@@ -50,6 +52,7 @@ export function PostForm({ onClose, onPosted }: { onClose: () => void; onPosted:
   const [caption, setCaption] = useState("");
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   async function addFiles(list: FileList | null) {
     if (!list?.length) return;
@@ -79,7 +82,7 @@ export function PostForm({ onClose, onPosted }: { onClose: () => void; onPosted:
     setMedia((current) => current.filter((item) => item.id !== id));
   }
 
-  function publish(event: React.FormEvent) {
+  async function publish(event: React.FormEvent) {
     event.preventDefault();
     if (media.length < 1) {
       setError("Add at least one photo or video");
@@ -89,17 +92,31 @@ export function PostForm({ onClose, onPosted }: { onClose: () => void; onPosted:
       setError("Add a caption");
       return;
     }
-    const first = media[0];
-    const onlyPhotos = media.every((item) => item.kind === "photo");
-    savePost({
-      id: `post-${Date.now()}`,
-      kind: onlyPhotos ? "photo" : "video",
-      caption: caption.trim(),
-      imageUrl: first.imageUrl,
-      videoUrl: first.kind === "video" ? first.videoUrl : "",
-      media: media.map(({ kind, imageUrl, videoUrl }) => ({ kind, imageUrl, videoUrl })),
-    });
-    onPosted();
+    const token = readCookie("th_access");
+    if (!token) {
+      setError("Sign in again to post");
+      return;
+    }
+    setPublishing(true);
+    setError("");
+    try {
+      const uploaded = await Promise.all(media.map((item) => persistPostMedia(token, item)));
+      const first = uploaded[0];
+      const onlyPhotos = uploaded.every((item) => item.kind === "photo");
+      savePost({
+        id: `post-${Date.now()}`,
+        kind: onlyPhotos ? "photo" : "video",
+        caption: caption.trim(),
+        imageUrl: first.imageUrl,
+        videoUrl: first.kind === "video" ? first.videoUrl : "",
+        media: uploaded.map(({ kind, imageUrl, videoUrl }) => ({ kind, imageUrl, videoUrl })),
+      });
+      onPosted();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not publish that post");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   return (
@@ -164,10 +181,10 @@ export function PostForm({ onClose, onPosted }: { onClose: () => void; onPosted:
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <button
         type="submit"
-        disabled={reading}
+        disabled={reading || publishing}
         className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {reading ? <Loader label="Preparing" /> : "Post"}
+        {reading || publishing ? <Loader label={publishing ? "Uploading" : "Preparing"} /> : "Post"}
       </button>
     </form>
   );
@@ -178,6 +195,7 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
   const [caption, setCaption] = useState("");
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -196,7 +214,7 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
     }
   }
 
-  function publish(event: React.FormEvent) {
+  async function publish(event: React.FormEvent) {
     event.preventDefault();
     if (!clip) {
       setError("Add a video");
@@ -206,15 +224,29 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
       setError("Add a caption");
       return;
     }
-    savePost({
-      id: `glimpse-${Date.now()}`,
-      kind: "glimpse",
-      caption: caption.trim(),
-      imageUrl: clip.imageUrl,
-      videoUrl: clip.videoUrl,
-      media: [{ kind: "video", imageUrl: clip.imageUrl, videoUrl: clip.videoUrl }],
-    });
-    onPosted();
+    const token = readCookie("th_access");
+    if (!token) {
+      setError("Sign in again to post");
+      return;
+    }
+    setPublishing(true);
+    setError("");
+    try {
+      const uploaded = await persistPostMedia(token, clip);
+      savePost({
+        id: `glimpse-${Date.now()}`,
+        kind: "glimpse",
+        caption: caption.trim(),
+        imageUrl: uploaded.imageUrl,
+        videoUrl: uploaded.videoUrl,
+        media: [{ kind: "video", imageUrl: uploaded.imageUrl, videoUrl: uploaded.videoUrl }],
+      });
+      onPosted();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not publish that short");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   return (
@@ -251,10 +283,10 @@ export function GlimpseComposer({ onClose, onPosted }: { onClose: () => void; on
       {error ? <p className="text-sm text-primary">{error}</p> : null}
       <button
         type="submit"
-        disabled={reading}
+        disabled={reading || publishing}
         className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {reading ? <Loader label="Preparing" /> : "Post"}
+        {reading || publishing ? <Loader label={publishing ? "Uploading" : "Preparing"} /> : "Post"}
       </button>
     </form>
   );

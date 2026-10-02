@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import type { Glimpse } from "@/lib/glimpse";
+import { defaultShortAds, normalizeShortAds, type ShortAd } from "@/lib/short-ad";
 import type { Library } from "@/lib/marks";
 import type { Person } from "@/lib/profile";
 import { apiBase } from "@/lib/api";
@@ -27,6 +28,16 @@ async function load<T>(path: string, token?: string): Promise<T | null> {
 export function loadGlimpses(token?: string, country?: string) {
   const query = country ? `?country=${encodeURIComponent(country)}` : "";
   return load<Glimpse[]>(`/glimpses${query}`, token);
+}
+
+export function loadShortAds() {
+  return load<ShortAd[]>("/ads/hues");
+}
+
+export async function loadShortAdsForFeed(): Promise<ShortAd[]> {
+  const remote = await loadShortAds();
+  const parsed = normalizeShortAds(remote);
+  return parsed.length > 0 ? parsed : defaultShortAds;
 }
 
 export async function loadEnabledCountries() {

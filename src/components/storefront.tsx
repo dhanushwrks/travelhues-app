@@ -6,6 +6,8 @@ import { Bookmark, Heart, MapPin, Route, Share2, type LucideIcon } from "lucide-
 import { useState, useSyncExternalStore } from "react";
 
 import { BackLink } from "@/components/back-link";
+import { LoginGateCard } from "@/components/login-prompt";
+import { PostMediaPreview } from "@/components/post-media-preview";
 import { ProfileMast } from "@/components/profile-mast";
 import { SocialLinks } from "@/components/social-links";
 import { mediaUrl } from "@/lib/api";
@@ -28,9 +30,11 @@ type Shelf = "posts" | "hues" | "stories";
 export function Storefront({
   person,
   library,
+  guestPreview = false,
 }: {
   person: Person;
   library: Library;
+  guestPreview?: boolean;
 }) {
   const [shelf, setShelf] = useState<Shelf>("stories");
   const allPosts = useSyncExternalStore(subscribeStudio, postsSnapshot, postsServerSnapshot);
@@ -77,7 +81,7 @@ export function Storefront({
             <p className="mt-2 text-sm text-muted-foreground">No countries marked yet.</p>
           )}
         </section>
-        <SocialLinks links={person.socials} />
+        <SocialLinks links={person.socials} guestPreview={guestPreview} />
       </div>
       <div className="mt-8 flex border-b border-border px-5">
         <ShelfTab
@@ -94,14 +98,16 @@ export function Storefront({
           onClick={() => setShelf("stories")}
         />
       </div>
-      {shelf === "posts" ? <PostsGrid posts={posts} /> : null}
-      {shelf === "hues" ? <ShortsGrid hues={hues} /> : null}
-      {shelf === "stories" ? <StoryShelf stories={person.stories} library={library} /> : null}
+      {shelf === "posts" ? <PostsGrid posts={posts} guestPreview={guestPreview} /> : null}
+      {shelf === "hues" ? <ShortsGrid hues={hues} guestPreview={guestPreview} /> : null}
+      {shelf === "stories" ? (
+        <StoryShelf stories={person.stories} library={library} guestPreview={guestPreview} />
+      ) : null}
     </div>
   );
 }
 
-function PostsGrid({ posts }: { posts: MediaPost[] }) {
+function PostsGrid({ posts, guestPreview }: { posts: MediaPost[]; guestPreview?: boolean }) {
   if (posts.length === 0) {
     return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No posts yet.</p>;
   }
@@ -111,46 +117,55 @@ function PostsGrid({ posts }: { posts: MediaPost[] }) {
       {posts.map((post) => {
         const likes = postBoard(post.id).likes;
         const saves = 0;
+        const tile = (
+          <>
+            <figure className="relative aspect-square">
+              <PostMediaPreview imageUrl={post.imageUrl} videoUrl={post.videoUrl} />
+              <span
+                className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                aria-hidden
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Heart className="size-4 fill-current" />
+                  {likes}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Bookmark className="size-4 fill-current" />
+                  {saves}
+                </span>
+              </span>
+              {post.media && post.media.length > 1 ? (
+                <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                  {post.media.length}
+                </figcaption>
+              ) : post.kind !== "photo" ? (
+                <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+                  Video
+                </figcaption>
+              ) : null}
+            </figure>
+          </>
+        );
         return (
           <li key={post.id} className="bg-card">
-            <Link
-              href={`/storefront/posts/${post.id}`}
-              className="group block focus-visible:outline-none"
-              aria-label={`${likes} likes, ${saves} saves`}
-            >
-              <figure className="relative aspect-square">
-                {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={post.imageUrl} alt="" className="size-full object-cover" />
-                ) : post.imageUrl ? (
-                  <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
-                ) : (
-                  <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
-                )}
-                <span
-                  className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-                  aria-hidden
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Heart className="size-4 fill-current" />
-                    {likes}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Bookmark className="size-4 fill-current" />
-                    {saves}
-                  </span>
-                </span>
-                {post.media && post.media.length > 1 ? (
-                  <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                    {post.media.length}
-                  </figcaption>
-                ) : post.kind !== "photo" ? (
-                  <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                    Video
-                  </figcaption>
-                ) : null}
-              </figure>
-            </Link>
+            {guestPreview ? (
+              <LoginGateCard
+                className="group block w-full text-left focus-visible:outline-none"
+                label="Post"
+                title="Sign in to open posts"
+                body="Create a free traveler account to open this creator’s posts."
+              >
+                {tile}
+              </LoginGateCard>
+            ) : (
+              <Link
+                href={`/storefront/posts/${post.id}`}
+                className="group block focus-visible:outline-none"
+                aria-label={`${likes} likes, ${saves} saves`}
+              >
+                {tile}
+              </Link>
+            )}
           </li>
         );
       })}
@@ -158,7 +173,15 @@ function PostsGrid({ posts }: { posts: MediaPost[] }) {
   );
 }
 
-function StoryShelf({ stories, library }: { stories: Story[]; library: Library }) {
+function StoryShelf({
+  stories,
+  library,
+  guestPreview,
+}: {
+  stories: Story[];
+  library: Library;
+  guestPreview?: boolean;
+}) {
   if (stories.length === 0) {
     return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No stories yet.</p>;
   }
@@ -169,26 +192,42 @@ function StoryShelf({ stories, library }: { stories: Story[]; library: Library }
         const spots = story.spots.filter((find) => !find.archived).length;
         const itineraries = story.itineraries.filter((plan) => !plan.archived).length;
         const likes = storyLikeCount(library, story.slug);
+        const tile = (
+          <>
+            <span className="relative block aspect-[16/9] bg-muted">
+              <Cover src={story.coverUrl} />
+            </span>
+            <span className="block px-4 pt-3">
+              <span className="block font-display text-2xl">{story.title}</span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {countryFlag(story.destination.country)} {countryName(story.destination.country)}
+              </span>
+            </span>
+            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-4 text-sm text-muted-foreground">
+              <Count icon={MapPin} value={spots} label="Finds" />
+              <Count icon={Route} value={itineraries} label="itineraries" />
+              <Count icon={Heart} value={likes} label="likes" />
+              <Count icon={Share2} value={0} label="shares" />
+              <Count icon={Bookmark} value={0} label="saves" />
+            </p>
+          </>
+        );
         return (
           <li key={story.slug} className="overflow-hidden rounded-3xl bg-secondary">
-            <Link href={storyHref(story)} className="block">
-              <span className="relative block aspect-[16/9] bg-muted">
-                <Cover src={story.coverUrl} />
-              </span>
-              <span className="block px-4 pt-3">
-                <span className="block font-display text-2xl">{story.title}</span>
-                <span className="mt-1 block text-sm text-muted-foreground">
-                  {countryFlag(story.destination.country)} {countryName(story.destination.country)}
-                </span>
-              </span>
-              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-4 text-sm text-muted-foreground">
-                <Count icon={MapPin} value={spots} label="Finds" />
-                <Count icon={Route} value={itineraries} label="itineraries" />
-                <Count icon={Heart} value={likes} label="likes" />
-                <Count icon={Share2} value={0} label="shares" />
-                <Count icon={Bookmark} value={0} label="saves" />
-              </p>
-            </Link>
+            {guestPreview ? (
+              <LoginGateCard
+                className="block w-full text-left"
+                label={story.title}
+                title="Sign in to open stories"
+                body="Create a free traveler account to read this creator’s stories, finds, and plans."
+              >
+                {tile}
+              </LoginGateCard>
+            ) : (
+              <Link href={storyHref(story)} className="block">
+                {tile}
+              </Link>
+            )}
           </li>
         );
       })}
@@ -214,7 +253,7 @@ function Count({
   );
 }
 
-function ShortsGrid({ hues }: { hues: MediaPost[] }) {
+function ShortsGrid({ hues, guestPreview }: { hues: MediaPost[]; guestPreview?: boolean }) {
   if (hues.length === 0) {
     return <p className="px-5 py-12 text-center text-sm text-muted-foreground">No hues yet.</p>;
   }
@@ -224,40 +263,47 @@ function ShortsGrid({ hues }: { hues: MediaPost[] }) {
       {hues.map((short) => {
         const likes = postBoard(short.id).likes;
         const saves = 0;
+        const tile = (
+          <figure className="relative aspect-square">
+            <PostMediaPreview imageUrl={short.imageUrl} videoUrl={short.videoUrl} />
+            <span
+              className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+              aria-hidden
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Heart className="size-4 fill-current" />
+                {likes}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Bookmark className="size-4 fill-current" />
+                {saves}
+              </span>
+            </span>
+            <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
+              Short
+            </figcaption>
+          </figure>
+        );
         return (
           <li key={short.id} className="bg-card">
-            <Link
-              href={`/storefront/posts/${short.id}`}
-              className="group block focus-visible:outline-none"
-              aria-label={`${likes} likes, ${saves} saves`}
-            >
-              <figure className="relative aspect-square">
-                {short.imageUrl.startsWith("data:") || short.imageUrl.startsWith("blob:") ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={short.imageUrl} alt="" className="size-full object-cover" />
-                ) : short.imageUrl ? (
-                  <Image src={short.imageUrl} alt="" fill className="object-cover" sizes="144px" />
-                ) : (
-                  <video src={short.videoUrl} muted playsInline className="size-full object-cover" />
-                )}
-                <span
-                  className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-                  aria-hidden
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Heart className="size-4 fill-current" />
-                    {likes}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Bookmark className="size-4 fill-current" />
-                    {saves}
-                  </span>
-                </span>
-                <figcaption className="absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-white">
-                  Short
-                </figcaption>
-              </figure>
-            </Link>
+            {guestPreview ? (
+              <LoginGateCard
+                className="group block w-full text-left focus-visible:outline-none"
+                label="Hue"
+                title="Sign in to open hues"
+                body="Create a free traveler account to watch this creator’s short videos."
+              >
+                {tile}
+              </LoginGateCard>
+            ) : (
+              <Link
+                href={`/storefront/posts/${short.id}`}
+                className="group block focus-visible:outline-none"
+                aria-label={`${likes} likes, ${saves} saves`}
+              >
+                {tile}
+              </Link>
+            )}
           </li>
         );
       })}

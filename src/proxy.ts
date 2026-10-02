@@ -26,6 +26,7 @@ function isPublicPath(pathname: string) {
   if (pathname.startsWith("/auth/")) return true;
   if (pathname.startsWith("/search/")) return true;
   if (/^\/stories\/[^/]+\/[^/]+$/.test(pathname)) return true;
+  if (/^\/u\/[^/]+$/.test(pathname)) return true;
   return false;
 }
 

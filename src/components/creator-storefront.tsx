@@ -6,6 +6,7 @@ import { Bookmark, Heart } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
 import { mediaUrl } from "@/lib/api";
+import { PostMediaPreview } from "@/components/post-media-preview";
 import {
   postBoard,
   postsServerSnapshot,
@@ -86,14 +87,7 @@ export function CreatorStorefront({
                   aria-label={`${likes} likes, ${saves} saves`}
                 >
                   <figure className="relative aspect-square">
-                    {post.imageUrl.startsWith("data:") || post.imageUrl.startsWith("blob:") ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={post.imageUrl} alt="" className="size-full object-cover" />
-                    ) : post.imageUrl ? (
-                      <Image src={post.imageUrl} alt="" fill className="object-cover" sizes="144px" />
-                    ) : (
-                      <video src={post.videoUrl} muted playsInline className="size-full object-cover" />
-                    )}
+                    <PostMediaPreview imageUrl={post.imageUrl} videoUrl={post.videoUrl} />
                     <span
                       className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-4 bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
                       aria-hidden

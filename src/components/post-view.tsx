@@ -1,10 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
+import { PostMediaPreview } from "@/components/post-media-preview";
+import { mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 import {
   addPostComment,
@@ -170,16 +171,18 @@ function Carousel({ frames }: { frames: PostMedia[] }) {
 
 function Frame({ frame }: { frame: PostMedia }) {
   if (frame.kind === "video" && frame.videoUrl) {
-    return <video src={frame.videoUrl} poster={frame.imageUrl || undefined} controls playsInline className="size-full object-cover" />;
-  }
-  if (frame.imageUrl.startsWith("data:") || frame.imageUrl.startsWith("blob:")) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={frame.imageUrl} alt="" className="size-full object-cover" />
+      <video
+        src={mediaUrl(frame.videoUrl)}
+        poster={frame.imageUrl ? mediaUrl(frame.imageUrl) : undefined}
+        controls
+        playsInline
+        className="size-full object-cover"
+      />
     );
   }
   if (!frame.imageUrl) return null;
-  return <Image src={frame.imageUrl} alt="" fill className="object-cover" sizes="(min-width: 1024px) 36rem, 100vw" />;
+  return <PostMediaPreview imageUrl={frame.imageUrl} />;
 }
 
 function postFrames(post: MediaPost): PostMedia[] {

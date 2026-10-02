@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, Globe2, MapPin, Route, type LucideIcon } from "lucide-react";
 
-import { LoginGateCard } from "@/components/login-prompt";
 import { mediaUrl } from "@/lib/api";
 
 export type CreatorCardData = {
@@ -83,14 +82,9 @@ export function CreatorCard({
 
   if (guest) {
     return (
-      <LoginGateCard
-        className="block h-full w-full overflow-hidden rounded-3xl bg-card text-left ring-1 ring-border"
-        label={creator.displayName}
-        title="Sign in to view this creator"
-        body="Sign in to open creator profiles, stories, and posts."
-      >
+      <Link href={`/u/${creator.username}`} className="block h-full overflow-hidden rounded-3xl bg-card ring-1 ring-border">
         {body}
-      </LoginGateCard>
+      </Link>
     );
   }
 
