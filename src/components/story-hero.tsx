@@ -5,40 +5,47 @@ import Link from "next/link";
 import { ChevronLeft, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 
+import { StreamingVideo } from "@/components/streaming-video";
 import { mediaUrl } from "@/lib/api";
+import { resolvePlaybackSrc } from "@/lib/video-stream";
 
 export function StoryHero({
   cover,
   videoUrl,
+  streamUrl,
   portrait,
   name,
   username,
 }: {
   cover: string;
   videoUrl: string;
+  streamUrl?: string;
   portrait: string;
   name: string;
   username: string;
 }) {
   const [sound, setSound] = useState(false);
   const avatar = mediaUrl(portrait);
+  const coverSrc = cover ? mediaUrl(cover) : "";
+  const playback = resolvePlaybackSrc(videoUrl, streamUrl);
 
   return (
     <div className="relative mx-4 mt-4 pb-14">
       <div className="relative h-52 overflow-hidden rounded-[1.75rem] bg-secondary md:h-72">
-        {videoUrl ? (
-          <video
-            src={videoUrl}
-            poster={cover || undefined}
+        {playback ? (
+          <StreamingVideo
+            src={playback}
+            poster={coverSrc || undefined}
             className="size-full object-cover"
-            autoPlay
+            shouldLoad
+            shouldPlay
             loop
             muted={!sound}
             playsInline
           />
-        ) : cover ? (
+        ) : coverSrc ? (
           <Image
-            src={cover}
+            src={coverSrc}
             alt=""
             fill
             priority
@@ -53,7 +60,7 @@ export function StoryHero({
           <ChevronLeft className="size-4" />
           Explore
         </Link>
-        {videoUrl ? (
+        {playback ? (
           <button
             type="button"
             aria-label={sound ? "Mute highlight" : "Play highlight with sound"}

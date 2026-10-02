@@ -7,9 +7,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { LoginPrompt } from "@/components/login-prompt";
 import { HuesAdSlide } from "@/components/hues-ad-slide";
+import { StreamingVideo } from "@/components/streaming-video";
 import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
 import { linkHref, type Glimpse } from "@/lib/glimpse";
+import { resolvePlaybackSrc, shouldLoadVideo } from "@/lib/video-stream";
 import { buildHuesFeed, feedStartIndex } from "@/lib/hues-feed";
 import type { ShortAd } from "@/lib/short-ad";
 
@@ -83,23 +85,6 @@ export function GlimpsePlayer({
       setSaved([]);
     }
   }, []);
-
-  useEffect(() => {
-    const root = scroller.current;
-    if (!root) return;
-    const slides = root.querySelectorAll<HTMLElement>("[data-feed-index]");
-    slides.forEach((slide) => {
-      const index = Number(slide.dataset.feedIndex);
-      const video = slide.querySelector("video");
-      if (!video) return;
-      video.muted = !sound;
-      if (index === active) {
-        void video.play().catch(() => undefined);
-        return;
-      }
-      video.pause();
-    });
-  }, [active, sound, feed.length]);
 
   async function toggleLike(glimpse: Glimpse) {
     if (guest || !traveler) {
@@ -227,7 +212,7 @@ export function GlimpsePlayer({
               data-id={`ad-${item.ad.id}`}
               className="h-full snap-start"
             >
-              <HuesAdSlide ad={item.ad} />
+              <HuesAdSlide ad={item.ad} index={index} active={active} muted={!sound} />
             </div>
           ) : (
             <GlimpseSlide
@@ -235,6 +220,7 @@ export function GlimpsePlayer({
               glimpse={item.glimpse}
               index={index}
               active={active}
+              sound={sound}
               traveler={traveler}
               saved={saved}
               notice={notice}
@@ -325,6 +311,7 @@ function GlimpseSlide({
   glimpse,
   index,
   active,
+  sound,
   traveler,
   saved,
   notice,
@@ -336,6 +323,7 @@ function GlimpseSlide({
   glimpse: Glimpse;
   index: number;
   active: number;
+  sound: boolean;
   traveler: boolean;
   saved: string[];
   notice: string;
@@ -344,6 +332,10 @@ function GlimpseSlide({
   onShare: () => void;
   onSave: () => void;
 }) {
+  const playback = resolvePlaybackSrc(glimpse.videoUrl, glimpse.streamUrl);
+  const loadVideo = shouldLoadVideo(index, active);
+  const isActive = index === active;
+
   return (
     <article
       data-feed-index={index}
@@ -351,14 +343,15 @@ function GlimpseSlide({
       data-id={glimpse.id}
       className="relative h-full snap-start"
     >
-      <video
-        src={glimpse.videoUrl}
-        poster={glimpse.posterUrl || undefined}
+      <StreamingVideo
+        src={playback}
+        poster={glimpse.posterUrl ? mediaUrl(glimpse.posterUrl) : undefined}
         className="size-full object-cover"
         playsInline
         loop
-        muted
-        preload={index === active ? "auto" : "metadata"}
+        muted={!sound || !isActive}
+        shouldLoad={loadVideo}
+        shouldPlay={isActive && loadVideo}
       />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
       <div className="absolute right-3 bottom-24 z-10 grid justify-items-center gap-4 text-center text-white md:bottom-6">

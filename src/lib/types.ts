@@ -124,6 +124,10 @@ export type Story = {
   title: string;
   summary: string;
   coverUrl: string;
+  /** When set by GET /stories/:slug, avoids a separate glimpses fetch for the hero video. */
+  highlightVideoUrl?: string;
+  /** Optional HLS stream for story hero highlight. */
+  highlightStreamUrl?: string;
   images?: string[];
   ownerId?: string;
   destination: Destination;

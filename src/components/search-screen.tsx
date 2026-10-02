@@ -11,6 +11,7 @@ import { BackLink } from "@/components/back-link";
 import { Loader, PageLoader } from "@/components/loader";
 import { LoginGateCard } from "@/components/login-prompt";
 import { apiBase, mediaUrl } from "@/lib/api";
+import { cachedClientGet } from "@/lib/client-fetch-cache";
 import { readCookie } from "@/lib/browser-session";
 import { countryFlag } from "@/lib/countries";
 
@@ -151,20 +152,25 @@ export function SearchScreen({
     });
     const token = readCookie("th_access");
     const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-    return fetch(`${apiBase}/search?${params}`, {
-      headers,
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Search is not available yet");
-        return (await response.json()) as Page;
+    const cacheKey = `search:${params}`;
+    return cachedClientGet(cacheKey, () =>
+      fetch(`${apiBase}/search?${params}`, {
+        headers,
+        cache: "no-store",
       })
-      .catch((caught: unknown) => {
-        if (request.current) setError(caught instanceof Error ? caught.message : "Search is not available yet");
-        setLoading(false);
-        setLoadingMore(false);
-        return null;
-      });
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Search is not available yet");
+          return (await response.json()) as Page;
+        })
+        .catch((caught: unknown) => {
+          if (request.current) {
+            setError(caught instanceof Error ? caught.message : "Search is not available yet");
+          }
+          setLoading(false);
+          setLoadingMore(false);
+          return null;
+        }),
+    );
   }
 
   const categoryName = categories.find((item) => item.id === category)?.label ?? "";

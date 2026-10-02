@@ -1,21 +1,32 @@
+import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import type { Glimpse } from "@/lib/glimpse";
 import { defaultShortAds, normalizeShortAds, type ShortAd } from "@/lib/short-ad";
 import type { Library } from "@/lib/marks";
 import type { Person } from "@/lib/profile";
 import { apiBase } from "@/lib/api";
+import { CACHE_TAGS, PUBLIC_CACHE_SECONDS } from "@/lib/server-cache";
 import type { Itinerary, Story } from "@/lib/types";
 
 const base = apiBase;
+const fetchLog = process.env.TH_FETCH_LOG === "1";
 
 async function load<T>(path: string, token?: string): Promise<T | null> {
   const headers: HeadersInit = {};
   if (token) headers.Authorization = `Bearer ${token}`;
+  const started = fetchLog ? performance.now() : 0;
   const response = await fetch(`${base}${path}`, {
     headers,
     cache: "no-store",
   });
+  if (fetchLog) {
+    const length = response.headers.get("content-length") ?? "?";
+    console.info(
+      `[travelhues] ${path} ${Math.round(performance.now() - started)}ms status=${response.status} bytes=${length}`,
+    );
+  }
   if (response.status === 401) {
     if (token) redirect("/login");
     return null;
@@ -25,13 +36,72 @@ async function load<T>(path: string, token?: string): Promise<T | null> {
   return (await response.json()) as T;
 }
 
-export function loadGlimpses(token?: string, country?: string) {
-  const query = country ? `?country=${encodeURIComponent(country)}` : "";
+async function fetchPublicJson<T>(path: string): Promise<T | null> {
+  const response = await fetch(`${base}${path}`, {
+    next: { revalidate: PUBLIC_CACHE_SECONDS },
+  });
+  if (!response.ok) return null;
+  return (await response.json()) as T;
+}
+
+const cachedSettings = unstable_cache(
+  () => fetchPublicJson<{ app?: Record<string, unknown> }>("/settings"),
+  ["travelhues-public-settings"],
+  { revalidate: PUBLIC_CACHE_SECONDS, tags: [CACHE_TAGS.settings] },
+);
+
+const cachedCountries = unstable_cache(
+  () =>
+    fetchPublicJson<{ code: string; name: string; flag?: string }[]>("/countries"),
+  ["travelhues-public-countries"],
+  { revalidate: PUBLIC_CACHE_SECONDS, tags: [CACHE_TAGS.countries] },
+);
+
+const cachedShortAds = unstable_cache(
+  () => fetchPublicJson<ShortAd[]>("/ads/hues"),
+  ["travelhues-public-short-ads"],
+  { revalidate: PUBLIC_CACHE_SECONDS, tags: [CACHE_TAGS.shortAds] },
+);
+
+export function loadGlimpses(token?: string, country?: string, storySlug?: string) {
+  const params = new URLSearchParams();
+  if (country) params.set("country", country);
+  if (storySlug) params.set("storySlug", storySlug);
+  const query = params.size ? `?${params}` : "";
   return load<Glimpse[]>(`/glimpses${query}`, token);
 }
 
+export type StoryHighlightMedia = {
+  videoUrl: string;
+  streamUrl: string;
+};
+
+export async function loadStoryHighlightMedia(
+  token: string | undefined,
+  storySlug: string,
+  countryCode?: string,
+): Promise<StoryHighlightMedia> {
+  const glimpses = await loadGlimpses(token, countryCode, storySlug);
+  const match = (glimpses ?? []).find(
+    (item) => item.link?.storySlug === storySlug && (item.streamUrl || item.videoUrl),
+  );
+  return {
+    videoUrl: match?.videoUrl ?? "",
+    streamUrl: match?.streamUrl ?? "",
+  };
+}
+
+export async function loadStoryHighlightVideo(
+  token: string | undefined,
+  storySlug: string,
+  countryCode?: string,
+): Promise<string> {
+  const media = await loadStoryHighlightMedia(token, storySlug, countryCode);
+  return media.streamUrl || media.videoUrl;
+}
+
 export function loadShortAds() {
-  return load<ShortAd[]>("/ads/hues");
+  return cachedShortAds();
 }
 
 export async function loadShortAdsForFeed(): Promise<ShortAd[]> {
@@ -41,20 +111,11 @@ export async function loadShortAdsForFeed(): Promise<ShortAd[]> {
 }
 
 export async function loadEnabledCountries() {
-  const [settingsResponse, countriesResponse] = await Promise.all([
-    fetch(`${base}/settings`, { cache: "no-store" }),
-    fetch(`${base}/countries`, { cache: "no-store" }),
-  ]);
-  if (!settingsResponse.ok || !countriesResponse.ok) return [];
-  const settings = (await settingsResponse.json()) as {
-    app?: { enabledCountries?: string[] };
-  };
-  const countries = (await countriesResponse.json()) as {
-    code: string;
-    name: string;
-    flag?: string;
-  }[];
-  const enabled = new Set(settings.app?.enabledCountries ?? []);
+  const [settings, countries] = await Promise.all([cachedSettings(), cachedCountries()]);
+  if (!settings || !countries) return [];
+  const enabled = new Set(
+    (settings.app?.enabledCountries as string[] | undefined) ?? [],
+  );
   return countries.filter((country) => enabled.has(country.code));
 }
 
@@ -76,10 +137,9 @@ export const brandLinkDefaults: BrandLinks = {
 
 export async function loadBrandLinks(): Promise<BrandLinks> {
   try {
-    const response = await fetch(`${base}/settings`, { cache: "no-store" });
-    if (!response.ok) return brandLinkDefaults;
-    const settings = (await response.json()) as { app?: Partial<BrandLinks> };
-    const app = settings.app ?? {};
+    const settings = await cachedSettings();
+    if (!settings) return brandLinkDefaults;
+    const app = (settings.app ?? {}) as Partial<BrandLinks>;
     return {
       instagramUrl: app.instagramUrl ?? brandLinkDefaults.instagramUrl,
       linkedinUrl: app.linkedinUrl ?? brandLinkDefaults.linkedinUrl,
@@ -106,23 +166,35 @@ export function loadDestinations(
   return load<Story[]>(`/destinations?${params}`, token);
 }
 
+const loadStoryCached = cache((token: string | undefined, slug: string) =>
+  load<Story>(`/stories/${slug}`, token),
+);
+
 export function loadStory(token: string | undefined, slug: string) {
-  return load<Story>(`/stories/${slug}`, token);
+  return loadStoryCached(token, slug);
 }
 
-export function loadItinerary(token: string, slug: string, itinerarySlug: string) {
-  return load<{ story: Story; itinerary: Itinerary }>(
+const loadItineraryCached = cache((token: string, slug: string, itinerarySlug: string) =>
+  load<{ story: Story; itinerary: Itinerary }>(
     `/stories/${slug}/itineraries/${itinerarySlug}`,
     token,
-  );
+  ),
+);
+
+export function loadItinerary(token: string, slug: string, itinerarySlug: string) {
+  return loadItineraryCached(token, slug, itinerarySlug);
 }
 
 export function loadMe(token: string) {
   return load<Person>("/me", token);
 }
 
+const loadProfileCached = cache((token: string | undefined, username: string) =>
+  load<Person>(`/profiles/${username}`, token),
+);
+
 export function loadProfile(token: string | undefined, username: string) {
-  return load<Person>(`/profiles/${username}`, token);
+  return loadProfileCached(token, username);
 }
 
 export function loadLibrary(token?: string) {

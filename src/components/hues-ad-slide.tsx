@@ -4,11 +4,23 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 
+import { StreamingVideo } from "@/components/streaming-video";
 import { mediaUrl } from "@/lib/api";
 import { resolveAdCtaUrl, type ShortAd } from "@/lib/short-ad";
+import { shouldLoadVideo } from "@/lib/video-stream";
 
 /** Sponsored hue-style slide: partner profile + 9:16 highlight + CTA. */
-export function HuesAdSlide({ ad }: { ad: ShortAd }) {
+export function HuesAdSlide({
+  ad,
+  index = 0,
+  active = 0,
+  muted = true,
+}: {
+  ad: ShortAd;
+  index?: number;
+  active?: number;
+  muted?: boolean;
+}) {
   const poster = ad.imageUrl ? mediaUrl(ad.imageUrl) : "";
   const video = ad.videoUrl ? mediaUrl(ad.videoUrl) : "";
   const avatar = ad.partnerAvatarUrl ? mediaUrl(ad.partnerAvatarUrl) : "";
@@ -16,10 +28,18 @@ export function HuesAdSlide({ ad }: { ad: ShortAd }) {
   const ctaLabel = ad.ctaLabel.trim() || "Learn more";
   const internal = ctaHref.startsWith("/");
   const initial = ad.partnerName.slice(0, 1);
+  const loadVideo = shouldLoadVideo(index, active);
+  const isActive = index === active;
 
   return (
     <article className="relative h-full snap-start bg-black text-white">
-      <AdCreative916 poster={poster} video={video} />
+      <AdCreative916
+        poster={poster}
+        video={video}
+        shouldLoad={loadVideo}
+        shouldPlay={isActive && loadVideo}
+        muted={muted || !isActive}
+      />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
       <div className="pointer-events-none absolute inset-x-4 bottom-24 flex items-end gap-3 pr-4 md:bottom-6">
         <span
@@ -50,7 +70,19 @@ export function HuesAdSlide({ ad }: { ad: ShortAd }) {
   );
 }
 
-function AdCreative916({ poster, video }: { poster: string; video: string }) {
+function AdCreative916({
+  poster,
+  video,
+  shouldLoad,
+  shouldPlay,
+  muted,
+}: {
+  poster: string;
+  video: string;
+  shouldLoad: boolean;
+  shouldPlay: boolean;
+  muted: boolean;
+}) {
   const [videoReady, setVideoReady] = useState(Boolean(video));
   const showVideo = Boolean(video) && videoReady;
 
@@ -58,14 +90,15 @@ function AdCreative916({ poster, video }: { poster: string; video: string }) {
     <div className="absolute inset-0 grid place-items-center bg-black">
       <div className="relative mx-auto aspect-[9/16] h-full w-auto max-w-full">
         {showVideo ? (
-          <video
+          <StreamingVideo
             src={video}
             poster={poster || undefined}
             className="absolute inset-0 size-full object-cover"
             playsInline
             loop
-            muted
-            preload="metadata"
+            muted={muted}
+            shouldLoad={shouldLoad}
+            shouldPlay={shouldPlay}
             onError={() => setVideoReady(false)}
           />
         ) : poster ? (

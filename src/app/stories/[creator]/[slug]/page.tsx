@@ -5,7 +5,12 @@ import { StoryBrowser } from "@/components/story-browser";
 import { StoryHero } from "@/components/story-hero";
 import { ReportControl } from "@/components/report-control";
 import { emptyLibrary } from "@/lib/marks";
-import { loadGlimpses, loadLibrary, loadProfile, loadStory } from "@/lib/remote";
+import {
+  loadLibrary,
+  loadProfile,
+  loadStory,
+  loadStoryHighlightMedia,
+} from "@/lib/remote";
 import { getSession } from "@/lib/session";
 import { storyHref } from "@/lib/types";
 
@@ -32,10 +37,9 @@ export default async function StoryPage({
   const { spot = "", tab = "" } = await searchParams;
   const session = await getSession();
   const guest = !session;
-  const [story, library, glimpses, profile] = await Promise.all([
+  const [story, library, profile] = await Promise.all([
     loadStory(session?.token, slug),
     loadLibrary(session?.token),
-    loadGlimpses(session?.token),
     loadProfile(session?.token, creator),
   ]);
   if (!story) notFound();
@@ -47,14 +51,23 @@ export default async function StoryPage({
   }
 
   const portrait = profile?.avatarUrl ?? story.creator.avatarUrl;
-  const highlight =
-    (glimpses ?? []).find((item) => item.link?.storySlug === story.slug && item.videoUrl)?.videoUrl ?? "";
+  let highlightVideo = story.highlightVideoUrl?.trim() ?? "";
+  let highlightStream = story.highlightStreamUrl?.trim() ?? "";
+  if (!highlightVideo && !highlightStream) {
+    const countryCode = /^[A-Za-z]{2}$/.test(story.destination.country)
+      ? story.destination.country.toUpperCase()
+      : undefined;
+    const highlight = await loadStoryHighlightMedia(session?.token, story.slug, countryCode);
+    highlightVideo = highlight.videoUrl;
+    highlightStream = highlight.streamUrl;
+  }
 
   return (
     <div className="h-full overflow-y-auto">
       <StoryHero
         cover={story.coverUrl}
-        videoUrl={highlight}
+        videoUrl={highlightVideo}
+        streamUrl={highlightStream}
         portrait={portrait}
         name={story.creator.displayName}
         username={story.creator.username}

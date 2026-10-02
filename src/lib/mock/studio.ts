@@ -7,6 +7,7 @@ export type PostMedia = {
   kind: "photo" | "video";
   imageUrl: string;
   videoUrl: string;
+  streamUrl?: string;
 };
 
 export type PostComment = {

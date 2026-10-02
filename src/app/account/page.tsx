@@ -8,12 +8,14 @@ import { redirect } from "next/navigation";
 
 export default async function AccountPage() {
   const session = await requireSession();
-  const person = await loadMe(session.token);
+  const [person, library] = await Promise.all([
+    loadMe(session.token),
+    loadLibrary(session.token),
+  ]);
   if (!person) redirect("/login");
 
   if (session.role === "traveler") {
-    const library = (await loadLibrary(session.token)) ?? emptyLibrary;
-    return <TravelerProfile person={person} library={library} />;
+    return <TravelerProfile person={person} library={library ?? emptyLibrary} />;
   }
 
   return (

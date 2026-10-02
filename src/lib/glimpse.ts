@@ -21,6 +21,8 @@ export type Glimpse = {
   avatarUrl: string;
   caption: string;
   videoUrl: string;
+  /** HLS or progressive stream URL; preferred over videoUrl when set. */
+  streamUrl?: string;
   posterUrl: string;
   country: string;
   link: GlimpseLink | null;

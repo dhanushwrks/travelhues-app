@@ -3,7 +3,7 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MapPin, Pencil } from "lucide-react";
+import { ExternalLink, MapPin, Pencil } from "lucide-react";
 
 import { BackLink } from "@/components/back-link";
 import { ItineraryView } from "@/components/itinerary-view";
@@ -99,15 +99,26 @@ export function StudioItem({
           </dl>
         ) : null}
         {find.affiliateUrl || find.referenceUrl ? (
-          <div className="grid gap-2 px-5 pt-5 text-sm">
+          <div className="mx-5 mt-5 grid gap-2">
             {find.affiliateUrl ? (
-              <a href={find.affiliateUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
-                Booking link
+              <a
+                href={find.affiliateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                {find.category === "stay" ? "Reserve here" : "Book here"}
               </a>
             ) : null}
             {find.referenceUrl ? (
-              <a href={find.referenceUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
-                Reference
+              <a
+                href={find.referenceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-12 items-center justify-center gap-2 rounded-full bg-secondary px-4 text-sm font-medium"
+              >
+                <ExternalLink className="size-4" />
+                {linkLabel(find.referenceUrl)}
               </a>
             ) : null}
           </div>
@@ -199,4 +210,12 @@ function Cover({ src }: { src: string }) {
   }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt="" className="size-full object-cover" />;
+}
+
+function linkLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "Official site";
+  }
 }

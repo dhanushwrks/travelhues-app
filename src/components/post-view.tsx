@@ -5,7 +5,9 @@ import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
 import { PostMediaPreview } from "@/components/post-media-preview";
+import { StreamingVideo } from "@/components/streaming-video";
 import { mediaUrl } from "@/lib/api";
+import { resolvePlaybackSrc } from "@/lib/video-stream";
 import { readCookie } from "@/lib/browser-session";
 import {
   addPostComment,
@@ -156,7 +158,7 @@ function Carousel({ frames }: { frames: PostMedia[] }) {
       <div onScroll={onScroll} className="flex snap-x snap-mandatory overflow-x-auto">
         {frames.map((frame, frameIndex) => (
           <div key={`${frame.imageUrl}-${frame.videoUrl}-${frameIndex}`} className="relative aspect-[4/5] w-full shrink-0 snap-center bg-black">
-            <Frame frame={frame} />
+            <Frame frame={frame} active={frameIndex === index} />
           </div>
         ))}
       </div>
@@ -169,14 +171,17 @@ function Carousel({ frames }: { frames: PostMedia[] }) {
   );
 }
 
-function Frame({ frame }: { frame: PostMedia }) {
+function Frame({ frame, active }: { frame: PostMedia; active: boolean }) {
   if (frame.kind === "video" && frame.videoUrl) {
+    const src = resolvePlaybackSrc(frame.videoUrl, frame.streamUrl);
     return (
-      <video
-        src={mediaUrl(frame.videoUrl)}
+      <StreamingVideo
+        src={src}
         poster={frame.imageUrl ? mediaUrl(frame.imageUrl) : undefined}
         controls
         playsInline
+        shouldLoad={active}
+        shouldPlay={false}
         className="size-full object-cover"
       />
     );

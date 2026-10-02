@@ -12,6 +12,7 @@ export type ShortAd = {
   imageUrl?: string;
   /** 9:16 highlight video; loops like a hue. `imageUrl` is the poster when set. */
   videoUrl?: string;
+  streamUrl?: string;
   ctaLabel: string;
   ctaUrl: string;
 };

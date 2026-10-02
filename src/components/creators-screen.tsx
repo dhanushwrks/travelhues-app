@@ -8,6 +8,7 @@ import { CreatorCard, type CreatorCardData } from "@/components/creator-card";
 import { Loader, PageLoader } from "@/components/loader";
 import { apiBase } from "@/lib/api";
 import { readCookie } from "@/lib/browser-session";
+import { cachedClientGet } from "@/lib/client-fetch-cache";
 
 type Page = {
   page: number;
@@ -84,22 +85,25 @@ export function CreatorsScreen() {
     });
     const token = readCookie("th_access");
     const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-    return fetch(`${apiBase}/creators?${params}`, {
-      headers,
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Creators are not available yet");
-        return (await response.json()) as Page;
+    const cacheKey = `creators:${params}`;
+    return cachedClientGet(cacheKey, () =>
+      fetch(`${apiBase}/creators?${params}`, {
+        headers,
+        cache: "no-store",
       })
-      .catch((caught: unknown) => {
-        if (request.current) {
-          setError(caught instanceof Error ? caught.message : "Creators are not available yet");
-        }
-        setLoading(false);
-        setLoadingMore(false);
-        return null;
-      });
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Creators are not available yet");
+          return (await response.json()) as Page;
+        })
+        .catch((caught: unknown) => {
+          if (request.current) {
+            setError(caught instanceof Error ? caught.message : "Creators are not available yet");
+          }
+          setLoading(false);
+          setLoadingMore(false);
+          return null;
+        }),
+    );
   }
 
   return (

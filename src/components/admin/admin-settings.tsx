@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Loader, PageLoader } from "@/components/loader";
 import { fetchAdminSettings, saveAdminSettings } from "@/lib/admin-api";
+import { revalidatePublicSettingsCache } from "@/lib/revalidate-public-cache";
 import type { AdminSettings } from "@/lib/admin-types";
 import { readCookie } from "@/lib/browser-session";
 import { countryFlag, countryName } from "@/lib/countries";
@@ -35,6 +36,7 @@ export function AdminSettingsPage({
     try {
       const next = await saveAdminSettings(token, settings);
       setSettings(next);
+      await revalidatePublicSettingsCache();
       setNotice("Settings saved");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not save");

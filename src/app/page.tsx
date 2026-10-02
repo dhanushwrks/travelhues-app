@@ -10,7 +10,13 @@ import { GlimpseRow } from "@/components/glimpse-row";
 import { LoginGateButton } from "@/components/login-prompt";
 import { countryName } from "@/lib/countries";
 import { emptyLibrary, storyLikeTotals } from "@/lib/marks";
-import { loadEnabledCountries, loadGlimpses, loadLibrary, loadProfile, loadStories } from "@/lib/remote";
+import {
+  loadCreators,
+  loadEnabledCountries,
+  loadGlimpses,
+  loadLibrary,
+  loadStories,
+} from "@/lib/remote";
 import { GUEST_SHORTS_LIMIT, getSession } from "@/lib/session";
 import type { Story } from "@/lib/types";
 
@@ -49,18 +55,23 @@ export default async function ExplorePage({
     .filter((story) => story.itineraries.length > 0)
     .sort((a, b) => (likeTotals.get(b.slug) ?? 0) - (likeTotals.get(a.slug) ?? 0) || b.itineraries.length - a.itineraries.length);
   const rankedCreators = topCreators(visibleStories, likeTotals);
-  const creators = await Promise.all(
-    rankedCreators
-      .slice(0, guest ? GUEST_CREATOR_LIMIT : CREATOR_PREVIEW_LIMIT)
-      .map(async (creator) => {
-        const profile = await creatorProfile(token, creator.username, creator.bio);
-        return {
-          ...creator,
-          blurb: profile.blurb,
-          introVideoUrl: profile.introVideoUrl,
-        };
-      }),
+  const previewLimit = guest ? GUEST_CREATOR_LIMIT : CREATOR_PREVIEW_LIMIT;
+  const rankedPreview = rankedCreators.slice(0, previewLimit);
+  const creatorsPage = await loadCreators(token, {
+    country: code || undefined,
+    limit: Math.max(previewLimit, 12),
+  });
+  const creatorMeta = new Map(
+    (creatorsPage?.items ?? []).map((item) => [item.username, item]),
   );
+  const creators = rankedPreview.map((creator) => {
+    const remote = creatorMeta.get(creator.username);
+    return {
+      ...creator,
+      blurb: remote?.blurb?.trim() || creator.bio.trim(),
+      introVideoUrl: remote?.introVideoUrl?.trim() || "",
+    };
+  });
   const first = guest ? "Wanderer" : session.displayName.split(" ")[0] || "there";
   const suggested = suggestCountries(countries);
   const shortPreview = (glimpses ?? []).slice(0, GUEST_SHORTS_LIMIT);
@@ -252,14 +263,3 @@ function topCreators(stories: Story[], likeTotals: Map<string, number>) {
   return [...grouped.values()].sort((a, b) => b.stories - a.stories || b.likes - a.likes);
 }
 
-async function creatorProfile(token: string | undefined, username: string, bio: string) {
-  try {
-    const person = await loadProfile(token, username);
-    return {
-      blurb: person?.headline?.trim() || person?.bio?.trim() || bio.trim(),
-      introVideoUrl: person?.introVideoUrl?.trim() || "",
-    };
-  } catch {
-    return { blurb: bio.trim(), introVideoUrl: "" };
-  }
-}

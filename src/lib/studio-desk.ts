@@ -169,7 +169,7 @@ export async function updateDeskStory(
     },
     "PUT",
   );
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
 }
 
 export async function createDeskSpot(
@@ -177,8 +177,7 @@ export async function createDeskSpot(
   spot: Omit<StorySpot, "id"> & { lat: number; lng: number },
 ) {
   const token = tokenOrThrow();
-  const images = [];
-  for (const image of spot.images) images.push(await uploadImage(token, image));
+  const images = await uploadImages(token, spot.images);
   await send(token, `/stories/${storyId}/spots`, {
     id: slugify(spot.title, "spot"),
     type: spot.category,
@@ -194,14 +193,13 @@ export async function createDeskSpot(
     purchaseOnly: spot.purchaseOnly ?? false,
     priceInr: spot.priceInr ?? 99,
   });
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
 }
 
 export async function updateDeskSpot(storyId: string, spotId: string, spot: StorySpot) {
   const token = tokenOrThrow();
   if (spot.lat == null || spot.lng == null) throw new Error("Drop a pin on the map");
-  const images = [];
-  for (const image of spot.images) images.push(await uploadImage(token, image));
+  const images = await uploadImages(token, spot.images);
   await send(
     token,
     `/stories/${storyId}/spots/${spotId}`,
@@ -221,14 +219,13 @@ export async function updateDeskSpot(storyId: string, spotId: string, spot: Stor
     },
     "PUT",
   );
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
 }
 
 export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id">) {
   const token = tokenOrThrow();
   const story = stories.find((item) => item.id === storyId);
-  const images = [];
-  for (const image of plan.images) images.push(await uploadImage(token, image));
+  const images = await uploadImages(token, plan.images);
   const coverUrl = images[0] || story?.coverUrl;
   if (!coverUrl) throw new Error("Add a cover picture for the plan");
   const id = slugify(plan.title, "plan");
@@ -246,15 +243,14 @@ export async function createDeskPlan(storyId: string, plan: Omit<StoryPlan, "id"
     purchaseOnly: plan.purchaseOnly ?? false,
     priceInr: plan.priceInr ?? 99,
   });
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
   return id;
 }
 
 export async function updateDeskPlan(storyId: string, planId: string, plan: Omit<StoryPlan, "id">) {
   const token = tokenOrThrow();
   const story = stories.find((item) => item.id === storyId);
-  const images = [];
-  for (const image of plan.images) images.push(await uploadImage(token, image));
+  const images = await uploadImages(token, plan.images);
   const coverUrl = images[0] || story?.coverUrl;
   if (!coverUrl) throw new Error("Add a cover picture for the plan");
   await send(
@@ -275,7 +271,7 @@ export async function updateDeskPlan(storyId: string, planId: string, plan: Omit
     },
     "PUT",
   );
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
 }
 
 export async function setDeskArchived(
@@ -291,7 +287,7 @@ export async function setDeskArchived(
     const path = kind === "plans" ? "itineraries" : kind;
     await send(token, `/stories/${storyId}/${path}/${id}/archive`, { archived });
   }
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
 }
 
 export async function addDeskBlog(storyId: string, blog: StoryBlog) {
@@ -308,7 +304,7 @@ export async function addDeskBlog(storyId: string, blog: StoryBlog) {
     purchaseOnly: blog.purchaseOnly ?? false,
     priceInr: blog.priceInr ?? 99,
   });
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
 }
 
 export async function updateDeskBlog(storyId: string, blogId: string, blog: StoryBlog) {
@@ -329,12 +325,45 @@ export async function updateDeskBlog(storyId: string, blogId: string, blog: Stor
     },
     "PUT",
   );
-  await pull(token);
+  await mergeStoryFromRemote(token, storyId);
+}
+
+async function mapPool<T, R>(
+  items: T[],
+  concurrency: number,
+  run: (item: T) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (true) {
+        const index = next;
+        next += 1;
+        if (index >= items.length) break;
+        results[index] = await run(items[index]);
+      }
+    }),
+  );
+  return results;
+}
+
+async function uploadImages(token: string, values: string[]) {
+  return mapPool(values, 3, (value) => uploadImage(token, value));
+}
+
+async function mergeStoryFromRemote(token: string, storyId: string) {
+  const response = await fetch(`${apiBase}/stories/${storyId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(await apiMessage(response));
+  const story = (await response.json()) as Story;
+  remember(stories.map((item) => (item.id === storyId ? toDesk(story) : item)));
 }
 
 async function pull(token: string) {
-  const catalog = await fetchSpotCatalog();
-  kindLabels = new Set(catalog.flatMap((item) => item.kinds));
   const seen = ++generation;
   if (!token) {
     status = "error";
@@ -343,10 +372,14 @@ async function pull(token: string) {
     return;
   }
   try {
-    const response = await fetch(`${apiBase}/me/stories`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
+    const [catalog, response] = await Promise.all([
+      fetchSpotCatalog(),
+      fetch(`${apiBase}/me/stories`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }),
+    ]);
+    kindLabels = new Set(catalog.flatMap((item) => item.kinds));
     if (!response.ok) throw new Error(await apiMessage(response));
     const body = (await response.json()) as Story[];
     if (seen !== generation) return;

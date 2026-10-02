@@ -1,8 +1,9 @@
 "use client";
 
 import { Volume2, VolumeX, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
+import { StreamingVideo } from "@/components/streaming-video";
 import { mediaUrl } from "@/lib/api";
 
 export function ProfileAvatar({
@@ -53,7 +54,6 @@ function IntroVideoModal({
   name: string;
   onClose: () => void;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [sound, setSound] = useState(true);
 
   useEffect(() => {
@@ -68,13 +68,6 @@ function IntroVideoModal({
       window.removeEventListener("keydown", onKey);
     };
   }, [onClose]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !sound;
-    void video.play().catch(() => undefined);
-  }, [sound, src]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-white">
@@ -96,13 +89,13 @@ function IntroVideoModal({
         {sound ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
       </button>
       <div className="relative h-full w-full max-w-md">
-        <video
-          ref={videoRef}
+        <StreamingVideo
           src={src}
           className="size-full object-contain"
           playsInline
           loop
-          autoPlay
+          shouldLoad
+          shouldPlay
           muted={!sound}
           controls={false}
         />
