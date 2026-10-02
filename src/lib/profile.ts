@@ -20,6 +20,7 @@ export type Person = {
   introVideoUrl?: string;
   role: "tcc" | "traveler" | "admin";
   hidden: boolean;
+  homeAirport?: string;
   counts: { stories: number; spots: number; itineraries: number };
   stories: Story[];
   email?: string;

@@ -1,5 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Project wiki (LLM dictionary)
+
+Compiled dev context lives in [`wiki/`](wiki/) (see [`wiki/index.md`](wiki/index.md)). Raw sources: [`raw/`](raw/). Agents follow [`wiki/SCHEMA.md`](wiki/SCHEMA.md) and the `llm-wiki` skill in `.cursor/skills/llm-wiki/`.
+
 ## Getting Started
 
 First, run the development server:

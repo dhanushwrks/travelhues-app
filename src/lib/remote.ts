@@ -8,7 +8,7 @@ import type { Library } from "@/lib/marks";
 import type { Person } from "@/lib/profile";
 import { apiBase } from "@/lib/api";
 import { CACHE_TAGS, PUBLIC_CACHE_SECONDS } from "@/lib/server-cache";
-import type { Itinerary, Story } from "@/lib/types";
+import type { Itinerary, PublicFlightDeal, Story } from "@/lib/types";
 
 const base = apiBase;
 const fetchLog = process.env.TH_FETCH_LOG === "1";
@@ -206,7 +206,7 @@ export type PurchaseKind = "spot" | "itinerary" | "blog";
 
 export async function purchaseContent(
   token: string,
-  input: { storySlug: string; kind: PurchaseKind; itemId: string },
+  input: { storySlug: string; kind: PurchaseKind; itemId: string; sourceDealId?: string },
 ) {
   const response = await fetch(`${base}/purchases`, {
     method: "POST",
@@ -221,6 +221,36 @@ export async function purchaseContent(
     throw new Error(message || "Could not complete purchase");
   }
   return response.json() as Promise<{ ok: boolean; alreadyOwned?: boolean }>;
+}
+
+const loadFlightDealsCached = cache((origin: string, limit: number) => {
+  const params = new URLSearchParams();
+  if (origin) params.set("origin", origin);
+  params.set("limit", String(limit));
+  return load<PublicFlightDeal[]>(`/flight-deals?${params}`);
+});
+
+export function loadFlightDeals(origin?: string, limit = 20) {
+  return loadFlightDealsCached(origin?.toUpperCase() ?? "", limit);
+}
+
+export function loadFlightDeal(id: string) {
+  return load<PublicFlightDeal>(`/flight-deals/${id}`);
+}
+
+export async function trackFlightDealEvent(
+  dealId: string,
+  type: string,
+  token?: string,
+  metadata?: Record<string, unknown>,
+) {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  await fetch(`${base}/flight-deals/${dealId}/events`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ type, metadata }),
+  }).catch(() => undefined);
 }
 
 export function loadCreator(token: string | undefined, username: string) {

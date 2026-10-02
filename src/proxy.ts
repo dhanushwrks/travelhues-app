@@ -10,6 +10,7 @@ const openExact = new Set([
   "/shorts",
   "/plans",
   "/trips",
+  "/deals",
   "/login",
   "/login/user",
   "/login/tcc",
@@ -27,6 +28,7 @@ function isPublicPath(pathname: string) {
   if (pathname.startsWith("/search/")) return true;
   if (/^\/stories\/[^/]+\/[^/]+$/.test(pathname)) return true;
   if (/^\/u\/[^/]+$/.test(pathname)) return true;
+  if (/^\/deals(\/|$)/.test(pathname)) return true;
   return false;
 }
 

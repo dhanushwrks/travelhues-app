@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Loader } from "@/components/loader";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { formatInr } from "@/lib/format";
+import { readDealAttribution } from "@/lib/deal-attribution";
 import { purchaseContent, type PurchaseKind } from "@/lib/remote";
 import { readCookie } from "@/lib/browser-session";
 
@@ -43,7 +44,7 @@ export function PurchaseSheet({
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const token = readCookie("th_token");
+  const token = readCookie("th_access");
 
   async function buy() {
     if (!token) {
@@ -53,7 +54,13 @@ export function PurchaseSheet({
     setPending(true);
     setError("");
     try {
-      await purchaseContent(token, { storySlug, kind, itemId });
+      const sourceDealId = readDealAttribution();
+      await purchaseContent(token, {
+        storySlug,
+        kind,
+        itemId,
+        ...(sourceDealId ? { sourceDealId } : {}),
+      });
       onOpenChange(false);
       onPurchased?.();
       router.refresh();

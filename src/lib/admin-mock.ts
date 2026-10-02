@@ -410,6 +410,17 @@ export function buildAnalytics(store: AdminStore, rangeDays = 30): AnalyticsOver
       { country: "TH", stories: 1, purchases: completed.filter((p) => p.storySlug.includes("bangkok")).length },
       { country: "IN", stories: 1, purchases: 0 },
     ],
+    flightDeals: mockFlightDealAnalytics(),
+  };
+}
+
+function mockFlightDealAnalytics(): NonNullable<AnalyticsOverview["flightDeals"]> {
+  return {
+    dealAffiliateClicks: 0,
+    dealStoryOpens: 0,
+    dealAttributedPurchases: 0,
+    dealAttributedGmvInr: 0,
+    topDeals: [],
   };
 }
 

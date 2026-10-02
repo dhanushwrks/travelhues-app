@@ -176,6 +176,22 @@ export type AnalyticsOverview = {
   topPaid: { title: string; kind: string; count: number; gmvInr: number }[];
   activation: { invited: number; signedUp: number; firstStory: number };
   markets: { country: string; stories: number; purchases: number }[];
+  flightDeals?: {
+    dealAffiliateClicks: number;
+    dealStoryOpens: number;
+    dealAttributedPurchases: number;
+    dealAttributedGmvInr: number;
+    topDeals: {
+      id: string;
+      headline: string;
+      originIata: string;
+      destinationIata: string;
+      affiliateClicks: number;
+      storyOpens: number;
+      purchases: number;
+      gmvInr: number;
+    }[];
+  };
 };
 
 export const moderationReasons: { id: ModerationReason; label: string }[] = [

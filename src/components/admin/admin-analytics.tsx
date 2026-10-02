@@ -126,6 +126,41 @@ export function AdminAnalyticsPage({ focus = "overview" }: { focus?: "overview" 
         </>
       ) : (
         <>
+          {data.flightDeals ? (
+            <section className="mt-8">
+              <h2 className="text-lg font-medium">Flight deal funnel</h2>
+              <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Stat label="Affiliate clicks" value={data.flightDeals.dealAffiliateClicks} />
+                <Stat label="Story opens" value={data.flightDeals.dealStoryOpens} />
+                <Stat label="Attributed purchases" value={data.flightDeals.dealAttributedPurchases} />
+                <div className="rounded-2xl bg-secondary px-4 py-3">
+                  <dt className="text-xs text-muted-foreground uppercase">Attributed GMV</dt>
+                  <dd className="mt-1 text-xl font-medium">
+                    {formatInr(data.flightDeals.dealAttributedGmvInr)}
+                  </dd>
+                </div>
+              </dl>
+              <ul className="mt-4 divide-y divide-border rounded-2xl border border-border">
+                {data.flightDeals.topDeals.map((deal) => (
+                  <li key={deal.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                    <div>
+                      <p className="font-medium">{deal.headline}</p>
+                      <p className="text-muted-foreground">
+                        {deal.originIata} → {deal.destinationIata}
+                      </p>
+                    </div>
+                    <div className="text-right text-muted-foreground">
+                      <p>{deal.affiliateClicks} clicks · {deal.storyOpens} stories</p>
+                      <p>{deal.purchases} purchases · {formatInr(deal.gmvInr)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Manage deals in Travelhues Desk (flight-deals).
+              </p>
+            </section>
+          ) : null}
           <section className="mt-8">
             <h2 className="text-lg font-medium">Top paid items</h2>
             <ul className="mt-3 divide-y divide-border rounded-2xl border border-border">

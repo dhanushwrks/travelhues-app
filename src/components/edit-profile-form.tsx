@@ -18,6 +18,7 @@ import {
   controlClass,
   useCountries,
 } from "@/components/profile-fields";
+import { HomeAirportPicker } from "@/components/home-airport-picker";
 import { apiBase, apiMessage, mediaUrl } from "@/lib/api";
 import { readCookie, saveSession } from "@/lib/browser-session";
 import type { Person, SocialLink } from "@/lib/profile";
@@ -35,6 +36,7 @@ export function EditProfileForm({ person }: { person: Person }) {
   const [headline, setHeadline] = useState(person.headline);
   const [bio, setBio] = useState(person.bio);
   const [country, setCountry] = useState(person.country);
+  const [homeAirport, setHomeAirport] = useState(person.homeAirport ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(person.dateOfBirth ?? "");
   const [hobbies, setHobbies] = useState(person.hobbies);
   const [countriesTraveled, setCountriesTraveled] = useState(person.countriesTraveled);
@@ -89,6 +91,7 @@ export function EditProfileForm({ person }: { person: Person }) {
         headline,
         ...(creator || bio.trim() ? { bio } : {}),
         country: country || undefined,
+        homeAirport: person.role === "traveler" ? homeAirport || "" : undefined,
         dateOfBirth: dateOfBirth || undefined,
         hobbies,
         countriesTraveled,
@@ -221,6 +224,13 @@ export function EditProfileForm({ person }: { person: Person }) {
       {creator ? null : (
         <>
           <CountryField countries={countries} label="Country" value={country} onChange={setCountry} />
+          <Field label="Home airport (for flight deals)">
+            <HomeAirportPicker
+              className={controlClass}
+              value={homeAirport}
+              onChange={setHomeAirport}
+            />
+          </Field>
           <HobbyField value={hobbies} onChange={setHobbies} />
         </>
       )}

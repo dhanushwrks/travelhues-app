@@ -107,10 +107,41 @@ function actorName() {
 }
 
 export async function fetchAnalytics(token: string): Promise<AnalyticsOverview> {
-  const response = await adminFetch(token, "/admin/analytics/overview").catch(() => null);
-  const data = response ? await tryJson<AnalyticsOverview>(response) : null;
-  if (data) return data;
-  return buildAnalytics(loadAdminStore());
+  const [overviewRes, dealsRes] = await Promise.all([
+    adminFetch(token, "/admin/analytics/overview").catch(() => null),
+    adminFetch(token, "/admin/flight-deals/analytics").catch(() => null),
+  ]);
+  const data = overviewRes ? await tryJson<AnalyticsOverview>(overviewRes) : null;
+  const flightDeals = dealsRes ? await tryJson<NonNullable<AnalyticsOverview["flightDeals"]>>(dealsRes) : null;
+  if (data) {
+    return flightDeals ? { ...data, flightDeals } : data;
+  }
+  const mock = buildAnalytics(loadAdminStore());
+  return {
+    ...mock,
+    flightDeals: flightDeals ?? mockFlightDealAnalytics(),
+  };
+}
+
+function mockFlightDealAnalytics(): NonNullable<AnalyticsOverview["flightDeals"]> {
+  return {
+    dealAffiliateClicks: 42,
+    dealStoryOpens: 18,
+    dealAttributedPurchases: 3,
+    dealAttributedGmvInr: 297,
+    topDeals: [
+      {
+        id: "mock-deal-1",
+        headline: "BLR → BKK",
+        originIata: "BLR",
+        destinationIata: "BKK",
+        affiliateClicks: 24,
+        storyOpens: 11,
+        purchases: 2,
+        gmvInr: 198,
+      },
+    ],
+  };
 }
 
 export async function fetchWaitlist(token: string): Promise<WaitlistEntry[]> {

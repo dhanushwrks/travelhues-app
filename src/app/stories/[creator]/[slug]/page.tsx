@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
+import { Suspense } from "react";
+
+import { DealStoryTracker } from "@/components/deal-story-tracker";
 import { StoryBrowser } from "@/components/story-browser";
 import { StoryHero } from "@/components/story-hero";
 import { ReportControl } from "@/components/report-control";
@@ -31,10 +34,10 @@ export default async function StoryPage({
   searchParams,
 }: {
   params: Promise<{ creator: string; slug: string }>;
-  searchParams: Promise<{ spot?: string; tab?: string }>;
+  searchParams: Promise<{ spot?: string; tab?: string; deal?: string }>;
 }) {
   const { creator, slug } = await params;
-  const { spot = "", tab = "" } = await searchParams;
+  const { spot = "", tab = "", deal = "" } = await searchParams;
   const session = await getSession();
   const guest = !session;
   const [story, library, profile] = await Promise.all([
@@ -64,6 +67,9 @@ export default async function StoryPage({
 
   return (
     <div className="h-full overflow-y-auto">
+      <Suspense fallback={null}>
+        <DealStoryTracker dealId={deal} />
+      </Suspense>
       <StoryHero
         cover={story.coverUrl}
         videoUrl={highlightVideo}

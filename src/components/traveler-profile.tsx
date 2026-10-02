@@ -39,6 +39,9 @@ export function TravelerProfile({ person, library }: { person: Person; library: 
             {countryFlag(person.country)} {countryName(person.country)}
           </p>
         ) : null}
+        {person.homeAirport ? (
+          <p className="mt-1 text-sm text-muted-foreground">Flights from {person.homeAirport}</p>
+        ) : null}
         {person.hobbies.length > 0 ? (
           <ul className="mt-3 flex flex-wrap gap-2">
             {person.hobbies.map((hobby) => (

@@ -1,3 +1,5 @@
+import { apiBase } from "@/lib/api";
+
 export const spotTypes = [
   "stay",
   "food",
@@ -28,6 +30,7 @@ export type Spot = {
 };
 
 export const commuteModes = ["walk", "cycle", "cab", "public", "self_drive", "flight"] as const;
+
 export type CommuteMode = (typeof commuteModes)[number];
 
 export type CommuteLeg = {
@@ -165,4 +168,49 @@ export function reservationsForDay(reservations: Reservation[] | undefined, dayI
 export function formatDayRange(fromDay: number, toDay: number) {
   if (fromDay === toDay) return `Day ${fromDay + 1}`;
   return `Day ${fromDay + 1}–${toDay + 1}`;
+}
+
+export const flightDealOrigins = ["BLR", "BOM", "HYD", "DEL", "MAA"] as const;
+
+export type FlightDealStoryPreview = {
+  slug: string;
+  title: string;
+  coverUrl: string;
+  creator: Creator;
+};
+
+export type PublicFlightDeal = {
+  id: string;
+  originIata: string;
+  destinationIata: string;
+  destinationCity: string;
+  destinationCountry: string;
+  departureDate: string;
+  returnDate: string;
+  priceInr: number;
+  currency: string;
+  affiliateUrl: string;
+  headline: string;
+  subtitle: string;
+  badge: string;
+  storyCreatorUsername: string;
+  storySlug: string;
+  featuredItinerarySlug: string;
+  featuredSpotIds: string[];
+  tripType: "one_way" | "return";
+  storyPreview?: FlightDealStoryPreview | null;
+};
+
+export function dealBookHref(dealId: string) {
+  return `${apiBase}/r/flight-deals/${dealId}/book`;
+}
+
+export function storyHrefWithDeal(
+  story: Pick<Story, "slug" | "creator">,
+  dealId: string,
+  spotId = "",
+) {
+  const path = storyHref(story, spotId);
+  const join = path.includes("?") ? "&" : "?";
+  return `${path}${join}deal=${encodeURIComponent(dealId)}`;
 }

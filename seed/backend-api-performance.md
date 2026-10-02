@@ -1,13 +1,19 @@
 # Backend API performance checklist
 
-Apply on the service behind `NEXT_PUBLIC_API_URL`.
+Apply on the service behind `NEXT_PUBLIC_API_URL` (`travelhues-api` repo).
 
-## High impact
+## Done in API (deploy to pick up)
+
+- **GET /stories/:slug**: `highlightVideoUrl` / `highlightStreamUrl` from linked hues.
+- **GET /glimpses**: `storySlug`, `limit`, `streamUrl` for HLS.
+- **GET /settings**, **/countries**, **/spot-catalog**: `Cache-Control: public, max-age=300`.
+- **gzip** response compression (Express `compression` middleware).
+
+## High impact (remaining)
 
 - **GET /me/stories**: Return a slim list for the studio shell, or paginate; avoid shipping full spot/plan graphs on every refresh.
 - **POST /media**: Replace synchronous base64 `dataUrl` with presigned object storage uploads.
-- **GET /stories/:slug**: Include optional `highlightVideoUrl` so story pages skip a glimpses list fetch.
-- **GET /profiles**: Support `?usernames=u1,u2` batch for home creator rows.
+- **GET /profiles**: Support `?usernames=u1,u2` batch for home creator rows (app uses `/creators` today).
 
 ## Data layer
 

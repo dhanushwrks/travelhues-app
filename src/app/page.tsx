@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { CountrySearch } from "@/components/country-search";
 import { CreatorCard } from "@/components/creator-card";
 import { DestinationCard } from "@/components/destination-card";
+import { FlightDealCard } from "@/components/flight-deal-card";
 import { GlimpseRow } from "@/components/glimpse-row";
 import { LoginGateButton } from "@/components/login-prompt";
 import { countryName } from "@/lib/countries";
@@ -13,8 +14,10 @@ import { emptyLibrary, storyLikeTotals } from "@/lib/marks";
 import {
   loadCreators,
   loadEnabledCountries,
+  loadFlightDeals,
   loadGlimpses,
   loadLibrary,
+  loadMe,
   loadStories,
 } from "@/lib/remote";
 import { GUEST_SHORTS_LIMIT, getSession } from "@/lib/session";
@@ -36,12 +39,16 @@ export default async function ExplorePage({
   const token = session?.token;
   const { country = "" } = await searchParams;
   const code = country.toUpperCase();
-  const [countries, stories, glimpses, library] = await Promise.all([
+  const [countries, stories, glimpses, library, person] = await Promise.all([
     loadEnabledCountries(),
     loadStories(token),
     loadGlimpses(token, code || undefined),
     loadLibrary(token),
+    token ? loadMe(token) : Promise.resolve(null),
   ]);
+  const homeAirport = person?.homeAirport?.toUpperCase() ?? "";
+  const flightDeals =
+    !guest && homeAirport ? ((await loadFlightDeals(homeAirport, 4)) ?? []) : [];
   const selected = countries.find((item) => item.code === code);
   const place = selected?.name ?? "";
   const visibleStories = (stories ?? []).filter((story) => {
@@ -87,6 +94,31 @@ export default async function ExplorePage({
         <p className="text-base text-muted-foreground">Where are you wandering today?</p>
         <CountrySearch countries={countries} suggested={suggested} selected={selected ? code : ""} />
       </header>
+      {!guest && !homeAirport ? (
+        <p className="mt-4 px-5 text-sm text-muted-foreground">
+          <Link href="/account/edit" className="font-medium text-primary underline">
+            Set your home airport
+          </Link>{" "}
+          to see flight deals from your city.
+        </p>
+      ) : null}
+      {flightDeals.length > 0 ? (
+        <section className="mt-8 grid gap-3">
+          <div className="flex items-center justify-between gap-3 px-5">
+            <h2 className="font-display text-2xl">Flights from {homeAirport}</h2>
+            <Link href="/deals" className="shrink-0 text-sm font-medium text-primary">
+              View all
+            </Link>
+          </div>
+          <CardRow>
+            {flightDeals.map((deal) => (
+              <li key={deal.id} className={cardWidth}>
+                <FlightDealCard deal={deal} compact />
+              </li>
+            ))}
+          </CardRow>
+        </section>
+      ) : null}
       <section className="mt-8 grid gap-3">
         <div className="px-5">
           <h2 className="font-display text-2xl">Hues</h2>
