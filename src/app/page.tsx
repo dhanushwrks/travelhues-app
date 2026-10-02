@@ -39,13 +39,15 @@ export default async function ExplorePage({
   const token = session?.token;
   const { country = "" } = await searchParams;
   const code = country.toUpperCase();
-  const [countries, stories, glimpses, library, person] = await Promise.all([
+  const [countries, stories, library, person, huesFeed] = await Promise.all([
     loadEnabledCountries(),
     loadStories(token),
-    loadGlimpses(token, code || undefined),
     loadLibrary(token),
     token ? loadMe(token) : Promise.resolve(null),
+    // Home hues are global discover — not tied to the destination country filter.
+    loadGlimpses(token, undefined, undefined, 12),
   ]);
+  const glimpses = huesFeed;
   const homeAirport = person?.homeAirport?.toUpperCase() ?? "";
   const flightDeals = guest
     ? []
@@ -128,7 +130,7 @@ export default async function ExplorePage({
           </div>
           <CardRow>
             {flightDeals.map((deal) => (
-              <li key={deal.id} className={cardWidth}>
+              <li key={deal.id} className={dealCardWidth}>
                 <FlightDealCard deal={deal} compact />
               </li>
             ))}
@@ -136,12 +138,17 @@ export default async function ExplorePage({
         </section>
       ) : null}
       <section className="mt-8 grid gap-3">
-        <div className="px-5">
+        <div className="flex items-center justify-between gap-3 px-5">
           <h2 className="font-display text-2xl">Hues</h2>
+          {!guest ? (
+            <Link href="/shorts" className="shrink-0 text-sm font-medium text-primary">
+              View all
+            </Link>
+          ) : null}
         </div>
         <GlimpseRow
           glimpses={shortPreview}
-          country={selected ? code : ""}
+          country=""
           guest={guest}
           moreAvailable={(glimpses ?? []).length > GUEST_SHORTS_LIMIT}
         />
@@ -254,6 +261,7 @@ export default async function ExplorePage({
 }
 
 const cardWidth = "w-[calc(100%-3rem)] max-w-sm shrink-0 snap-start";
+const dealCardWidth = "w-[9.25rem] shrink-0 snap-start sm:w-[10rem]";
 
 function suggestCountries<T>(countries: T[]) {
   const pool = [...countries];

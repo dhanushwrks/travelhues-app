@@ -188,6 +188,15 @@ export type PublicFlightDeal = {
   departureDate: string;
   returnDate: string;
   priceInr: number;
+  listPriceInr: number;
+  offerPercent: number;
+  tripDays: number;
+  travelMonthLabel: string;
+  cabinClass: string;
+  stopsLabel: string;
+  baggageSummary: string;
+  airlineName: string;
+  dealEndsAt: string;
   currency: string;
   affiliateUrl: string;
   headline: string;
@@ -199,6 +208,14 @@ export type PublicFlightDeal = {
   featuredSpotIds: string[];
   tripType: "one_way" | "return";
   storyPreview?: FlightDealStoryPreview | null;
+};
+
+export type FlightDealSort = "featured" | "latest" | "offer";
+
+export type FlightDealsPage = {
+  items: PublicFlightDeal[];
+  total: number;
+  hasMore: boolean;
 };
 
 export function dealBookHref(dealId: string) {

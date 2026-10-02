@@ -17,8 +17,8 @@ export function GlimpseRow({
   moreAvailable?: boolean;
 }) {
   const preview = glimpses.slice(0, 5);
-  const more = moreAvailable || glimpses.length > 5;
-  const feed = country ? `/hues?country=${country}` : "/hues";
+  const more = moreAvailable || glimpses.length > 5 || preview.length >= 5;
+  const shortsBase = country ? `/shorts?country=${encodeURIComponent(country)}` : "/shorts";
 
   if (preview.length === 0) {
     return <p className="px-5 text-sm text-muted-foreground">No hues in this search yet.</p>;
@@ -51,7 +51,10 @@ export function GlimpseRow({
                 {tile}
               </LoginGateCard>
             ) : (
-              <Link href={`${feed}${feed.includes("?") ? "&" : "?"}start=${glimpse.id}`} className="block">
+              <Link
+                href={`${shortsBase}${shortsBase.includes("?") ? "&" : "?"}start=${glimpse.id}`}
+                className="block"
+              >
                 {tile}
               </Link>
             )}
@@ -70,7 +73,7 @@ export function GlimpseRow({
             </LoginGateButton>
           ) : (
             <Link
-              href={feed}
+              href={shortsBase}
               className="grid aspect-[9/16] place-items-center rounded-2xl bg-foreground px-3 text-center text-sm text-background"
             >
               View more

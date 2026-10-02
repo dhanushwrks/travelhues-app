@@ -8,7 +8,13 @@ import type { Library } from "@/lib/marks";
 import type { Person } from "@/lib/profile";
 import { apiBase } from "@/lib/api";
 import { CACHE_TAGS, PUBLIC_CACHE_SECONDS } from "@/lib/server-cache";
-import type { Itinerary, PublicFlightDeal, Story } from "@/lib/types";
+import type {
+  FlightDealSort,
+  FlightDealsPage,
+  Itinerary,
+  PublicFlightDeal,
+  Story,
+} from "@/lib/types";
 
 const base = apiBase;
 const fetchLog = process.env.TH_FETCH_LOG === "1";
@@ -63,10 +69,16 @@ const cachedShortAds = unstable_cache(
   { revalidate: PUBLIC_CACHE_SECONDS, tags: [CACHE_TAGS.shortAds] },
 );
 
-export function loadGlimpses(token?: string, country?: string, storySlug?: string) {
+export function loadGlimpses(
+  token?: string,
+  country?: string,
+  storySlug?: string,
+  limit?: number,
+) {
   const params = new URLSearchParams();
   if (country) params.set("country", country);
   if (storySlug) params.set("storySlug", storySlug);
+  if (limit != null) params.set("limit", String(limit));
   const query = params.size ? `?${params}` : "";
   return load<Glimpse[]>(`/glimpses${query}`, token);
 }
@@ -223,15 +235,35 @@ export async function purchaseContent(
   return response.json() as Promise<{ ok: boolean; alreadyOwned?: boolean }>;
 }
 
-const loadFlightDealsCached = cache((origin: string, limit: number) => {
-  const params = new URLSearchParams();
-  if (origin) params.set("origin", origin);
-  params.set("limit", String(limit));
-  return load<PublicFlightDeal[]>(`/flight-deals?${params}`);
-});
+function normalizeDealsPage(data: FlightDealsPage | PublicFlightDeal[]): FlightDealsPage {
+  if (Array.isArray(data)) {
+    return { items: data, total: data.length, hasMore: false };
+  }
+  return data;
+}
 
-export function loadFlightDeals(origin?: string, limit = 20) {
-  return loadFlightDealsCached(origin?.toUpperCase() ?? "", limit);
+export async function fetchFlightDealsPage(query: {
+  origin?: string;
+  limit?: number;
+  offset?: number;
+  sort?: FlightDealSort;
+}) {
+  const params = new URLSearchParams();
+  if (query.origin) params.set("origin", query.origin.toUpperCase());
+  params.set("limit", String(query.limit ?? 5));
+  params.set("offset", String(query.offset ?? 0));
+  if (query.sort) params.set("sort", query.sort);
+  const data = await load<FlightDealsPage | PublicFlightDeal[]>(`/flight-deals?${params}`);
+  return normalizeDealsPage(data ?? { items: [], total: 0, hasMore: false });
+}
+
+const loadFlightDealsCached = cache((origin: string, limit: number) =>
+  fetchFlightDealsPage({ origin: origin || undefined, limit, sort: "featured" }),
+);
+
+export async function loadFlightDeals(origin?: string, limit = 20) {
+  const page = await loadFlightDealsCached(origin?.toUpperCase() ?? "", limit);
+  return page.items;
 }
 
 export function loadFlightDeal(id: string) {
