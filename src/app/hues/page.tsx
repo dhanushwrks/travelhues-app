@@ -1,6 +1,6 @@
 import { GlimpsePlayer } from "@/components/glimpse-player";
 import { loadGlimpses, loadShortAdsForFeed } from "@/lib/remote";
-import { GUEST_SHORTS_LIMIT, getSession } from "@/lib/session";
+import { getSession } from "@/lib/session";
 
 export default async function HuesPage({
   searchParams,
@@ -14,8 +14,7 @@ export default async function HuesPage({
     loadGlimpses(session?.token, country || undefined),
     loadShortAdsForFeed(),
   ]);
-  const list = all ?? [];
-  const glimpses = guest ? list.slice(0, GUEST_SHORTS_LIMIT) : list;
+  const glimpses = all ?? [];
 
   return (
     <GlimpsePlayer
@@ -24,7 +23,7 @@ export default async function HuesPage({
       startId={start}
       traveler={session?.role === "traveler"}
       guest={guest}
-      guestCapped={guest && list.length > GUEST_SHORTS_LIMIT}
+      guestCapped={false}
     />
   );
 }

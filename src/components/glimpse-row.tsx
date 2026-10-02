@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { LoginGateButton, LoginGateCard } from "@/components/login-prompt";
+import { LoginGateButton } from "@/components/login-prompt";
 import type { Glimpse } from "@/lib/glimpse";
 
 export function GlimpseRow({
@@ -41,23 +41,12 @@ export function GlimpseRow({
         );
         return (
           <li key={glimpse.id} className="w-28 shrink-0">
-            {guest ? (
-              <LoginGateCard
-                className="block w-full text-left"
-                label={glimpse.displayName || glimpse.caption}
-                title="Sign in to watch this short"
-                body="Sign in to open hues, stories, and creator pages."
-              >
-                {tile}
-              </LoginGateCard>
-            ) : (
-              <Link
-                href={`${shortsBase}${shortsBase.includes("?") ? "&" : "?"}start=${glimpse.id}`}
-                className="block"
-              >
-                {tile}
-              </Link>
-            )}
+            <Link
+              href={`${shortsBase}${shortsBase.includes("?") ? "&" : "?"}start=${glimpse.id}`}
+              className="block"
+            >
+              {tile}
+            </Link>
           </li>
         );
       })}
