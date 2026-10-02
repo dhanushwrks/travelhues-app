@@ -192,21 +192,31 @@ function Missing({ href, label }: { href: string; label: string }) {
 
 function Gallery({ images }: { images: string[] }) {
   if (images.length === 0) return null;
+  if (images.length === 1) {
+    return (
+      <div className="relative mx-5 mt-4 aspect-[4/3] overflow-hidden rounded-3xl bg-secondary">
+        <Cover src={images[0]} sizes="(max-width: 768px) 100vw, 672px" />
+      </div>
+    );
+  }
   return (
-    <div className="mt-4 flex snap-x gap-3 overflow-x-auto px-5">
+    <div className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5">
       {images.map((src, index) => (
-        <div key={`${index}-${src.slice(0, 24)}`} className="relative aspect-[4/3] w-[85%] shrink-0 snap-center overflow-hidden rounded-3xl bg-secondary">
-          <Cover src={src} />
+        <div
+          key={`${index}-${src.slice(0, 24)}`}
+          className="relative aspect-[4/3] w-full min-w-full shrink-0 snap-center overflow-hidden rounded-3xl bg-secondary"
+        >
+          <Cover src={src} sizes="(max-width: 768px) 100vw, 672px" />
         </div>
       ))}
     </div>
   );
 }
 
-function Cover({ src }: { src: string }) {
+function Cover({ src, sizes = "360px" }: { src: string; sizes?: string }) {
   if (!src) return null;
   if (src.includes("images.unsplash.com")) {
-    return <Image src={src} alt="" fill className="object-cover" sizes="360px" />;
+    return <Image src={src} alt="" fill className="object-cover" sizes={sizes} />;
   }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt="" className="size-full object-cover" />;
