@@ -1,17 +1,18 @@
 "use client";
 
-import { MapPin } from "lucide-react";
+import { MapPin, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { ArchiveAction } from "@/components/archive-action";
 import { BackLink } from "@/components/back-link";
 import { PlaceCard, PlacePicker, PlaceSearch, blankPlace, nearbyPlaces, type ChosenPlace } from "@/components/maps";
-import { Loader } from "@/components/loader";
+import { Loader, PageLoader } from "@/components/loader";
 import { PictureTray } from "@/components/picture-tray";
 import { PurchaseAccessFields } from "@/components/purchase-access-fields";
 import { fetchSpotCatalog, seedSpotCatalog, type SpotCatalogItem } from "@/lib/spot-catalog";
-import { createDeskSpot, useDesk, useDeskHome } from "@/lib/studio-desk";
+import { createDeskSpot, updateDeskSpot, useDesk, useDeskHome } from "@/lib/studio-desk";
 import { defaultPurchasePriceInr } from "@/lib/commerce-defaults";
 
 const field = "w-full rounded-2xl border border-border bg-background px-4 py-3";
@@ -27,18 +28,22 @@ const ages = ["All ages", "Families", "Adults"];
 
 export function SpotForm({
   storyId,
+  spotId,
   returnTo,
   initialCategory = "",
 }: {
   storyId: string;
+  spotId?: string;
   returnTo?: string;
   initialCategory?: string;
 }) {
   const router = useRouter();
   const home = useDeskHome();
-  const back = returnTo ?? `${home}/${storyId}?tab=spots`;
-  const { stories } = useDesk();
+  const { stories, status, problem } = useDesk();
   const story = stories.find((item) => item.id === storyId);
+  const existing = spotId ? story?.spots.find((item) => item.id === spotId) : undefined;
+  const back =
+    returnTo ?? (spotId ? `${home}/${storyId}/spots/${spotId}` : `${home}/${storyId}?tab=spots`);
   const center = centers[story?.country ?? ""] ?? centers.IN;
 
   const [title, setTitle] = useState("");
@@ -65,8 +70,41 @@ export function SpotForm({
   const [priceInr, setPriceInr] = useState(defaultPurchasePriceInr());
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(spotId ? "" : "new");
   const chosen = catalog.find((item) => item.slug === category);
   const pinTicket = useRef(0);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  if (spotId && existing && loaded !== existing.id) {
+    setLoaded(existing.id);
+    setTitle(existing.title);
+    setSummary(existing.summary);
+    setTips(existing.tips);
+    setCategory(existing.category);
+    setSubcategory(existing.subcategory);
+    setPlaceName(existing.placeName);
+    setLat(existing.lat);
+    setLng(existing.lng);
+    setImages(existing.images);
+    setDuration(existing.duration);
+    setCost(existing.cost);
+    setDifficulty(existing.difficulty);
+    setSeason(existing.season);
+    setAgeGroup(existing.ageGroup);
+    setAffiliateUrl(existing.affiliateUrl);
+    setReferenceUrl(existing.referenceUrl);
+    setPurchaseOnly(existing.purchaseOnly ?? false);
+    setPriceInr(existing.priceInr ?? defaultPurchasePriceInr());
+    if (existing.lat != null && existing.lng != null) {
+      setPlaceCard(
+        blankPlace({
+          name: existing.placeName.trim() || existing.title,
+          lat: existing.lat,
+          lng: existing.lng,
+        }),
+      );
+    }
+  }
 
   function movePin(nextLat: number, nextLng: number) {
     const ticket = ++pinTicket.current;
@@ -104,6 +142,39 @@ export function SpotForm({
     };
   }, []);
 
+  if (spotId && !story && status !== "ready") {
+    return (
+      <div className="px-5 pt-6">
+        <PageLoader label="Loading the find" />
+      </div>
+    );
+  }
+  if (spotId && status === "error") {
+    return <p className="px-5 pt-6 text-sm text-primary">{problem}</p>;
+  }
+  if (spotId && status === "ready" && !story) {
+    return (
+      <div className="px-5 pt-6">
+        <p className="text-sm text-muted-foreground">That story is not in your studio.</p>
+      </div>
+    );
+  }
+  if (spotId && story && !existing) {
+    return (
+      <div className="px-5 pt-6">
+        <BackLink href={`${home}/${storyId}?tab=spots`} />
+        <p className="pt-6 text-sm text-muted-foreground">That find is not in this story.</p>
+      </div>
+    );
+  }
+  if (spotId && !loaded) {
+    return (
+      <div className="px-5 pt-6">
+        <PageLoader label="Loading the find" />
+      </div>
+    );
+  }
+
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) {
@@ -136,28 +207,37 @@ export function SpotForm({
     }
     setError("");
     setSaving(true);
+    const payload = {
+      title: title.trim(),
+      summary: summary.trim(),
+      tips: tips.trim(),
+      category,
+      subcategory,
+      placeName: placeName.trim(),
+      lat,
+      lng,
+      images,
+      duration: duration.trim(),
+      cost: cost.trim(),
+      difficulty,
+      season,
+      ageGroup,
+      affiliateUrl: affiliateUrl.trim(),
+      referenceUrl: referenceUrl.trim(),
+      purchaseOnly,
+      priceInr: purchaseOnly ? priceInr : 99,
+    };
     try {
-      await createDeskSpot(storyId, {
-        title: title.trim(),
-        summary: summary.trim(),
-        tips: tips.trim(),
-        category,
-        subcategory,
-        placeName: placeName.trim(),
-        lat,
-        lng,
-        images,
-        duration: duration.trim(),
-        cost: cost.trim(),
-        difficulty,
-        season,
-        ageGroup,
-        affiliateUrl: affiliateUrl.trim(),
-        referenceUrl: referenceUrl.trim(),
-        purchaseOnly,
-        priceInr: purchaseOnly ? priceInr : 99,
-      });
-      router.push(back);
+      if (spotId) {
+        await updateDeskSpot(storyId, spotId, {
+          id: spotId,
+          ...payload,
+          archived: existing?.archived ?? false,
+        });
+      } else {
+        await createDeskSpot(storyId, payload);
+      }
+      router.push(spotId ? `${home}/${storyId}/spots/${spotId}` : back);
       router.refresh();
     } catch (caught) {
       setSaving(false);
@@ -166,16 +246,39 @@ export function SpotForm({
   }
 
   return (
-    <form onSubmit={save} className="flex h-full min-h-0 flex-col md:mx-auto md:max-w-2xl">
+    <form ref={formRef} onSubmit={save} className="flex h-full min-h-0 flex-col md:mx-auto md:max-w-2xl">
       <div className="grid min-h-0 flex-1 content-start gap-5 overflow-y-auto px-5 pt-5 pb-6 contain-paint">
       <div className="flex items-center gap-3">
-        <BackLink href={back} label="Story" />
-        <h1 className="text-lg font-medium">New find</h1>
+        <BackLink href={back} label={spotId ? "Find" : "Story"} />
+        <h1 className="min-w-0 flex-1 text-lg font-medium">{spotId ? "Edit find" : "New find"}</h1>
+        <div className="flex shrink-0 items-center gap-2">
+          {spotId && existing ? (
+            <ArchiveAction
+              storyId={storyId}
+              kind="spots"
+              itemId={spotId}
+              archived={existing.archived ?? false}
+              compact
+            />
+          ) : null}
+          <button
+            type="button"
+            aria-label={spotId ? "Save find" : "Create find"}
+            disabled={saving}
+            onClick={() => formRef.current?.requestSubmit()}
+            className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? <Loader className="size-4" /> : <Save className="size-4" />}
+            {spotId ? "Save" : "Create"}
+          </button>
+        </div>
       </div>
-      <p className="text-sm leading-6">
-        <span className="font-medium">What is a find?</span> One stop in this story. A room, a meal, a walk, a shop.
-        Plans line these up by day.
-      </p>
+      {spotId ? null : (
+        <p className="text-sm leading-6">
+          <span className="font-medium">What is a find?</span> One stop in this story. A room, a meal, a walk, a shop.
+          Plans line these up by day.
+        </p>
+      )}
       <label className="grid gap-1 text-sm">
         <span className="font-medium">Name</span>
         <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="The place, in a few words" className={field} />
@@ -371,7 +474,7 @@ export function SpotForm({
           disabled={saving}
           className="flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
         >
-          {saving ? <Loader label="Saving" /> : "Create find"}
+          {saving ? <Loader label="Saving" /> : spotId ? "Save find" : "Create find"}
         </button>
       </div>
     </form>

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { PlanForm } from "@/components/plan-form";
-import { SpotEdit } from "@/components/spot-edit";
+import { SpotForm } from "@/components/spot-form";
 import { requireSession } from "@/lib/session";
 import { DeskScope } from "@/lib/studio-desk";
 
@@ -19,7 +19,7 @@ export default async function EditTripItineraryPage({
   if (tab === "spots") {
     return (
       <DeskScope home="/plans">
-        <SpotEdit storyId={id} spotId={itemId} />
+        <SpotForm storyId={id} spotId={itemId} />
       </DeskScope>
     );
   }
