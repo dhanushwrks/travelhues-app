@@ -28,6 +28,10 @@ Body may include `homeAirport`: `BLR` | `BOM` | `HYD` | `DEL` | `MAA` or `""` to
 
 Optional `sourceDealId` (UUID) for attribution.
 
+## Dev seed (travelhues-api)
+
+On API startup, missing deals are upserted for each published story with itineraries: **five origins** (`BLR`, `BOM`, `DEL`, `HYD`, `MAA`) per destination. Missing **Hues** shorts are seeded (five `TH` previews linked to the first open story) when the store has none.
+
 ## Admin (Desk)
 
 Bearer `ADMIN_TOKEN`.

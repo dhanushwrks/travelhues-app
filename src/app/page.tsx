@@ -39,10 +39,10 @@ export default async function ExplorePage({
   const token = session?.token;
   const { country = "" } = await searchParams;
   const code = country.toUpperCase();
-  const [countries, stories, allGlimpses, library, person] = await Promise.all([
+  const [countries, stories, glimpses, library, person] = await Promise.all([
     loadEnabledCountries(),
     loadStories(token),
-    loadGlimpses(token),
+    loadGlimpses(token, code || undefined),
     loadLibrary(token),
     token ? loadMe(token) : Promise.resolve(null),
   ]);
@@ -82,7 +82,7 @@ export default async function ExplorePage({
   });
   const first = guest ? "Wanderer" : session.displayName.split(" ")[0] || "there";
   const suggested = suggestCountries(countries);
-  const shortPreview = (allGlimpses ?? []).slice(0, GUEST_SHORTS_LIMIT);
+  const shortPreview = (glimpses ?? []).slice(0, GUEST_SHORTS_LIMIT);
   const destinationPreview = destinations.slice(0, guest ? GUEST_DESTINATION_LIMIT : DESTINATION_PREVIEW_LIMIT);
 
   return (
@@ -136,17 +136,14 @@ export default async function ExplorePage({
         </section>
       ) : null}
       <section className="mt-8 grid gap-3">
-        <div className="flex items-center justify-between gap-3 px-5">
+        <div className="px-5">
           <h2 className="font-display text-2xl">Hues</h2>
-          <Link href="/hues" className="shrink-0 text-sm font-medium text-primary">
-            Watch all
-          </Link>
         </div>
         <GlimpseRow
           glimpses={shortPreview}
-          country=""
+          country={selected ? code : ""}
           guest={guest}
-          moreAvailable={(allGlimpses ?? []).length > GUEST_SHORTS_LIMIT}
+          moreAvailable={(glimpses ?? []).length > GUEST_SHORTS_LIMIT}
         />
       </section>
       <section className="mt-8">
